@@ -12,6 +12,7 @@ venv/
 
 # OS/editor noise
 .DS_Store
+**/.DS_Store
 
 # Local caches and heavy generated artifacts
 .cache/
@@ -23,7 +24,20 @@ venv/
 
 # Large/generated data caches. Keep lightweight metadata/docs explicitly tracked.
 data/*
+data/local_market_data/
+data/**/*.parquet
+data/**/*.h5
+data/**/*.db
+data/**/*.sqlite
+data/**/*.feather
+data/**/*.pkl
+data/**/*.csv
 !data/README.md
+!data/README_drive.md
+!data/sample/
+!data/sample/**
+!data/links/
+!data/links/**
 !data/catalog/
 !data/catalog/*.csv
 !data/catalog/*.parquet
@@ -35,6 +49,7 @@ data/data_providers/*.raw.parquet
 !data/data_providers/api_registry/*.parquet
 !data/alternative_data/
 !data/alternative_data/*.parquet
+data/alternative_data/earnings_calls_text_features.parquet
 !data/alternative_data/free_finance_ml_sources/
 !data/alternative_data/free_finance_ml_sources/*.csv
 !data/alternative_data/free_finance_ml_sources/*.json

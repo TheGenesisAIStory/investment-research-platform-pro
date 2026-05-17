@@ -15,11 +15,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESEARCH_PROJECT_FOLDERS = ["company_valuation", "pead_european_banks_ifrs9", "portfolio_analysis"]
-OPTIONAL_SUPPORT_FILES = ["RESEARCH_PROJECTS.md", "prompts", "scripts", "Company_Valuatio.ipynb"]
+OPTIONAL_SUPPORT_FILES = ["RESEARCH_PROJECTS.md", "prompts", "scripts", "data/README_drive.md"]
 GENERATED_OUTPUT_NAMES = {"output", ".ipynb_checkpoints", "__pycache__"}
 DEFAULT_DATABASE_ROOT = Path(
     "/Users/itsgennymac/Library/CloudStorage/"
-    "GoogleDrive-s.genise50@studenti.poliba.it/Il mio Drive/Database Finanziario"
+    "GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario"
 )
 DEFAULT_LOCAL_DESTINATION = DEFAULT_DATABASE_ROOT / "research_exports"
 MANIFEST_NAME = "RESEARCH_EXPORT_MANIFEST.md"
@@ -113,7 +113,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Mirror the canonical research project folders to a local destination.")
     parser.add_argument("--destination", type=Path, default=DEFAULT_LOCAL_DESTINATION)
     parser.add_argument("--include-output", action="store_true", help="Also copy generated output/ folders and notebook checkpoints.")
-    parser.add_argument("--no-support-files", action="store_true", help="Copy only the three project folders, without RESEARCH_PROJECTS.md/prompts/scripts/top-level notebook mirror.")
+    parser.add_argument("--no-support-files", action="store_true", help="Copy only the three project folders, without RESEARCH_PROJECTS.md/prompts/scripts/Drive data docs.")
     parser.add_argument("--zip", action="store_true", help=f"Also create {ZIP_NAME} in the destination folder.")
     args = parser.parse_args()
     copied = sync_research_projects(

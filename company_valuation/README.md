@@ -2,7 +2,7 @@
 
 Cartella dedicata alla **valutazione aziendale** e all'integrazione tra dati di mercato, fondamentali e dashboard finale.
 
-Questa directory è la posizione canonica del notebook `notebooks/Company_Valuatio.ipynb` e dei moduli Python collegati. La copia top-level `Company_Valuatio.ipynb`, quando presente, serve solo per compatibilità con vecchi link Colab: la fonte di verità GitHub-ready rimane questa cartella.
+Questa directory è la posizione canonica del notebook `notebooks/Company_Valuatio.ipynb` e dei moduli Python collegati. La copia top-level `Company_Valuatio.ipynb` è stata rimossa: la fonte di verità GitHub-ready rimane questa cartella.
 
 ## Contenuto
 
@@ -31,7 +31,7 @@ Per ridurre conflitti con il ramo principale e con l'editor GitHub, il progetto 
 company_valuation/notebooks/Company_Valuatio.ipynb
 ```
 
-La copia in root (`Company_Valuatio.ipynb`) viene mantenuta solo come mirror di compatibilità. I link Colab e la documentazione puntano al percorso canonico nella cartella del progetto.
+La copia in root (`Company_Valuatio.ipynb`) non viene più mantenuta. I vecchi link o riferimenti devono puntare al percorso canonico nella cartella del progetto.
 
 ## Pipeline finale
 
@@ -104,6 +104,14 @@ Se il secret non è disponibile, il notebook tenta prima la cache locale e poi p
 python -m pip install -r company_valuation/requirements.txt
 jupyter notebook company_valuation/notebooks/Company_Valuatio.ipynb
 ```
+
+I dataset pesanti devono restare fuori dal repo. Usa `DATA_PATH` per puntare alla cartella locale sincronizzata da Drive:
+
+```bash
+export ML_TRADING_DB_BASE="/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario"
+```
+
+Vedi anche [`../data/README_drive.md`](../data/README_drive.md).
 
 ## Nota metodologica
 

@@ -16,12 +16,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_FOLDERS = ["company_valuation", "pead_european_banks_ifrs9", "portfolio_analysis", "prompts"]
-SUPPORT_FILES = ["RESEARCH_PROJECTS.md", "EXPORT_LOCATIONS.md", "Company_Valuatio.ipynb"]
+SUPPORT_FILES = ["RESEARCH_PROJECTS.md", "EXPORT_LOCATIONS.md", "data/README_drive.md"]
 GENERATED_OUTPUT_NAMES = {"output", ".ipynb_checkpoints", "__pycache__"}
 MANIFEST_NAME = "RESEARCH_EXPORT_MANIFEST.md"
 DEFAULT_DATABASE_ROOT = Path(
     "/Users/itsgennymac/Library/CloudStorage/"
-    "GoogleDrive-s.genise50@studenti.poliba.it/Il mio Drive/Database Finanziario"
+    "GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario"
 )
 DEFAULT_DESTINATION = DEFAULT_DATABASE_ROOT / "research_exports"
 
@@ -102,7 +102,7 @@ def main() -> int:
     parser.add_argument("--destination", default=str(DEFAULT_DESTINATION))
     parser.add_argument("--folders", nargs="*", default=PROJECT_FOLDERS)
     parser.add_argument("--include-output", action="store_true", help="Also copy generated output/ folders and notebook checkpoints.")
-    parser.add_argument("--no-support-files", action="store_true", help="Skip RESEARCH_PROJECTS.md, EXPORT_LOCATIONS.md, and top-level notebook mirror.")
+    parser.add_argument("--no-support-files", action="store_true", help="Skip RESEARCH_PROJECTS.md, EXPORT_LOCATIONS.md, and Drive data docs.")
     args = parser.parse_args()
     destination = Path(args.destination)
     try:

@@ -21,6 +21,81 @@ Il repo contiene **oltre 164 notebook eseguiti**, organizzati in 24 capitoli tem
 | **III — NLP per il Trading** | 14–16 | Sentiment analysis, topic modeling, word embeddings |
 | **IV — Deep & RL** | 17–24 | CNN, RNN, Autoencoder, GAN, Reinforcement Learning |
 
+In più, il workspace master include:
+
+- `00_notebooks_final/`: notebook finali integrati dal repo `ml-trading-thesis-bot-final`;
+- `src/analysis/`: motori Analysis Studio riusabili da notebook, CLI, dashboard e scheduler;
+- `dashboard/`: dashboard Streamlit multipagina per le 8 analisi professionali;
+- `company_valuation/notebooks/Company_Valuatio.ipynb`: percorso canonico del notebook Company Valuation;
+- `pead_european_banks_ifrs9/`: esperimento PEAD European Banks / IFRS9;
+- `data/README_drive.md`: istruzioni per collegare i database pesanti su Google Drive senza versionarli;
+- `scripts/sync_drive_data.sh`: sync locale via `rclone` verso la cartella dati esterna.
+
+---
+
+## Database e Google Drive
+
+I database pesanti non devono essere committati su GitHub. La convenzione comune per notebook locali e Colab è:
+
+```python
+import os
+from pathlib import Path
+
+DB_BASE = Path(os.environ.get(
+    "ML_TRADING_DB_BASE",
+    "/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario",
+))
+DATA_PATH = DB_BASE
+```
+
+In Colab, `DATA_PATH` punta normalmente a:
+
+```text
+/content/drive/MyDrive/Database Finanziario
+```
+
+Guida completa: [`data/README_drive.md`](data/README_drive.md).
+
+Per sincronizzare in locale:
+
+```bash
+bash scripts/sync_drive_data.sh
+```
+
+---
+
+## Analysis Studio
+
+Analysis Studio aggiunge 8 workflow professionali eseguibili da notebook, terminale, dashboard e scheduler:
+
+```bash
+python -m src.cli.analysis_commands screen --universe sp500 --sector technology
+python -m src.cli.analysis_commands risk --portfolio-file positions.csv
+python -m src.cli.analysis_commands earnings --ticker NVDA
+python -m src.cli.analysis_commands build --risk-profile moderate
+python -m src.cli.analysis_commands technical --ticker AAPL
+python -m src.cli.analysis_commands competitive --sector semiconductors
+python -m src.cli.analysis_commands quant --ticker MSFT
+python -m src.cli.analysis_commands macro --portfolio-file positions.csv
+```
+
+Dashboard:
+
+```bash
+streamlit run dashboard/Analysis_Studio.py
+```
+
+Aggiornamento batch:
+
+```bash
+python scripts/weekly_update.py --offline
+```
+
+Documentazione:
+
+- [`docs/ANALYSIS_STUDIO.md`](docs/ANALYSIS_STUDIO.md)
+- [`docs/NOTEBOOKS_USAGE.md`](docs/NOTEBOOKS_USAGE.md)
+
 ---
 
 ## Database Locale di Mercato
@@ -187,6 +262,7 @@ FMP_API_KEY=la_tua_chiave    # Financial Modeling Prep (opzionale, per universe 
 
 - `.DS_Store` escluso da tutti i commit
 - `data/local_market_data/` escluso via `.gitignore` (dati pesanti locali)
+- database Drive e output Analysis Studio sincronizzati in `/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario`
 - File `.env` mai committato — usa solo `.env.example`
 
 ---
