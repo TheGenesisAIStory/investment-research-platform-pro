@@ -95,6 +95,19 @@ Documentazione:
 
 - [`docs/ANALYSIS_STUDIO.md`](docs/ANALYSIS_STUDIO.md)
 - [`docs/NOTEBOOKS_USAGE.md`](docs/NOTEBOOKS_USAGE.md)
+- [`docs/NOTEBOOK_QUALITY_STANDARD.md`](docs/NOTEBOOK_QUALITY_STANDARD.md)
+
+Audit qualità notebook:
+
+```bash
+python scripts/audit_notebook_quality.py --include-drive-benchmarks
+```
+
+Applicazione del pannello UX standard a notebook mancanti:
+
+```bash
+python scripts/apply_notebook_ux_standard.py --apply
+```
 
 ---
 

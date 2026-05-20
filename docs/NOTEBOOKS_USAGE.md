@@ -15,6 +15,7 @@ jupyter notebook 00_notebooks_final/01_stock_screening_professional.ipynb
 Each notebook:
 
 - configures `DB_BASE` and `DATA_PATH`
+- exposes Analysis Studio controls for parameters, data source, and model depth
 - creates missing output folders
 - imports the relevant Analysis Studio engine
 - runs end-to-end with fallback data
@@ -56,3 +57,39 @@ DATA_PATH = DB_BASE
 
 `99_colab_final_patch.ipynb` remains a utility notebook for Colab environment checks.
 
+## Canonical Professional Notebook
+
+The canonical standard for future professional notebooks and dashboards is:
+
+```text
+company_valuation/notebooks/Company_Valuation_Final_Version.ipynb
+```
+
+Use it as the reference pattern for:
+
+- central `MASTERREQUEST` / config-state design
+- visible Control Center and interactive user inputs
+- local project database plus API ingestion
+- validated data pipeline and diagnostics
+- formula-rich methodology sections
+- valuation, peer intelligence, model lab, risk, diagnostics, sensitivity, and scenario sections
+- final Plotly/HTML dashboard with dedicated result tabs
+- CSV, HTML, Markdown, config snapshot, and static dashboard exports under `DB_BASE`
+
+Future portfolio notebooks should reuse the company valuation UX/dashboard pattern and adapt it to portfolio analytics. Do not treat portfolio-specific prototypes as the canonical standard.
+
+## Quality Audit
+
+Run:
+
+```bash
+python scripts/audit_notebook_quality.py --include-drive-benchmarks
+```
+
+The report is saved to:
+
+- `output/review/notebook_quality_audit.csv`
+- `output/review/Notebook_Quality_Audit.md`
+- `DB_BASE / "analysis_outputs/notebook_quality/"`
+
+The current standardization pass ensures every notebook has the shared parameter/source control layer. The audit also identifies deeper work still needed, especially adding 0-14 structure, Plotly charts, and exports to older educational notebooks.

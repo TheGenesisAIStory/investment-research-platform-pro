@@ -13,6 +13,41 @@ from .portfolio_analysis_model import (
     analyze_portfolio,
     export_portfolio_analysis,
 )
+from .portfolio_dashboard import (
+    PORTFOLIO_PARAMETER_GUIDE,
+    PORTFOLIO_SOURCE_GUIDE,
+    PortfolioDashboardArtifacts,
+    build_dashboard_html,
+    build_report_html,
+    export_dashboard_and_report,
+)
+from .portfolio_engine import (
+    DEFAULT_PORTFOLIO_ENGINE_CONFIG,
+    build_returns_matrix_from_universe,
+    merge_portfolio_engine_config,
+    run_cvxportfolio_engine,
+    run_pyportfolioopt_engine,
+    run_riskfolio_engine,
+    unified_run_portfolio_engine,
+)
+from .ml_time_series_engine import (
+    DEFAULT_CRYPTO_ENGINE_CONFIG,
+    DEFAULT_DEEP_STOCK_ENGINE_CONFIG,
+    DEFAULT_TIME_SERIES_ENGINE_CONFIG,
+    build_anomaly_flags,
+    build_price_panel_from_long,
+    merge_engine_config,
+    prepare_crypto_features,
+    run_crypto_signal_engine,
+    run_deep_stock_model,
+    run_time_series_lab,
+    unified_run_ml_time_series_engine,
+)
+from .portfolio_research_screener import (
+    PORTFOLIO_FILTER_SCHEMA,
+    PORTFOLIO_PRESETS,
+    run_portfolio_selection_layer,
+)
 
 __all__ = [
     "PortfolioConfig",
@@ -26,4 +61,31 @@ __all__ = [
     "portfolio_metric_summary",
     "analyze_portfolio",
     "export_portfolio_analysis",
+    "PORTFOLIO_PARAMETER_GUIDE",
+    "PORTFOLIO_SOURCE_GUIDE",
+    "PortfolioDashboardArtifacts",
+    "build_dashboard_html",
+    "build_report_html",
+    "export_dashboard_and_report",
+    "DEFAULT_PORTFOLIO_ENGINE_CONFIG",
+    "build_returns_matrix_from_universe",
+    "merge_portfolio_engine_config",
+    "run_cvxportfolio_engine",
+    "run_pyportfolioopt_engine",
+    "run_riskfolio_engine",
+    "unified_run_portfolio_engine",
+    "DEFAULT_CRYPTO_ENGINE_CONFIG",
+    "DEFAULT_DEEP_STOCK_ENGINE_CONFIG",
+    "DEFAULT_TIME_SERIES_ENGINE_CONFIG",
+    "build_anomaly_flags",
+    "build_price_panel_from_long",
+    "merge_engine_config",
+    "prepare_crypto_features",
+    "run_crypto_signal_engine",
+    "run_deep_stock_model",
+    "run_time_series_lab",
+    "unified_run_ml_time_series_engine",
+    "PORTFOLIO_FILTER_SCHEMA",
+    "PORTFOLIO_PRESETS",
+    "run_portfolio_selection_layer",
 ]

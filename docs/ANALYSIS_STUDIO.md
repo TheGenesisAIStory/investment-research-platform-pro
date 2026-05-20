@@ -96,3 +96,25 @@ The `run()` method returns a DataFrame for notebook ergonomics. The richer `engi
 ## Data Philosophy
 
 The engines try local/remote real data where practical and fall back to realistic synthetic data when unavailable. Synthetic columns are explicitly marked with suffixes such as `_synthetic`, and warnings are logged by the shared data helpers.
+
+## Notebook UX Standard
+
+The shared notebook control layer lives in `src/notebook_standards/`.
+
+Use it directly:
+
+```python
+from src.notebook_standards import NotebookControlDefaults, build_control_panel
+```
+
+Audit notebooks:
+
+```bash
+python scripts/audit_notebook_quality.py --include-drive-benchmarks
+```
+
+Apply the common control panel to notebooks that do not yet have it:
+
+```bash
+python scripts/apply_notebook_ux_standard.py --apply
+```

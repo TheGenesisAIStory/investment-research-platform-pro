@@ -2,17 +2,19 @@
 
 Cartella dedicata alla **valutazione aziendale** e all'integrazione tra dati di mercato, fondamentali e dashboard finale.
 
-Questa directory è la posizione canonica del notebook `notebooks/Company_Valuatio.ipynb` e dei moduli Python collegati. La copia top-level `Company_Valuatio.ipynb` è stata rimossa: la fonte di verità GitHub-ready rimane questa cartella.
+Questa directory è la posizione canonica dei notebook di company valuation e dei moduli Python collegati. Il notebook finale rifattorizzato è `notebooks/Company_Valuation_Final_Version.ipynb`.
 
 ## Contenuto
 
 ```text
 company_valuation/
 ├── notebooks/
-│   └── Company_Valuatio.ipynb        # Notebook Colab/Jupyter completo
+│   ├── Company_Valuatio.ipynb        # Versione legacy compatta
+│   └── Company_Valuation_Final_Version.ipynb
 ├── src/
 │   ├── __init__.py
 │   ├── company_valuation_utils.py    # Helper riusabili estratti/organizzati dal notebook
+│   ├── company_valuation_dashboard.py # Dashboard navigabile + report HTML finale
 │   └── sws_company_analysis_model.py # Modello SWS-style eseguibile
 ├── output/
 │   ├── tables/.gitkeep               # Tabelle CSV/parquet generate dal runtime
@@ -25,10 +27,10 @@ company_valuation/
 
 ## Risoluzione conflitti e percorso canonico
 
-Per ridurre conflitti con il ramo principale e con l'editor GitHub, il progetto usa **un solo notebook canonico**:
+Per la versione finale completa, il progetto usa questo notebook canonico:
 
 ```text
-company_valuation/notebooks/Company_Valuatio.ipynb
+company_valuation/notebooks/Company_Valuation_Final_Version.ipynb
 ```
 
 La copia in root (`Company_Valuatio.ipynb`) non viene più mantenuta. I vecchi link o riferimenti devono puntare al percorso canonico nella cartella del progetto.
@@ -66,9 +68,18 @@ Il notebook implementa un flusso end-to-end:
    - Fallback excess returns.
    - Fallback relative valuation.
 
-7. **Diagnostica, robustness e dashboard**
+7. **Diagnostica, robustness, dashboard e report**
    - QA tables, missingness, staleness, ablation, scenario analysis.
-   - Dashboard finale HTML con KPI card, ranking, chart e summary analyst-style.
+   - Dashboard finale HTML navigabile con tab Executive, Valuation, Visuals, QA, Parameters, Sources & APIs.
+   - Report HTML separato con metodologia, parametri, ranking, QA e inventario fonti/API.
+
+8. **Research platform layer**
+   - Inventory automatico del database locale.
+   - Diagnostics-first workflow con coverage, missingness e look-ahead checks.
+   - Catalogo feature blocks e return targets.
+   - Model registry con linear, ridge, elastic net, random forest, gradient boosting e Bayesian ridge quando i dati sono sufficienti.
+   - Comparable-analysis module con peer similarity, target-vs-peer multiples e warning analyst-style.
+   - Macro-risk layer per rates, FX e commodities da database locale o API open-source opzionali.
 
 ## Output runtime attesi
 
@@ -80,7 +91,9 @@ Quando il notebook viene eseguito, gli artifact principali vengono salvati in `o
 - `Table_VIII_performance_summary.csv`
 - `Table_XI_scenario_expected_returns.csv`
 - `Table_XIII_robustness_checks.csv`
-- `company_valuation_dashboard.html`
+- `dashboard/company_valuation_navigable_dashboard.html`
+- `reports/company_valuation_research_report.html`
+- `feature_catalog`, `target_catalog`, `model_results`, `peeranalysis`, `macro_risk`, `source_provenance`
 - `final_notebook_report.json`
 
 ## Uso rapido in Colab
@@ -88,7 +101,7 @@ Quando il notebook viene eseguito, gli artifact principali vengono salvati in `o
 Aprire il notebook:
 
 ```text
-company_valuation/notebooks/Company_Valuatio.ipynb
+company_valuation/notebooks/Company_Valuation_Final_Version.ipynb
 ```
 
 Per usare FMP in Colab, configurare uno dei segreti:
@@ -97,6 +110,14 @@ Per usare FMP in Colab, configurare uno dei segreti:
 - `fmp_api_key`
 
 Se il secret non è disponibile, il notebook tenta prima la cache locale e poi prosegue in modalità market-only senza interrompere il flusso.
+
+La sezione finale `36. Research Platform Completion Layer` è Colab-friendly e produce sempre dashboard + report. Per abilitare refresh API open-source per rates, FX e commodities, impostare:
+
+```python
+RESEARCH_PLATFORM_CONFIG["refresh_open_source_apis"] = True
+```
+
+Il database locale resta la fonte prioritaria quando `ML_TRADING_DB_BASE`, `GENESIS_DB_BASE`, `DATA_PATH` o `DB_BASE` sono configurati.
 
 ## Uso locale
 

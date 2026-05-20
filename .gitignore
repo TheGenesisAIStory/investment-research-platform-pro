@@ -74,3 +74,15 @@ data/local_market_data/
 02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/*.h5
 02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/*_parquet/
 13_unsupervised_learning/data/
+
+# Research Platform local runtime state and generated artifacts
+research_platform_app/runs/
+research_platform_app/state/
+*.pre_parameters_backup
+*_backup_pre_*.ipynb
+company_valuation/output/cache/
+company_valuation/output/manifests/
+company_valuation/output/reports/
+company_valuation/output/dashboard/
+company_valuation/output/config/
+portfolio_analysis/output/config/
