@@ -51,6 +51,8 @@ Key final docs:
 - `research_platform_definitive/docs/FORMULE_STRATEGIE_REASONING.md`
 - `research_platform_definitive/docs/LLM_LAB_VIBE_TRADING.md`
 - `research_platform_definitive/docs/MOBILE_QUANTDINGER_HANDOFF.md`
+- `research_platform_definitive/docs/ACADEMIC_METHODS.md`
+- `research_platform_definitive/docs/MEMORY_RECOVERY_PLAN.md`
 
 Local databases not kept on Google Drive were preserved under:
 

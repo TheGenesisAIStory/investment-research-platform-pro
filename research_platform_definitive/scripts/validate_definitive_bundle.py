@@ -25,6 +25,8 @@ REQUIRED_PATHS = [
     "src/smart_money_engine/__init__.py",
     "docs/CODEX_CANONICAL_MAINTENANCE_GUIDE.md",
     "docs/PROJECT_STATUS_FINAL.md",
+    "docs/ACADEMIC_METHODS.md",
+    "docs/MEMORY_RECOVERY_PLAN.md",
     "docs/DATA_CENTER_OPERATING_MODEL.md",
     "docs/FORMULE_STRATEGIE_REASONING.md",
     "scripts/validate_notebooks.py",

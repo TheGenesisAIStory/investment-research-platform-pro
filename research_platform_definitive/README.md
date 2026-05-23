@@ -25,6 +25,8 @@ Open these first:
 15. `docs/FORMULE_STRATEGIE_REASONING.md`
 16. `docs/LLM_LAB_VIBE_TRADING.md`
 17. `docs/MOBILE_QUANTDINGER_HANDOFF.md`
+18. `docs/ACADEMIC_METHODS.md`
+19. `docs/MEMORY_RECOVERY_PLAN.md`
 
 Reference/lab material restored from the old Drive project is in:
 

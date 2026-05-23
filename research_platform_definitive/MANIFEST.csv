@@ -31,3 +31,5 @@ Strategy Formula Reasoning,doc,docs/FORMULE_STRATEGIE_REASONING.md,docs/FORMULE_
 LLM Lab Vibe Trading,doc,docs/LLM_LAB_VIBE_TRADING.md,docs/LLM_LAB_VIBE_TRADING.md,canonical,Documents provider registry prompt templates and vibe bridge workflow
 Mobile QuantDinger Handoff,doc,docs/MOBILE_QUANTDINGER_HANDOFF.md,docs/MOBILE_QUANTDINGER_HANDOFF.md,canonical,Documents mobile endpoints configuration and UX fallback behavior
 Final Project Status,doc,docs/PROJECT_STATUS_FINAL.md,docs/PROJECT_STATUS_FINAL.md,canonical,Final component status and operating commands
+Academic Methods,doc,docs/ACADEMIC_METHODS.md,docs/ACADEMIC_METHODS.md,canonical,Academic methodology document covering valuation portfolio ML Data Center and LLM assisted research
+Memory Recovery Plan,doc,docs/MEMORY_RECOVERY_PLAN.md,docs/MEMORY_RECOVERY_PLAN.md,canonical,Plan to recover factor library validation and thesis patterns from ml-trading-thesis-bot
