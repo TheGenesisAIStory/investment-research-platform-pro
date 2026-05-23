@@ -1,0 +1,22 @@
+jobs:
+  - name: daily_price_sync
+    schedule: "0 18 * * 1-5"
+    command: python scripts/sync_prices.py --mode incremental --execute
+  - name: daily_ohlcv_incremental_sync
+    schedule: "45 18 * * 1-5"
+    command: python scripts/sync_ohlcv_prices.py --execute --mode incremental --markets us_all,europe_major,japan_major,global_etfs --max-assets 0
+  - name: weekly_fundamentals
+    schedule: "0 2 * * 0"
+    command: python scripts/sync_fundamentals.py --execute
+  - name: monthly_factor_refresh
+    schedule: "0 3 1 * *"
+    command: python scripts/initial_setup.py --factors ff,aqr,risk --max-items 0 --execute
+  - name: monthly_official_macro_refresh
+    schedule: "30 3 2 * *"
+    command: python scripts/sync_official_macro.py --execute --build-features --start 2010-01
+  - name: api_health_check
+    schedule: "*/15 * * * *"
+    command: python research_platform_app/scheduler.py --once --jobs data_platform_status_refresh
+  - name: data_quality_validation
+    schedule: "30 6 * * *"
+    command: python scripts/validate_data.py

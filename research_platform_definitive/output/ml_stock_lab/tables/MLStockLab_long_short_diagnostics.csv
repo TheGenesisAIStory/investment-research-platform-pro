@@ -1,0 +1,2 @@
+status,reason,long_short_mean_return,long_short_volatility,long_short_sharpe,avg_names_long_short
+NO_QUINTILE_RETURNS,Quantile return artifact is empty,,,,

@@ -1,0 +1,5 @@
+asset_class,series,value,change,source_object,quality_flag,updated_at
+rates,10Y yield,,,unavailable,MISSING,2026-05-22T14:27:45+00:00
+fx,EUR/USD,,,unavailable,MISSING,2026-05-22T14:27:45+00:00
+commodities,Gold/Oil proxy,,,unavailable,MISSING,2026-05-22T14:27:45+00:00
+crypto,BTC proxy,,,unavailable,MISSING,2026-05-22T14:27:45+00:00

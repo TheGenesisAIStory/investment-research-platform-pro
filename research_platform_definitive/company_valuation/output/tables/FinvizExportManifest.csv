@@ -1,0 +1,14 @@
+artifact,path,rows,updated_at
+FinvizArchitectureReview.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizArchitectureReview.csv,6,2026-05-22T14:27:45+00:00
+FinvizDataDictionary.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizDataDictionary.csv,14,2026-05-22T14:27:45+00:00
+FinvizSecuritiesMaster.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizSecuritiesMaster.csv,74,2026-05-22T14:27:45+00:00
+FinvizUniverseConstituents.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizUniverseConstituents.csv,74,2026-05-22T14:27:45+00:00
+FinvizLatestCrossSection.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizLatestCrossSection.csv,74,2026-05-22T14:27:45+00:00
+FinvizGroupSummaries.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizGroupSummaries.csv,9,2026-05-22T14:27:45+00:00
+FinvizMapPayload.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizMapPayload.csv,74,2026-05-22T14:27:45+00:00
+FinvizWatchlists.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizWatchlists.csv,25,2026-05-22T14:27:45+00:00
+FinvizEvents.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizEvents.csv,0,2026-05-22T14:27:45+00:00
+FinvizMacroRisk.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizMacroRisk.csv,4,2026-05-22T14:27:45+00:00
+FinvizAlerts.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizAlerts.csv,4,2026-05-22T14:27:45+00:00
+FinvizQuickView.csv,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/tables/FinvizQuickView.csv,1,2026-05-22T14:27:45+00:00
+FinvizLayerConfig.json,/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/company_valuation/output/config/FinvizLayerConfig.json,1,2026-05-22T14:27:45+00:00

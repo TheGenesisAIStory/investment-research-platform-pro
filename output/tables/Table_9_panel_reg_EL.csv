@@ -1,6 +1,0 @@
-dependent,term,coef,t_stat,p_value,r2,N
-el_ecl,const,0.0075,0.8768,0.3806,0.8490,120
-el_ecl,el_tcel_lag1_w,-0.0606,-0.1329,0.8943,0.8490,120
-el_ecl,macro_stress_index_lag1_w,0.0021,2.3208,0.0203,0.8490,120
-el_ecl,stage2_ratio_lag1_w,-0.0279,-2.4458,0.0145,0.8490,120
-el_ecl,pd_pit_lag1_w,0.3437,5.1165,0.0000,0.8490,120

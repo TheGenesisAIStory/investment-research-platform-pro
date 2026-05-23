@@ -1,8 +1,0 @@
-2026-05-13 14:47:34,367 | INFO | Configured TCEL/ECL research notebook.
-2026-05-13 14:47:34,378 | WARNING | Real TCEL/ECL panel unavailable. Generating realistic synthetic portfolio panel with _synthetic columns.
-2026-05-13 14:49:33,087 | INFO | Configured TCEL/ECL research notebook.
-2026-05-13 14:49:33,100 | WARNING | Real TCEL/ECL panel unavailable. Generating realistic synthetic portfolio panel with _synthetic columns.
-2026-05-13 14:53:02,155 | INFO | Google Drive Colab path not available; local artifacts retained.
-2026-05-13 14:54:55,817 | INFO | Configured TCEL/ECL research notebook.
-2026-05-13 14:54:55,826 | WARNING | Real TCEL/ECL panel unavailable. Generating realistic synthetic portfolio panel with _synthetic columns.
-2026-05-13 14:56:24,315 | INFO | Google Drive Colab path not available; local artifacts retained.

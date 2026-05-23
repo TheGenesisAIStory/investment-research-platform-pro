@@ -1,0 +1,100 @@
+sources:
+  factors:
+    fama_french:
+      provider: Kenneth French Data Library
+      base_url: https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/
+      storage: Factors/FamaFrench
+      refresh: monthly
+      datasets:
+        - FF3_daily
+        - FF3_monthly
+        - FF5_daily
+        - FF5_monthly
+        - Momentum_daily
+        - Momentum_monthly
+        - Industry_10_daily
+        - Industry_49_monthly
+        - Global_3_daily
+        - Emerging_5_monthly
+    aqr:
+      provider: AQR Data Library
+      index_url: https://www.aqr.com/Insights/Datasets
+      storage: alpha_factor_library/aqr
+      refresh: monthly
+      datasets:
+        - QMJ
+        - BAB
+        - HML_Devil
+        - Momentum
+        - Value_Momentum_Everywhere
+    risk:
+      storage: RiskFactors
+      refresh: daily
+      providers: [fred, yfinance]
+
+  equities:
+    storage: Equities
+    start_date: "2000-01-01"
+    refresh_prices: daily
+    refresh_fundamentals: weekly
+    universes:
+      priority_1: [sp500, eurostoxx50, ftsemib]
+      priority_2: [nasdaq100, ftse100, dax40]
+      priority_3: [cac40, ibex35, nikkei225]
+      best_effort: [russell2000, csi300, hangseng, kospi, msci_em_top100]
+
+  ohlcv_prices:
+    storage: MarketData/OHLCV
+    database_url_env: MARKETDATA_DATABASE_URL
+    start_date: "2000-01-01"
+    refresh: daily
+    providers: [yfinance, stooq, alpha_vantage]
+    universe_sources:
+      us_all: NASDAQ Trader Symbol Directory
+      europe_major: Existing index constituents + manual exchange CSV files
+      japan_major: Existing Nikkei/Japan constituents + manual exchange CSV files
+      global_etfs: Curated ETF seed + US ETF flag from NASDAQ Trader
+
+  fx:
+    storage: FX
+    start_date: "2000-01-01"
+    refresh: daily
+    tickers: [EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF, NZDUSD, EURGBP, EURJPY, DXY]
+
+  commodities:
+    storage: Commodities
+    start_date: "2000-01-01"
+    refresh: daily
+    tickers: [WTI, Brent, NaturalGas, Gold, Silver, Platinum, Palladium, Copper, Corn, Wheat, Soybeans, GSCI, DBC]
+
+  official_macro:
+    storage: OfficialMacro
+    refresh: monthly
+    sources:
+      ecb:
+        provider: ECB Data Portal
+        api_base: https://data-api.ecb.europa.eu/service
+        docs:
+          data: https://data.ecb.europa.eu/help/api/data
+          content_negotiation: https://data.ecb.europa.eu/help/api/content-negotiation
+          datasets: https://data.ecb.europa.eu/data/datasets
+        datasets:
+          - hicp_euro_area_yoy
+          - policy_rate_mro
+          - policy_rate_deposit
+          - policy_rate_marginal_lending
+          - m2_notional_stock_index
+          - m3_notional_stock_index
+      bancaditalia:
+        provider: Banca d'Italia BDS / Infostat A2A
+        api_base: https://a2a.bancaditalia.it/infostat/dataservices/export
+        docs:
+          infostat: https://infostat.bancaditalia.it/inquiry/
+          bds: https://www.bancaditalia.it/statistiche/basi-dati/bds/
+          release_calendar: https://www.bancaditalia.it/statistiche/calendario-pubblicazioni/calendario-pubblicazioni.html
+        datasets:
+          - credit_growth
+          - credit_counterparts
+          - deposit_volumes
+          - public_debt
+          - official_rates_bdi

@@ -1,4 +1,0 @@
-model,rmse,mae,r2,directional_accuracy,N
-elastic_net,78.3944,63.7152,0.8029,0.8636,44
-linear,86.3417,68.6498,0.7550,0.8636,44
-random_forest,91.5299,73.8184,0.7289,0.8182,44

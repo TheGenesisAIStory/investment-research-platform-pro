@@ -1,0 +1,49 @@
+app:
+  title: Data/API Control Center
+  default_inventory_limit: 5000
+  health_warning_threshold: 0.75
+  health_success_threshold: 0.9
+
+theme:
+  primary_color: "#1E3A8A"
+  success_color: "#10B981"
+  warning_color: "#F59E0B"
+  error_color: "#EF4444"
+  neutral_color: "#6B7280"
+
+batch_download:
+  default_format: csv
+  max_preview_rows: 2000
+  max_interactive_export_files: 250
+  output_subdir: batch_downloads
+  retry_failed: true
+
+market_context:
+  default_currency: USD
+  currencies:
+    USD:
+      benchmark: SPY
+      fx_pair: DX-Y.NYB
+      overlays: [UUP, TLT, GLD, DBC]
+    EUR:
+      benchmark: SX5E.DE
+      fx_pair: EURUSD=X
+      overlays: [EURUSD=X, FEZ, EWI, GLD]
+    GBP:
+      benchmark: ISF.L
+      fx_pair: GBPUSD=X
+      overlays: [GBPUSD=X, EWU, GLD]
+    CHF:
+      benchmark: EWL
+      fx_pair: CHF=X
+      overlays: [CHF=X, EWL, GLD]
+    JPY:
+      benchmark: EWJ
+      fx_pair: JPY=X
+      overlays: [JPY=X, EWJ, GLD]
+
+schedules:
+  api_health_minutes: 15
+  market_data_sync: daily
+  fundamentals_refresh: weekly
+  full_drive_backup: monthly

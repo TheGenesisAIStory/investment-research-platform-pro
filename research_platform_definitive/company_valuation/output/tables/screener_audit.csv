@@ -1,0 +1,2 @@
+field,operator,value,resolved_column,before,after,dropped,status,detail,updated_at,step
+blended_score,top_pct,0.25,,74,74,0,SKIP,Field unavailable in screener dataframe,2026-05-20T10:01:36+00:00,1

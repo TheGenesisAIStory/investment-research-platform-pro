@@ -1,0 +1,2 @@
+status,reason,model,rows,features,feature_count,feature_blocks,universe,tickers,target,target_selected,target_source,panel_rows,ticker_count,date_count,min_date,max_date,r2_os,sharpe_long_short,volatility_long_short,avg_names_long_short
+NO_QUINTILE_RETURNS,Quantile return artifact is empty,ols,75,"screener_rank,screener_score,source_count",3,,,,market_value,market_value,actual,76,76,2,2024-03-31,2026-05-21,,,,

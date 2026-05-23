@@ -1,0 +1,16 @@
+model,family,required_fields,output,status
+dcf_fcff,intrinsic,"free_cash_flow or operating_cash_flow/capex, discount_rate, growth",equity_value_per_share,active_if_data_available
+dcf_fcfe,intrinsic,"free_cash_flow_to_equity or free_cash_flow, cost_of_equity",equity_value_per_share,active_if_data_available
+two_stage_dcf,intrinsic,"free_cash_flow, high_growth, terminal_growth",equity_value_per_share,active_if_data_available
+reverse_dcf,expectations,"current_price, free_cash_flow, shares_outstanding",implied_growth_rate,diagnostic
+residual_income,accounting,"book_value_per_share, roe, cost_of_equity",equity_value_per_share,active_if_data_available
+economic_profit_eva,accounting,"nopat, invested_capital, wacc",enterprise_value_proxy,active_if_data_available
+ddm_gordon,dividend,"dividend_per_share, cost_of_equity, dividend_growth",equity_value_per_share,active_if_data_available
+ddm_two_stage,dividend,"dividend_per_share, near_growth, terminal_growth",equity_value_per_share,active_if_data_available
+relative_pe,relative,"eps, peer pe_ratio",peer_implied_price,active_if_data_available
+relative_pb,relative,"book_value_per_share, peer pb_ratio",peer_implied_price,active_if_data_available
+relative_ev_ebitda,relative,"ebitda, net_debt, peer ev_ebitda",peer_implied_price,active_if_data_available
+relative_sales,relative,"revenue, peer sales_multiple",peer_implied_price,active_if_data_available
+asset_based_book,balance_sheet,book_value_per_share or equity/shares,equity_floor_value,diagnostic
+analyst_consensus,external,target_price or analyst_target,consensus_value,active_if_data_available
+sotp_placeholder,segment,segment revenue/EBITDA if available,sum_of_the_parts_value,scaffold

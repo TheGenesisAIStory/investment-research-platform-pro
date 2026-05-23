@@ -1,0 +1,4 @@
+# Optional Vibe-Trading integration dependencies.
+# Requires Python 3.11+ because the vendored Vibe-Trading package declares it.
+-e ./vibe_trading
+

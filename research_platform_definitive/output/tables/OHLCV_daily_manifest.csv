@@ -1,0 +1,3 @@
+ticker,provider_symbol,asset_id,exchange,status,provider,rows,start,end,target_path,batch,duration_seconds,updated_at
+SPY,SPY,1,NYSE Arca,downloaded,yfinance,6,2024-01-01,2024-01-10,/var/folders/lc/bskvxbb93zs20ztn0vgyqs9c0000gn/T/tmp.EfT7GgMF5H/db/MarketData/OHLCV/daily/NYSE_Arca/SPY.parquet,1,1.35,2026-05-23T16:24:20+00:00
+QQQ,QQQ,2,NASDAQ,downloaded,yfinance,6,2024-01-01,2024-01-10,/var/folders/lc/bskvxbb93zs20ztn0vgyqs9c0000gn/T/tmp.EfT7GgMF5H/db/MarketData/OHLCV/daily/NASDAQ/QQQ.parquet,1,1.35,2026-05-23T16:24:20+00:00

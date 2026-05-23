@@ -1,0 +1,9 @@
+repository,pattern,platform_action
+stefan-jansen/machine-learning-for-trading,Notebook-first ML trading curriculum,Keep only notebooks that map to the platform domains; do not keep broad teaching chapters.
+cloudQuant/alphalens,"Factor diagnostics: IC, quantile returns, turnover",Promote factor evaluation patterns into ml_stock_lab.evaluation.
+ranaroussi/quantstats,Portfolio tear sheets and HTML reports,Use report-style metrics in Portfolio Research and app summaries.
+dcajasn/Riskfolio-Lib,Advanced portfolio optimization and risk measures,"Use as reference for HRP/CVaR/risk contribution, without adding heavy dependencies by default."
+skfolio/skfolio,sklearn-style portfolio optimization,Preferred API pattern for future portfolio estimators.
+microsoft/qlib,AI quant platform workflow/data/model/backtest separation,"Use architecture pattern: data handler, model, recorder, experiment tracking."
+pmorissette/bt,Composable backtesting framework,Use as reference for strategy/backtest objects where vectorized tests are insufficient.
+AI4Finance-Foundation/FinRL,Financial RL environments and benchmarks,Keep as future optional reference; no DRL notebook promoted now because it is not core to current platform.

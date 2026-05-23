@@ -1,0 +1,205 @@
+path,cells,markdown_cells,code_cells,has_standard_headers,header_count,plotly_hits,widget_hits,source_hits,export_hits,model_hits,fallback_hits,score,status,recommendations
+company_valuation/notebooks/Company_Valuatio.ipynb,55,17,38,True,15,28,62,75,68,99,118,100,gold,meets professional standard
+00_notebooks_final/01_stock_screening_professional.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/02_portfolio_risk_bridgewater.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/03_pre_earnings_jpm.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/04_portfolio_builder_blackrock.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/05_technical_analysis_citadel.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/06_competitive_analysis_bain.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/07_quant_research_renaissance.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+00_notebooks_final/08_macro_strategy_mckinsey.ipynb,31,15,16,True,15,5,3,29,22,33,13,89,gold,meets professional standard
+portfolio_analysis/notebooks/SWS_Portfolio_Analysis_Model.ipynb,33,16,17,True,15,15,1,15,24,8,22,86,gold,meets professional standard
+02_market_and_fundamental_data/00_market_fundamental_data_definitive.ipynb,33,17,16,True,15,0,9,15,24,90,34,85,gold,add at least two Plotly charts
+02_market_and_fundamental_data/03_data_providers/03_integrated_api_provider_registry_definitive.ipynb,33,17,16,True,15,0,9,15,24,90,34,85,gold,add at least two Plotly charts
+03_alternative_data/00_alternative_data_definitive.ipynb,33,17,16,True,15,0,9,15,24,90,34,85,gold,add at least two Plotly charts
+Papers/Paper 1 su TTC Clean Expected Loss (TCEL).ipynb,33,17,16,True,15,0,7,20,26,64,83,85,gold,add at least two Plotly charts
+pead_european_banks_ifrs9/notebooks/PEAD_EuropeanBanks_IFRS9_FullExperiment.ipynb,33,16,17,True,15,5,1,46,28,81,61,83,silver,meets professional standard
+01_machine_learning_for_trading/00_machine_learning_for_trading_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+04_alpha_factor_research/00_alpha_factor_research_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+05_strategy_evaluation/00_strategy_evaluation_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+06_machine_learning_process/00_machine_learning_process_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+07_linear_models/00_linear_models_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+08_ml4t_workflow/00_ml4t_workflow_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+09_time_series_models/00_time_series_models_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+10_bayesian_machine_learning/00_bayesian_machine_learning_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+11_decision_trees_random_forests/00_decision_trees_random_forests_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+11_gradient_boosting_machines/00_gradient_boosting_machines_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+12_gradient_boosting_machines/00_gradient_boosting_machines_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+12_unsupervised_learning/00_unsupervised_learning_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+13_unsupervised_learning/00_unsupervised_learning_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+14_topic_modeling/00_topic_modeling_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+14_working_with_text_data/00_working_with_text_data_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+15_topic_modeling/00_topic_modeling_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+16_word_embeddings/00_word_embeddings_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+17_deep_learning/00_deep_learning_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+18_convolutional_neural_nets/00_convolutional_neural_nets_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+19_recurrent_neural_nets/00_recurrent_neural_nets_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+20_autoencoders_for_conditional_risk_factors/00_autoencoders_for_conditional_risk_factors_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+21_gans_for_synthetic_time_series/00_gans_for_synthetic_time_series_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,40,76,silver,add at least two Plotly charts
+22_deep_reinforcement_learning/00_deep_reinforcement_learning_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+23_next_steps/00_next_steps_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+24_alpha_factor_library/00_alpha_factor_library_definitive.ipynb,33,17,16,True,15,0,2,12,22,39,34,76,silver,add at least two Plotly charts
+/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Colab Notebooks/Company_Valuation_Final_Version.ipynb,57,18,39,False,0,28,104,33,62,68,119,75,silver,add 0-14 section scaffold
+02_market_and_fundamental_data/05_storage_benchmark/storage_benchmark.ipynb,86,36,50,False,0,0,3,12,4,15,3,45,bronze,add 0-14 section scaffold; add at least two Plotly charts
+02_market_and_fundamental_data/04_sec_edgar/edgar_xbrl.ipynb,61,33,28,False,0,0,4,24,1,6,8,40,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/create_stooq_data.ipynb,28,16,12,False,0,0,2,12,2,12,5,40,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Colab Notebooks/Portfolio-Analysis-Model.ipynb,32,12,20,False,1,1,40,3,0,84,91,39,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+04_alpha_factor_research/03_kalman_filter_and_wavelets.ipynb,27,14,13,False,0,0,2,8,0,24,9,36,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/01_parse_itch_order_flow_messages.ipynb,83,50,33,False,0,0,1,16,3,5,9,34,needs_work,add 0-14 section scaffold; add at least two Plotly charts
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/02_rebuild_nasdaq_order_book.ipynb,53,25,28,False,0,0,3,11,0,13,0,34,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+04_alpha_factor_research/01_feature_engineering.ipynb,85,42,43,False,0,0,2,9,0,14,3,34,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/01_linear_regression_intro.ipynb,5,2,3,False,0,0,2,8,2,9,0,34,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/03_data_providers/01_pandas_datareader_demo.ipynb,58,26,32,False,0,0,1,8,0,10,5,33,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+04_alpha_factor_research/01_ml_walk_forward_factor_backtest_definitive.ipynb,5,2,3,False,0,0,1,8,1,16,3,33,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/05_predicting_stock_returns_with_linear_regression.ipynb,5,2,3,False,0,0,2,8,1,11,0,33,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/02_algoseek_intraday/algoseek_minute_data.ipynb,33,16,17,False,0,0,1,9,0,9,4,31,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+06_machine_learning_process/03_bias_variance.ipynb,5,2,3,False,0,0,1,8,2,9,0,31,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+24_alpha_factor_library/01_sample_selection.ipynb,5,2,3,False,0,0,4,8,0,4,0,31,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/02_local_market_database_definitive.ipynb,7,3,4,False,0,0,3,8,0,6,1,31,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/03_data_providers/05_zipline_data_demo.ipynb,26,17,9,False,0,0,1,9,2,8,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+04_alpha_factor_research/06_performance_eval_alphalens.ipynb,49,28,21,False,0,0,1,8,1,6,4,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/07_logistic_regression_macro_data.ipynb,5,2,3,False,0,0,2,8,1,7,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/08_predicting_price_movements_with_logistic_regression.ipynb,5,2,3,False,0,0,2,8,1,7,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+08_ml4t_workflow/03_backtesting_with_backtrader.ipynb,5,2,3,False,0,0,1,8,1,12,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/07_pairs_trading_backtest.ipynb,5,2,3,False,0,0,1,8,1,11,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/07_backtesting_with_zipline.ipynb,6,2,4,False,0,0,1,8,1,21,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/09_backtesting_with_zipline.ipynb,6,2,4,False,0,0,1,8,1,17,0,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/create_datasets_definitive.ipynb,5,2,3,False,0,0,1,8,3,4,2,30,needs_work,add 0-14 section scaffold; add at least two Plotly charts
+00_notebooks_final/99_colab_final_patch.ipynb,8,2,6,False,0,1,1,33,0,4,6,29,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+08_ml4t_workflow/04_ml4t_workflow_with_zipline/03_ml4t_with_zipline.ipynb,5,2,3,False,0,0,1,8,1,9,0,29,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/05_trading_signals_with_lightgbm_and_catboost.ipynb,5,2,3,False,0,0,1,8,1,9,0,29,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+21_gans_for_synthetic_time_series/03_evaluating_synthetic_data.ipynb,5,2,3,False,0,0,1,8,1,4,5,29,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/03_data_providers/03_lobster_itch_data.ipynb,37,15,22,False,0,0,1,10,0,7,3,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+04_alpha_factor_research/02_how_to_use_talib.ipynb,25,12,13,False,0,0,2,8,0,4,3,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/04_statistical_inference_of_stock_returns_with_statsmodels.ipynb,5,2,3,False,0,0,1,8,1,8,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+08_ml4t_workflow/02_vectorized_backtest.ipynb,5,2,3,False,0,0,1,8,0,12,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+08_ml4t_workflow/04_ml4t_workflow_with_zipline/02_backtesting_with_zipline.ipynb,5,2,3,False,0,0,1,8,0,12,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/02_arima_models.ipynb,5,2,3,False,0,0,1,8,1,8,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+17_deep_learning/05_backtesting_with_zipline.ipynb,6,2,4,False,0,0,1,8,0,13,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/08_backtesting_with_zipline.ipynb,5,2,3,False,0,0,1,8,0,11,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/00_data_api_services_catalog_definitive.ipynb,6,3,3,False,0,0,1,8,3,4,0,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts
+data/create_datasets.ipynb,62,29,33,False,0,0,1,16,1,4,4,28,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+06_machine_learning_process/01_machine_learning_workflow.ipynb,5,2,3,False,0,0,2,8,1,4,0,27,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+06_machine_learning_process/02_mutual_information.ipynb,5,2,3,False,0,0,2,8,1,4,0,27,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/06_evaluating_signals_using_alphalens.ipynb,5,2,3,False,0,0,1,8,2,5,0,27,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/07_model_interpretation.ipynb,6,2,4,False,0,0,1,8,2,5,0,27,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/13_svhn_object_detection.ipynb,5,2,3,False,0,0,1,8,1,4,3,27,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+21_gans_for_synthetic_time_series/01_deep_convolutional_generative_adversarial_network.ipynb,6,2,4,False,0,0,1,8,0,4,5,27,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/03_data_providers/02_yfinance_demo.ipynb,60,18,42,False,0,0,1,13,0,5,3,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+04_alpha_factor_research/04_single_factor_zipline.ipynb,21,12,9,False,0,0,1,8,0,5,3,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/02_fama_macbeth.ipynb,5,2,3,False,0,0,1,8,1,6,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/06_statistical_arbitrage_with_cointegrated_pairs.ipynb,5,2,3,False,0,0,1,8,1,6,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/04_japanese_equity_features.ipynb,6,2,4,False,0,0,1,8,1,5,1,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/01_linear_dimensionality_reduction/04_pca_and_eigen_portfolios.ipynb,6,2,4,False,0,0,1,8,1,6,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+14_working_with_text_data/03_document_term_matrix.ipynb,6,2,4,False,0,0,1,8,2,4,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/01_latent_semantic_indexing.ipynb,5,2,3,False,0,0,1,8,2,4,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/05_lda_with_gensim.ipynb,5,2,3,False,0,0,1,8,1,4,2,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/04_financial_news_word2vec_tensorflow.ipynb,5,2,3,False,0,0,1,8,1,4,2,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/12_svhn_preprocessing.ipynb,5,2,3,False,0,0,1,8,1,4,2,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/07_sec_filings_return_prediction.ipynb,5,2,3,False,0,0,1,8,1,5,1,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/03_variational_autoencoder.ipynb,5,2,3,False,0,0,1,8,1,4,2,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+22_deep_reinforcement_learning/03_lunar_lander_deep_q_learning.ipynb,6,2,4,False,0,0,1,8,1,4,2,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+24_alpha_factor_library/04_factor_evaluation.ipynb,6,2,4,False,0,0,1,8,2,4,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/01_private_active_api_services.ipynb,6,3,3,False,0,0,1,8,2,4,0,26,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+05_strategy_evaluation/01_backtest_with_trades.ipynb,5,2,3,False,0,0,1,8,0,7,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+05_strategy_evaluation/02_backtest_with_pf_optimization.ipynb,5,2,3,False,0,0,1,8,0,7,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/01_tsa_and_stationarity.ipynb,5,2,3,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/03_arch_garch_models.ipynb,5,2,3,False,0,0,1,8,0,7,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/04_vector_autoregressive_model.ipynb,5,2,3,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+09_time_series_models/05_cointegration_tests.ipynb,5,2,3,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/01_decision_trees.ipynb,7,2,5,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/02_bagged_decision_trees.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/03_random_forest_tuning.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/05_random_forest_return_signals.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/06_alphalens_signals_quality.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/01_boosting_baseline.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/02_sklearn_gbm_tuning.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/06_evaluate_trading_signals.ipynb,6,2,4,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/08_making_out_of_sample_predictions.ipynb,5,2,3,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/02_manifold_learning/03_manifold_learning_tsne_umap.ipynb,6,2,4,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+14_working_with_text_data/06_sentiment_analysis_yelp.ipynb,5,2,3,False,0,0,1,8,1,5,0,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/02_digit_classification_with_lenet5.ipynb,5,2,3,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/06_cnn_for_trading_features_to_clustered_image_format.ipynb,5,2,3,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/07_cnn_for_trading.ipynb,5,2,3,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/11_satellite_images.ipynb,5,2,3,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/05_sentiment_analysis_imdb.ipynb,5,2,3,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/07_alphalens_analysis.ipynb,6,2,4,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+21_gans_for_synthetic_time_series/02_TimeGAN_TF2.ipynb,5,2,3,False,0,0,1,8,0,4,3,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+24_alpha_factor_library/05_alphalens_analysis.ipynb,6,2,4,False,0,0,1,8,1,4,1,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/create_yelp_review_data.ipynb,17,10,7,False,0,0,1,10,0,4,3,25,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+10_bayesian_machine_learning/01_updating_conjugate_priors.ipynb,7,2,5,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+10_bayesian_machine_learning/02_pymc3_workflow.ipynb,7,2,5,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+10_bayesian_machine_learning/03_bayesian_sharpe_ratio.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/01_linear_dimensionality_reduction/00_the_curse_of_dimensionality.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/01_linear_dimensionality_reduction/01_pca_key_ideas.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/01_linear_dimensionality_reduction/02_the_math_behind_pca.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/01_linear_dimensionality_reduction/03_pca_and_risk_factor_models.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/02_manifold_learning/02_manifold_learning_lle.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/02_manifold_learning/04_manifold_learning_asset_prices.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/03_clustering_algorithms/01_clustering_algos.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/03_clustering_algorithms/02_kmeans_implementation.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/03_clustering_algorithms/03_kmeans_evaluation.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/03_clustering_algorithms/04_hierarchical_clustering.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/03_clustering_algorithms/05_density_based_clustering.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/03_clustering_algorithms/06_gaussian_mixture_models.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/04_hierarchical_risk_parity/01_hierarchical_risk_parity.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/04_hierarchical_risk_parity/02_pf_optimization_with_hrp_zipline_benchmark.ipynb,6,2,4,False,0,0,1,8,0,6,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+14_working_with_text_data/01_nlp_pipeline_with_spaCy.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+14_working_with_text_data/02_nlp_with_textblob.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+14_working_with_text_data/04_news_text_classification.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+14_working_with_text_data/05_sentiment_analysis_twitter.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/02_probabilistic_latent_analysis.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/03_dirichlet_distribution.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/04_lda_with_sklearn.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/06_lda_earnings_calls.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+15_topic_modeling/07_lda_financial_news.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/01_using_pretrained_vectors.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/02_evaluating_embeddings.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/03_financial_news_preprocessing.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/06_sec_preprocessing.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/07_sec_word2vec.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/08_doc2vec_yelp_sentiment.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+17_deep_learning/02_how_to_use_tensorflow.ipynb,5,2,3,False,0,0,1,8,0,4,2,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+17_deep_learning/04_optimizing_a_NN_architecture_for_trading.ipynb,6,2,4,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/01_filter_example.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/04_time_series_prediction.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/10_transfer_learning.ipynb,5,2,3,False,0,0,1,8,0,5,1,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/01_univariate_time_series_regression.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/04_multivariate_timeseries.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+22_deep_reinforcement_learning/01_gridworld_dynamic_programming.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+22_deep_reinforcement_learning/02_gridworld_q_learning.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+22_deep_reinforcement_learning/04_q_learning_for_trading.ipynb,6,2,4,False,0,0,1,8,0,5,1,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+24_alpha_factor_library/00_indicator_zoo.ipynb,5,2,3,False,0,0,1,8,1,4,0,24,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/03_normalize_tick_data.ipynb,48,23,25,False,0,0,1,11,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+02_market_and_fundamental_data/03_data_providers/04_quandl_demo.ipynb,8,3,5,False,0,0,1,8,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+07_linear_models/03_preparing_the_model_data.ipynb,5,2,3,False,0,0,1,8,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+10_bayesian_machine_learning/04_rolling_regression.ipynb,6,2,4,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+11_decision_trees_random_forests/00_data_prep.ipynb,6,2,4,False,0,0,1,8,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/03_sklearn_gbm_tuning_results.ipynb,5,2,3,False,0,0,1,9,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/04_preparing_the_model_data.ipynb,5,2,3,False,0,0,1,8,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/10_intraday_features.ipynb,5,2,3,False,0,0,1,8,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+12_gradient_boosting_machines/11_intraday_model.ipynb,5,2,3,False,0,0,1,8,0,5,0,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+16_word_embeddings/05_financial_news_word2vec_gensim.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+17_deep_learning/03_how_to_use_pytorch.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/03_image_classification_with_alexnet.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/02_stacked_lstm_with_feature_embeddings.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/03_stacked_lstm_with_feature_embeddings_regression.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/06_sentiment_analysis_pretrained_embeddings.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/01_deep_autoencoders.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/02_convolutional_denoising_autoencoders.ipynb,5,2,3,False,0,0,1,8,0,4,1,23,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+05_strategy_evaluation/03_pyfolio_demo.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+05_strategy_evaluation/04_mean_variance_optimization.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+05_strategy_evaluation/05_kelly_rule.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+10_bayesian_machine_learning/05_stochastic_volatility.ipynb,6,2,4,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+13_unsupervised_learning/02_manifold_learning/01_manifold_learning_intro.ipynb,6,2,4,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+17_deep_learning/01_build_and_train_feedforward_nn.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/05_cnn_for_trading_feature_engineering.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+18_convolutional_neural_nets/09_bottleneck_features.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+19_recurrent_neural_nets/00_build_dataset.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/04_build_us_stock_dataset.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/05_conditional_autoencoder_for_asset_pricing_data.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+20_autoencoders_for_conditional_risk_factors/06_conditional_autoencoder_for_asset_pricing_model.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+24_alpha_factor_library/02_common_alpha_factors.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+24_alpha_factor_library/03_101_formulaic_alphas.ipynb,5,2,3,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/glove_word_vectors.ipynb,13,7,6,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE
+data/twitter_sentiment.ipynb,12,6,6,False,0,0,1,8,0,4,0,22,needs_work,add 0-14 section scaffold; add at least two Plotly charts; save CSV/HTML/Markdown outputs under DB_BASE

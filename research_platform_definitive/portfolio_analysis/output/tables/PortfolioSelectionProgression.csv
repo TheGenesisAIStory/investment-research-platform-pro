@@ -1,0 +1,3 @@
+step,field,operator,rows,dropped,status,detail
+start,,,1,0,START,
+1,composite_score,top_pct,1,0,PASS,Applied

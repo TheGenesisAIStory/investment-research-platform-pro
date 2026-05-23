@@ -1,0 +1,10 @@
+role,files,size_mb,newest_age_hours,oldest_age_hours,freshness_status
+other,1325,7845.4757,70.58,63916.01,weekly
+macro_risk,146,303.9196,9.7,65532.19,fresh
+portfolio,91,122.3629,70.58,63911.52,weekly
+prices,71,173.2855,58.63,63915.82,weekly
+fundamentals,64,88.4209,62.07,63869.32,weekly
+notebook_export,41,5.2435,70.58,31473.45,weekly
+alternative,28,3.1818,127.84,335.69,weekly
+screener,24,26.5938,71.52,63892.42,weekly
+provider_registry,14,0.08460000000000001,0.53,336.26,fresh

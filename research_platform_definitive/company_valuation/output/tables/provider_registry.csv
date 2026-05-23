@@ -1,0 +1,13 @@
+provider,domains,priority,requires_key,key_env,free_tier,rate_limit_estimate,cache_policy,fallback_after,key_available
+local_cache,all,0,False,,primary local lake,filesystem,"read first, write every successful refresh",,False
+google_drive_database,all,1,False,,primary persistent lake in Colab,drive/filesystem,"read first, write curated outputs",local_cache,False
+yfinance,"prices, fundamentals_light, metadata, fx, rates, commodities, benchmarks",2,False,,free unofficial,polite batching,cache parquet/csv per request,local_cache,False
+stooq,"prices, indices, fx, rates, commodities",3,False,,free,polite batching,cache csv per symbol,yfinance,False
+fred,"macro, rates",4,False,,free API/key optional,polite requests,cache csv/json per series,stooq,False
+ecb,"rates, fx, macro_europe",5,False,,free,polite requests,cache response per series,fred,False
+eurostat,macro_europe,6,False,,free,polite requests,cache response per dataset,ecb,False
+sec_edgar,"us_filings, fundamentals_us",7,False,,free,SEC fair access,cache submissions/company facts,yfinance,False
+fmp,"fundamentals, profiles, ratios, prices",8,True,FMP_API_KEY,free tier if key available,provider tier dependent,cache every endpoint,yfinance,False
+finnhub,"fundamentals, profiles, estimates",9,True,FINNHUB_API_KEY,free tier if key available,provider tier dependent,cache every endpoint,fmp,False
+alpha_vantage,"prices, fundamentals, fx, macro",10,True,ALPHA_VANTAGE_API_KEY,free tier if key available,low free quota,cache every endpoint,finnhub,False
+eodhd,"prices, fundamentals, indices",11,True,EODHD_API_KEY,trial/free-compatible if key available,provider tier dependent,cache every endpoint,alpha_vantage,False

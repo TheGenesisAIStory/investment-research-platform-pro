@@ -1,0 +1,8 @@
+dataset_name,slug,status,root_path,num_assets,num_rows,last_data_date,last_ingestion_ts
+us_stocks_etfs,borismarjanovic/price-volume-data-for-all-us-stocks-etfs,missing_root,/tmp/nonexistent_kaggle_seed_root/price-volume-data-for-all-us-stocks-etfs,0,0,,2026-05-23T16:59:29+00:00
+us_stocks_meta,jacksoncrow/stock-market-dataset,missing_root,/tmp/nonexistent_kaggle_seed_root/stock-market-dataset,0,0,,2026-05-23T16:59:29+00:00
+historical_etf_data,stefanoleone992/mutual-funds-and-etfs,missing_root,/tmp/nonexistent_kaggle_seed_root/historical-etf-data,0,0,,2026-05-23T16:59:29+00:00
+world_stock_prices,nelgiriyewithana/world-stock-prices-daily-updating,missing_root,/tmp/nonexistent_kaggle_seed_root/world-stock-prices-daily-updating,0,0,,2026-05-23T16:59:29+00:00
+crypto_daily,sudalairajkumar/cryptocurrencypricehistory,missing_root,/tmp/nonexistent_kaggle_seed_root/cryptocurrencypricehistory,0,0,,2026-05-23T16:59:29+00:00
+crypto_5m,varpit94/bitcoin-data-updated-till-26jun2021,missing_root,/tmp/nonexistent_kaggle_seed_root/crypto-5m,0,0,,2026-05-23T16:59:29+00:00
+btcusdt_5m,kaggle-local/btcusdt-5-minute-ohlcv,missing_root,/tmp/nonexistent_kaggle_seed_root/btcusdt-5-minute-ohlcv,0,0,,2026-05-23T16:59:29+00:00

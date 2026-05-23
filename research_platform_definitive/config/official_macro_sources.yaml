@@ -1,0 +1,34 @@
+official_macro:
+  timezone: Europe/Rome
+  storage: OfficialMacro
+  feature_panels:
+    inflation_nowcasting: OfficialMacro/features/inflation_nowcasting_panel.csv
+    credit_risk_macro: OfficialMacro/features/credit_risk_macro_panel.csv
+
+  ecb:
+    api_base: https://data-api.ecb.europa.eu/service
+    docs:
+      datasets: https://data.ecb.europa.eu/data/datasets
+      data_api: https://data.ecb.europa.eu/help/api/data
+      content_negotiation: https://data.ecb.europa.eu/help/api/content-negotiation
+    refresh:
+      hicp_euro_area_yoy: monthly
+      policy_rate_mro: weekly
+      policy_rate_deposit: weekly
+      policy_rate_marginal_lending: weekly
+      m2_notional_stock_index: monthly
+      m3_notional_stock_index: monthly
+
+  bancaditalia:
+    api_base: https://a2a.bancaditalia.it/infostat/dataservices/export
+    docs:
+      infostat: https://infostat.bancaditalia.it/inquiry/
+      bds: https://www.bancaditalia.it/statistiche/basi-dati/bds/
+      release_calendar: https://www.bancaditalia.it/statistiche/calendario-pubblicazioni/calendario-pubblicazioni.html
+    refresh:
+      credit_growth: monthly
+      credit_counterparts: monthly
+      deposit_volumes: monthly
+      public_debt: monthly
+      official_rates_bdi: monthly
+    release_calendar_note: Use the official Banca d'Italia publication calendar before freezing model snapshots.

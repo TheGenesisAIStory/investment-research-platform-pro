@@ -1,0 +1,144 @@
+2026-05-20 18:04:04,724 - INFO - Experiment configuration synchronized. Source: Batch Fallback (ISP.MI)
+2026-05-20 18:04:05,984 - WARNING - Drive mount skipped: No module named 'google.colab'
+2026-05-20 18:04:05,985 - INFO - DB_ROOT: None | exists: False
+2026-05-20 18:08:50,330 - INFO - Experiment configuration synchronized. Source: Interactive UI
+2026-05-20 18:09:36,854 - WARNING - Drive mount skipped: No module named 'google.colab'
+2026-05-20 18:09:36,864 - INFO - DB_ROOT: None | exists: False
+2026-05-20 18:11:30,777 - WARNING - [1.2] File locale non valido, mancante o incompleto → fallback API
+2026-05-20 18:11:30,779 - ERROR - [1.2] API fallita: name 'API_KEYS' is not defined
+2026-05-20 18:12:13,822 - WARNING - [Universe] SP500 non disponibile: Impossibile scaricare S&P 500 da DataHub: HTTP Error 404: Not Found
+2026-05-20 18:12:13,901 - INFO - [Universe] EURO STOXX 50 benchmark constituents caricati: 50
+2026-05-20 18:12:13,986 - INFO - [Universe] FTSEMIB benchmark constituents caricati: 40
+2026-05-20 18:22:17,212 - INFO - [BAMI.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 18:22:17,235 - INFO - [BAMI.MI_SYNTHETIC] Evaluating fmp: Credential Present=True
+2026-05-20 18:22:17,246 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via fmp: FMP execution not fully scaffolded here but consumes registry. Triggering next fallback.
+2026-05-20 18:22:17,254 - INFO - [BAMI.MI_SYNTHETIC] Evaluating eodhd: Credential Present=True
+2026-05-20 18:22:17,260 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via eodhd: None. Triggering next fallback.
+2026-05-20 18:22:17,268 - INFO - [BAMI.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 18:22:17,271 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:22:17,278 - INFO - [BAMI.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=True
+2026-05-20 18:22:17,283 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via alphavantage: None. Triggering next fallback.
+2026-05-20 18:22:17,287 - INFO - [BAMI.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 18:22:18,722 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 18:22:18,742 - INFO - [ISP.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 18:22:18,783 - INFO - [ISP.MI_SYNTHETIC] Evaluating fmp: Credential Present=True
+2026-05-20 18:22:18,786 - WARNING - [ISP.MI_SYNTHETIC] FAILED via fmp: FMP execution not fully scaffolded here but consumes registry. Triggering next fallback.
+2026-05-20 18:22:18,789 - INFO - [ISP.MI_SYNTHETIC] Evaluating eodhd: Credential Present=True
+2026-05-20 18:22:18,794 - WARNING - [ISP.MI_SYNTHETIC] FAILED via eodhd: None. Triggering next fallback.
+2026-05-20 18:22:18,800 - INFO - [ISP.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 18:22:18,803 - WARNING - [ISP.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:22:18,806 - INFO - [ISP.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=True
+2026-05-20 18:22:18,810 - WARNING - [ISP.MI_SYNTHETIC] FAILED via alphavantage: None. Triggering next fallback.
+2026-05-20 18:22:18,814 - INFO - [ISP.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 18:22:19,765 - WARNING - [ISP.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 18:22:19,769 - INFO - [UCG.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 18:22:19,772 - INFO - [UCG.MI_SYNTHETIC] Evaluating fmp: Credential Present=True
+2026-05-20 18:22:19,775 - WARNING - [UCG.MI_SYNTHETIC] FAILED via fmp: FMP execution not fully scaffolded here but consumes registry. Triggering next fallback.
+2026-05-20 18:22:19,779 - INFO - [UCG.MI_SYNTHETIC] Evaluating eodhd: Credential Present=True
+2026-05-20 18:22:19,783 - WARNING - [UCG.MI_SYNTHETIC] FAILED via eodhd: None. Triggering next fallback.
+2026-05-20 18:22:19,786 - INFO - [UCG.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 18:22:19,789 - WARNING - [UCG.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:22:19,794 - INFO - [UCG.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=True
+2026-05-20 18:22:19,798 - WARNING - [UCG.MI_SYNTHETIC] FAILED via alphavantage: None. Triggering next fallback.
+2026-05-20 18:22:19,805 - INFO - [UCG.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 18:22:20,715 - WARNING - [UCG.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 18:51:16,104 - INFO - Experiment configuration synchronized. Source: Batch Fallback (ISP.MI)
+2026-05-20 18:51:16,753 - WARNING - Drive mount skipped: No module named 'google.colab'
+2026-05-20 18:51:16,755 - INFO - DB_ROOT: None | exists: False
+2026-05-20 18:51:19,511 - WARNING - [1.2] File locale non valido, mancante o incompleto → fallback API
+2026-05-20 18:51:19,515 - ERROR - [1.2] API fallita: name 'API_KEYS' is not defined
+2026-05-20 18:51:28,578 - WARNING - Nessun benchmark universe caricato (manual mode o errori). Creazione fallback dummy.
+2026-05-20 18:51:29,667 - INFO - [BAMI.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 18:51:29,680 - INFO - [BAMI.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 18:51:29,685 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:29,698 - INFO - [BAMI.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 18:51:29,703 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:29,716 - INFO - [BAMI.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 18:51:29,720 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:29,726 - INFO - [BAMI.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 18:51:29,728 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:29,733 - INFO - [BAMI.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 18:51:31,291 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 18:51:31,296 - INFO - [ISP.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 18:51:31,298 - INFO - [ISP.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 18:51:31,302 - WARNING - [ISP.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:31,305 - INFO - [ISP.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 18:51:31,309 - WARNING - [ISP.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:31,313 - INFO - [ISP.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 18:51:31,317 - WARNING - [ISP.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:31,323 - INFO - [ISP.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 18:51:31,325 - WARNING - [ISP.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:31,328 - INFO - [ISP.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 18:51:32,415 - WARNING - [ISP.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 18:51:32,420 - INFO - [UCG.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 18:51:32,432 - INFO - [UCG.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 18:51:32,435 - WARNING - [UCG.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:32,438 - INFO - [UCG.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 18:51:32,440 - WARNING - [UCG.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:32,443 - INFO - [UCG.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 18:51:32,445 - WARNING - [UCG.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:32,447 - INFO - [UCG.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 18:51:32,451 - WARNING - [UCG.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 18:51:32,456 - INFO - [UCG.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 18:51:33,523 - WARNING - [UCG.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 23:10:14,832 - INFO - Experiment configuration synchronized. Source: Interactive UI
+2026-05-20 23:10:19,534 - WARNING - Drive mount skipped: No module named 'google.colab'
+2026-05-20 23:10:19,535 - INFO - DB_ROOT: None | exists: False
+2026-05-20 23:10:22,468 - WARNING - [1.2] File locale non valido, mancante o incompleto → fallback API
+2026-05-20 23:10:22,489 - ERROR - [1.2] API fallita: name 'API_KEYS' is not defined
+2026-05-20 23:10:24,400 - WARNING - Nessun benchmark universe caricato (manual mode o errori). Creazione fallback dummy.
+2026-05-20 23:10:28,360 - INFO - [BAMI.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 23:10:28,368 - INFO - [BAMI.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 23:10:28,377 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:28,381 - INFO - [BAMI.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 23:10:28,384 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:28,392 - INFO - [BAMI.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 23:10:28,396 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:28,400 - INFO - [BAMI.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 23:10:28,405 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:28,414 - INFO - [BAMI.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 23:10:30,506 - WARNING - [BAMI.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 23:10:30,519 - INFO - [BMED.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 23:10:30,536 - INFO - [BMED.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 23:10:30,552 - WARNING - [BMED.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:30,564 - INFO - [BMED.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 23:10:30,570 - WARNING - [BMED.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:30,574 - INFO - [BMED.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 23:10:30,578 - WARNING - [BMED.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:30,581 - INFO - [BMED.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 23:10:30,584 - WARNING - [BMED.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:30,590 - INFO - [BMED.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 23:10:31,856 - WARNING - [BMED.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 23:10:31,865 - INFO - [ISP.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 23:10:31,869 - INFO - [ISP.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 23:10:31,875 - WARNING - [ISP.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:31,881 - INFO - [ISP.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 23:10:31,889 - WARNING - [ISP.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:31,892 - INFO - [ISP.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 23:10:31,895 - WARNING - [ISP.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:31,898 - INFO - [ISP.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 23:10:31,901 - WARNING - [ISP.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:31,905 - INFO - [ISP.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 23:10:33,278 - WARNING - [ISP.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 23:10:33,294 - INFO - [MB.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 23:10:33,298 - INFO - [MB.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 23:10:33,303 - WARNING - [MB.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:33,311 - INFO - [MB.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 23:10:33,318 - WARNING - [MB.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:33,322 - INFO - [MB.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 23:10:33,332 - WARNING - [MB.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:33,335 - INFO - [MB.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 23:10:33,340 - WARNING - [MB.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:33,348 - INFO - [MB.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 23:10:34,689 - WARNING - [MB.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.
+2026-05-20 23:10:34,713 - INFO - [UCG.MI_SYNTHETIC] Starting fundamentals extraction. Fallback hierarchy: ['fmp', 'eodhd', 'finnhub', 'alphavantage', 'yfinance']
+2026-05-20 23:10:34,719 - INFO - [UCG.MI_SYNTHETIC] Evaluating fmp: Credential Present=False
+2026-05-20 23:10:34,728 - WARNING - [UCG.MI_SYNTHETIC] FAILED via fmp: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:34,736 - INFO - [UCG.MI_SYNTHETIC] Evaluating eodhd: Credential Present=False
+2026-05-20 23:10:34,744 - WARNING - [UCG.MI_SYNTHETIC] FAILED via eodhd: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:34,748 - INFO - [UCG.MI_SYNTHETIC] Evaluating finnhub: Credential Present=False
+2026-05-20 23:10:34,753 - WARNING - [UCG.MI_SYNTHETIC] FAILED via finnhub: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:34,761 - INFO - [UCG.MI_SYNTHETIC] Evaluating alphavantage: Credential Present=False
+2026-05-20 23:10:34,764 - WARNING - [UCG.MI_SYNTHETIC] FAILED via alphavantage: Credential missing in registry. Triggering next fallback.
+2026-05-20 23:10:34,768 - INFO - [UCG.MI_SYNTHETIC] Evaluating yfinance: Credential Present=True
+2026-05-20 23:10:35,994 - WARNING - [UCG.MI_SYNTHETIC] FAILED via yfinance: No data. Triggering next fallback.

@@ -1,6 +1,0 @@
-block,best_rmse,delta_rmse_vs_controls,N
-controls,79.4852,0.0000,132
-staging,79.2568,0.2284,132
-macro,79.0272,0.4580,132
-tcel,77.5988,1.8864,132
-ecl,76.8041,2.6812,132

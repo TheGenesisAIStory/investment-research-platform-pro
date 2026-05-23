@@ -1,0 +1,71 @@
+group,field,type,operators,aliases
+descriptive,ticker,text,"equals, in, contains, regex",symbol
+descriptive,company_name,text,"contains, regex, equals","name, company, security, Security, companyname, company_name"
+descriptive,country,category,"equals, in",
+descriptive,region,category,"equals, in",
+descriptive,exchange,category,"equals, in",
+descriptive,sector,category,"equals, in, contains",
+descriptive,industry,category,"equals, in, contains",
+descriptive,index_membership,category,"equals, in, contains",
+descriptive,market_cap,numeric,"gt, lt, between, top_pct","market_cap, marketcap, market_cap_est, marketcapest, mktcap"
+descriptive,market_cap_bucket,category,"equals, in",
+descriptive,price,numeric,"gt, lt, between","price, current_price, currentprice, adj_close, adjclose, close, last_price, lastprice"
+descriptive,avg_volume,numeric,"gt, lt, between","avg_volume, avgvolume, average_volume, averagevolume, avg_volume_3m, volume"
+descriptive,liquidity,numeric,"gt, lt, between","liquidity, dollar_volume, dollarvolume, avg_dollar_volume, avgdollarvolume"
+descriptive,security_type,category,"equals, in",
+descriptive,is_etf,boolean,"is_true, is_false",
+descriptive,is_adr,boolean,"is_true, is_false",
+fundamental,pe_ratio,numeric,"gt, lt, between, bottom_pct","pe_ratio, peratio, pe, trailingpe"
+fundamental,forward_pe,numeric,"gt, lt, between, bottom_pct","forward_pe, forwardpe, forwardPE"
+fundamental,pb_ratio,numeric,"gt, lt, between, bottom_pct","pb_ratio, pbratio, pb, pricebook"
+fundamental,ev_ebitda,numeric,"gt, lt, between, bottom_pct","ev_ebitda, evebitda, evtoebitda"
+fundamental,ev_sales,numeric,"gt, lt, between, bottom_pct","ev_sales, evsales, sales_multiple_proxy, salesmultipleproxy"
+fundamental,roe,numeric,"gt, lt, between, top_pct","roe, return_on_equity, returnonequity"
+fundamental,roa,numeric,"gt, lt, between, top_pct","roa, return_on_assets, returnonassets"
+fundamental,gross_margin,numeric,"gt, lt, between","gross_margin, grossmargin"
+fundamental,operating_margin,numeric,"gt, lt, between","operating_margin, operatingmargin"
+fundamental,net_margin,numeric,"gt, lt, between","net_margin, netmargin"
+fundamental,revenue_growth,numeric,"gt, lt, between","revenue_growth, revenuegrowth, sales_growth, salesgrowth"
+fundamental,earnings_growth,numeric,"gt, lt, between","earnings_growth, earningsgrowth, eps_growth, epsgrowth, net_income_growth, netincomegrowth"
+fundamental,debt_equity,numeric,"gt, lt, between","debt_equity, debtequity, debt_to_equity, debttoequity, total_debt_equity, totaldebtequity"
+fundamental,current_ratio,numeric,"gt, lt, between","current_ratio, currentratio"
+fundamental,dividend_yield,numeric,"gt, lt, between","dividend_yield, dividendyield"
+fundamental,payout_ratio,numeric,"gt, lt, between","payout_ratio, payoutratio"
+fundamental,fcf_yield,numeric,"gt, lt, between, top_pct","fcf_yield, fcfyield, free_cash_flow_yield, freecashflowyield"
+fundamental,valuation_score,numeric,"gt, lt, between, top_pct","valuation_score, valuationscore"
+fundamental,quality_score,numeric,"gt, lt, between, top_pct","quality_score, qualityscore"
+technical,sma20_rel,numeric,"gt, lt, between","sma20_rel, sma20rel, price_sma20, pricesma20"
+technical,sma50_rel,numeric,"gt, lt, between","sma50_rel, sma50rel, price_sma50, pricesma50"
+technical,sma200_rel,numeric,"gt, lt, between","sma200_rel, sma200rel, price_sma200, pricesma200"
+technical,ret_21d,numeric,"gt, lt, between, top_pct","ret_21d, ret21d, ret_1m, ret1m"
+technical,ret_63d,numeric,"gt, lt, between, top_pct","ret_63d, ret63d, ret_3m, ret3m, ret_126d, ret126d"
+technical,ret_126d,numeric,"gt, lt, between, top_pct","ret_126d, ret126d, ret_6m, ret6m"
+technical,ret_252d,numeric,"gt, lt, between, top_pct","ret_252d, ret252d, ret_12m, ret12m, annual_return, annualreturn"
+technical,volatility,numeric,"gt, lt, between, bottom_pct","volatility, vol_63d, vol63d, vol_126d, vol126d"
+technical,atr,numeric,"gt, lt, between",
+technical,rsi,numeric,"gt, lt, between",
+technical,relative_volume,numeric,"gt, lt, between",
+technical,trend_regime,category,"equals, in",
+risk_factor_macro,beta,numeric,"gt, lt, between",beta
+risk_factor_macro,leverage_risk,numeric,"gt, lt, between",
+risk_factor_macro,earnings_quality_flag,boolean,"is_true, is_false",
+risk_factor_macro,factor_exposure,numeric,"gt, lt, between",
+risk_factor_macro,days_since_fundamental,numeric,"gt, lt, between","days_since_fundamental, dayssincefundamental"
+risk_factor_macro,fundamental_matched,boolean,"is_true, is_false","fundamental_matched, fundamentalmatched"
+risk_factor_macro,scenario_downside,numeric,"gt, lt, between","scenario_downside, scenariodownside, bear_downside, beardownside"
+risk_factor_macro,macro_sensitivity,numeric,"gt, lt, between",
+risk_factor_macro,robustness_status,category,"equals, in","robustness_status, robustnessstatus, qa_status, qastatus, status"
+internal,blended_score,numeric,"gt, lt, between, top_pct","blended_score, blendedscore"
+internal,valuation_score,numeric,"gt, lt, between, top_pct","valuation_score, valuationscore"
+internal,quality_score,numeric,"gt, lt, between, top_pct","quality_score, qualityscore"
+internal,momentum_score,numeric,"gt, lt, between, top_pct","momentum_score, momentumscore"
+internal,risk_score,numeric,"gt, lt, between, top_pct","risk_score, riskscore"
+internal,sws_snowflake_score,numeric,"gt, lt, between, top_pct","sws_snowflake_score, swssnowflakescore"
+internal,upside_to_fair_value,numeric,"gt, lt, between, top_pct","upside_to_fair_value, upsidetofairvalue, upside"
+internal,ml_prediction_score,numeric,"gt, lt, between, top_pct","ml_prediction_score, mlpredictionscore, y_pred, ypred, prediction, model_score, modelscore"
+internal,dcf_mispricing,numeric,"gt, lt, between, top_pct","dcf_mispricing, dcf_upside, dcf_discount, dcf_model_mispricing"
+internal,dcf_probability_undervalued,numeric,"gt, lt, between, top_pct","dcf_probability_undervalued, dcf_prob_undervalued, probability_undervalued"
+internal,dcf_scenario_spread,numeric,"gt, lt, between, bottom_pct","dcf_scenario_spread, dcf_uncertainty, dcf_fair_value_spread"
+internal,residual_income_mispricing,numeric,"gt, lt, between, top_pct","residual_income_mispricing, ri_mispricing, residual_income_upside"
+internal,eva_value_gap,numeric,"gt, lt, between, top_pct","eva_value_gap, eva_mispricing, eva_upside"
+internal,committee_verdict,category,"equals, in, contains",

@@ -1,0 +1,10 @@
+group_type,group_value,count,fundamentals_coverage,diagnostic_quality,updated_at
+country,France,10,0.0,PASS,2026-05-22T14:27:45+00:00
+country,Germany,4,0.0,PASS,2026-05-22T14:27:45+00:00
+country,Italy,37,0.0,PASS,2026-05-22T14:27:45+00:00
+country,Netherlands,1,0.0,PASS,2026-05-22T14:27:45+00:00
+country,Spain,2,0.0,PASS,2026-05-22T14:27:45+00:00
+country,Unknown,20,0.0,PASS,2026-05-22T14:27:45+00:00
+index_membership,static_euro_stoxx_50,17,0.0,PASS,2026-05-22T14:27:45+00:00
+index_membership,static_ftse_mib,37,0.0,PASS,2026-05-22T14:27:45+00:00
+index_membership,static_sp500_core_sample,20,0.0,PASS,2026-05-22T14:27:45+00:00

@@ -1,0 +1,5 @@
+updated_at,ticker,rule,severity,value,threshold,message
+2026-05-22T14:27:45+00:00,,high_blended_score,MISSING,,0.75,High internal blended score: source field unavailable
+2026-05-22T14:27:45+00:00,,valuation_gap,MISSING,,0.15,Upside to fair value above threshold: source field unavailable
+2026-05-22T14:27:45+00:00,,stale_fundamentals,MISSING,,540.0,Fundamentals may be stale: source field unavailable
+2026-05-22T14:27:45+00:00,,high_risk_score,MISSING,,0.8,Risk score above threshold: source field unavailable

@@ -1,0 +1,3 @@
+step,field,operator,rows,dropped,status,detail
+start,,,74,0,START,
+1,blended_score,top_pct,74,0,SKIP,Field unavailable after alias resolution

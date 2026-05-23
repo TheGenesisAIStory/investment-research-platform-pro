@@ -1,0 +1,71 @@
+group,field,resolved_column,available,type,non_null,aliases
+descriptive,ticker,ticker,True,text,74,symbol
+descriptive,company_name,company_name,True,text,0,"name, company, security, Security, companyname, company_name"
+descriptive,country,country,True,category,54,
+descriptive,region,,False,category,0,
+descriptive,exchange,,False,category,0,
+descriptive,sector,,False,category,0,
+descriptive,industry,,False,category,0,
+descriptive,index_membership,index_membership,True,category,74,
+descriptive,market_cap,,False,numeric,0,"market_cap, marketcap, market_cap_est, marketcapest, mktcap"
+descriptive,market_cap_bucket,,False,category,0,
+descriptive,price,,False,numeric,0,"price, current_price, currentprice, adj_close, adjclose, close, last_price, lastprice"
+descriptive,avg_volume,,False,numeric,0,"avg_volume, avgvolume, average_volume, averagevolume, avg_volume_3m, volume"
+descriptive,liquidity,,False,numeric,0,"liquidity, dollar_volume, dollarvolume, avg_dollar_volume, avgdollarvolume"
+descriptive,security_type,,False,category,0,
+descriptive,is_etf,is_etf,True,boolean,74,
+descriptive,is_adr,is_adr,True,boolean,74,
+fundamental,pe_ratio,,False,numeric,0,"pe_ratio, peratio, pe, trailingpe"
+fundamental,forward_pe,,False,numeric,0,"forward_pe, forwardpe, forwardPE"
+fundamental,pb_ratio,,False,numeric,0,"pb_ratio, pbratio, pb, pricebook"
+fundamental,ev_ebitda,,False,numeric,0,"ev_ebitda, evebitda, evtoebitda"
+fundamental,ev_sales,,False,numeric,0,"ev_sales, evsales, sales_multiple_proxy, salesmultipleproxy"
+fundamental,roe,,False,numeric,0,"roe, return_on_equity, returnonequity"
+fundamental,roa,,False,numeric,0,"roa, return_on_assets, returnonassets"
+fundamental,gross_margin,,False,numeric,0,"gross_margin, grossmargin"
+fundamental,operating_margin,,False,numeric,0,"operating_margin, operatingmargin"
+fundamental,net_margin,,False,numeric,0,"net_margin, netmargin"
+fundamental,revenue_growth,,False,numeric,0,"revenue_growth, revenuegrowth, sales_growth, salesgrowth"
+fundamental,earnings_growth,,False,numeric,0,"earnings_growth, earningsgrowth, eps_growth, epsgrowth, net_income_growth, netincomegrowth"
+fundamental,debt_equity,,False,numeric,0,"debt_equity, debtequity, debt_to_equity, debttoequity, total_debt_equity, totaldebtequity"
+fundamental,current_ratio,,False,numeric,0,"current_ratio, currentratio"
+fundamental,dividend_yield,,False,numeric,0,"dividend_yield, dividendyield"
+fundamental,payout_ratio,,False,numeric,0,"payout_ratio, payoutratio"
+fundamental,fcf_yield,,False,numeric,0,"fcf_yield, fcfyield, free_cash_flow_yield, freecashflowyield"
+fundamental,valuation_score,,False,numeric,0,"valuation_score, valuationscore"
+fundamental,quality_score,,False,numeric,0,"quality_score, qualityscore"
+technical,sma20_rel,,False,numeric,0,"sma20_rel, sma20rel, price_sma20, pricesma20"
+technical,sma50_rel,,False,numeric,0,"sma50_rel, sma50rel, price_sma50, pricesma50"
+technical,sma200_rel,,False,numeric,0,"sma200_rel, sma200rel, price_sma200, pricesma200"
+technical,ret_21d,,False,numeric,0,"ret_21d, ret21d, ret_1m, ret1m"
+technical,ret_63d,,False,numeric,0,"ret_63d, ret63d, ret_3m, ret3m, ret_126d, ret126d"
+technical,ret_126d,,False,numeric,0,"ret_126d, ret126d, ret_6m, ret6m"
+technical,ret_252d,,False,numeric,0,"ret_252d, ret252d, ret_12m, ret12m, annual_return, annualreturn"
+technical,volatility,,False,numeric,0,"volatility, vol_63d, vol63d, vol_126d, vol126d"
+technical,atr,,False,numeric,0,
+technical,rsi,,False,numeric,0,
+technical,relative_volume,,False,numeric,0,
+technical,trend_regime,,False,category,0,
+risk_factor_macro,beta,,False,numeric,0,beta
+risk_factor_macro,leverage_risk,,False,numeric,0,
+risk_factor_macro,earnings_quality_flag,,False,boolean,0,
+risk_factor_macro,factor_exposure,,False,numeric,0,
+risk_factor_macro,days_since_fundamental,,False,numeric,0,"days_since_fundamental, dayssincefundamental"
+risk_factor_macro,fundamental_matched,fundamental_matched,True,boolean,0,"fundamental_matched, fundamentalmatched"
+risk_factor_macro,scenario_downside,scenario_downside,True,numeric,0,"scenario_downside, scenariodownside, bear_downside, beardownside"
+risk_factor_macro,macro_sensitivity,,False,numeric,0,
+risk_factor_macro,robustness_status,robustness_status,True,category,74,"robustness_status, robustnessstatus, qa_status, qastatus, status"
+internal,blended_score,,False,numeric,0,"blended_score, blendedscore"
+internal,valuation_score,,False,numeric,0,"valuation_score, valuationscore"
+internal,quality_score,,False,numeric,0,"quality_score, qualityscore"
+internal,momentum_score,,False,numeric,0,"momentum_score, momentumscore"
+internal,risk_score,,False,numeric,0,"risk_score, riskscore"
+internal,sws_snowflake_score,,False,numeric,0,"sws_snowflake_score, swssnowflakescore"
+internal,upside_to_fair_value,,False,numeric,0,"upside_to_fair_value, upsidetofairvalue, upside"
+internal,ml_prediction_score,,False,numeric,0,"ml_prediction_score, mlpredictionscore, y_pred, ypred, prediction, model_score, modelscore"
+internal,dcf_mispricing,,False,numeric,0,"dcf_mispricing, dcf_upside, dcf_discount, dcf_model_mispricing"
+internal,dcf_probability_undervalued,,False,numeric,0,"dcf_probability_undervalued, dcf_prob_undervalued, probability_undervalued"
+internal,dcf_scenario_spread,,False,numeric,0,"dcf_scenario_spread, dcf_uncertainty, dcf_fair_value_spread"
+internal,residual_income_mispricing,,False,numeric,0,"residual_income_mispricing, ri_mispricing, residual_income_upside"
+internal,eva_value_gap,,False,numeric,0,"eva_value_gap, eva_mispricing, eva_upside"
+internal,committee_verdict,,False,category,0,

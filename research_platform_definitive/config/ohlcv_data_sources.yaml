@@ -1,0 +1,144 @@
+ohlcv:
+  database_url_env: MARKETDATA_DATABASE_URL
+  default_database_url: sqlite:///Database Finanziario/MarketData/ohlcv.sqlite
+  start_date: "2000-01-01"
+  update_frequency: daily
+  storage:
+    parquet_root: MarketData/OHLCV
+    asset_universe: catalog/ohlcv_asset_universe.csv
+
+  cache:
+    enabled: true
+    backend: disk
+    universe_ttl_hours: 24
+    daily_request_ttl_hours: 12
+    intraday_request_ttl_hours: 1
+
+  policy:
+    allow_provider_blend: true
+    incomplete_coverage_threshold: 0.65
+    weights:
+      quality: 0.35
+      coverage: 0.25
+      cost: 0.20
+      stability: 0.15
+      priority: 0.05
+
+  markets:
+    default: [us_all, europe_major, japan_major, global_etfs]
+    us:
+      source: nasdaq_trader_symbol_directory
+      exchanges: [NASDAQ, NYSE, NYSE American, NYSE Arca]
+      include_etfs: true
+    europe:
+      source: index_constituents_plus_manual_exchange_files
+      manual_symbol_dir: catalog/exchange_symbols
+      examples: [lse, xetra, euronext_paris, borsa_italiana]
+    asia:
+      source: index_constituents_plus_manual_exchange_files
+      examples: [tokyo, osaka, hkex]
+
+  kaggle:
+    enabled: true
+    root: Kaggle
+    notes: Download Kaggle archives manually under Database Finanziario/Kaggle/<path>; the loader imports local CSV/TXT/ZIP files only.
+    datasets:
+      us_stocks_etfs:
+        enabled: true
+        slug: borismarjanovic/price-volume-data-for-all-us-stocks-etfs
+        path: price-volume-data-for-all-us-stocks-etfs
+        frequency: daily
+      us_stocks_meta:
+        enabled: true
+        slug: jacksoncrow/stock-market-dataset
+        path: stock-market-dataset
+        frequency: daily
+      historical_etf_data:
+        enabled: true
+        path: historical-etf-data
+        frequency: daily
+      world_stock_prices:
+        enabled: true
+        slug: nelgiriyewithana/world-stock-prices-daily-updating
+        path: world-stock-prices-daily-updating
+        frequency: daily
+      crypto_daily:
+        enabled: true
+        slug: sudalairajkumar/cryptocurrencypricehistory
+        path: cryptocurrencypricehistory
+        frequency: daily
+      crypto_5m:
+        enabled: true
+        path: crypto-5m
+        frequency: 5m
+      btcusdt_5m:
+        enabled: true
+        path: btcusdt-5-minute-ohlcv
+        frequency: 5m
+
+  providers:
+    kaggle_seed:
+      enabled: true
+      priority: 0
+      quality_score: 0.72
+      coverage_score: 0.85
+      cost_score: 1.0
+      policy_stability_score: 0.95
+      historical_start: "2000-01-01"
+      intervals: [1d, 5m]
+      regions: [global]
+      asset_types: [stock, etf, index, crypto]
+      static_history: true
+      notes: Local static seed; used by ingest date logic, not as a network API provider.
+    yfinance:
+      enabled: true
+      priority: 1
+      requests_per_minute: 120
+      quality_score: 0.68
+      coverage_score: 0.78
+      cost_score: 1.0
+      policy_stability_score: 0.45
+      historical_start: "2000-01-01"
+      intervals: [1d]
+      regions: [global]
+      asset_types: [stock, etf, index]
+      supports_bulk_daily: true
+      max_batch_size: 100
+      notes: Bulk daily downloads; 5m intraday coverage is limited by Yahoo availability and is not used for historical 5m.
+    stooq:
+      enabled: true
+      priority: 2
+      env_key: STOOQ_API_KEY
+      requests_per_minute: 60
+      quality_score: 0.76
+      coverage_score: 0.72
+      cost_score: 0.95
+      policy_stability_score: 0.65
+      historical_start: "2000-01-01"
+      intervals: [1d]
+      regions: [US, Europe, JP, global]
+      asset_types: [stock, etf, index]
+      notes: Direct CSV downloads currently require a user-generated apikey from stooq.com.
+    alpha_vantage:
+      enabled: true
+      priority: 3
+      env_key: ALPHAVANTAGE_API_KEY
+      requests_per_minute: 5
+      requests_per_day: 25
+      quality_score: 0.82
+      coverage_score: 0.70
+      cost_score: 0.25
+      policy_stability_score: 0.80
+      historical_start: "2000-01-01"
+      intervals: [1d, 5m]
+      regions: [US, global]
+      asset_types: [stock, etf, index]
+      supports_intraday_5m: true
+      notes: Daily adjusted full history and 5min intraday monthly slices where supported.
+
+  ingest:
+    daily_batch_size: 80
+    default_max_assets: 50
+    full_history_command: python scripts/sync_ohlcv_prices.py --execute --mode full --markets us_all,europe_major,japan_major,global_etfs --start-date 2000-01-01 --max-assets 0
+    daily_update_command: python scripts/sync_ohlcv_prices.py --execute --mode incremental --markets us_all,europe_major,japan_major,global_etfs --max-assets 0
+    intraday_5m_command: python scripts/sync_ohlcv_prices.py --execute --interval 5m --markets us_all --max-assets 10 --preferred-providers alpha_vantage

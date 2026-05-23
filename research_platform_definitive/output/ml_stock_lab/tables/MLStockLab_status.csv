@@ -1,0 +1,2 @@
+status,should_run,reason,panel_rows,ticker_count,date_count,min_date,max_date,min_required_rows,min_required_tickers,min_required_dates,stage,model,target_selected,feature_blocks,universe,tickers
+OK,True,OK,76,76,2,2024-03-31,2026-05-21,5,5,2,panel_validation,ols,market_value,,,

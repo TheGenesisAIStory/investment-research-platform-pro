@@ -1,0 +1,37 @@
+{
+  "financial_db_root": "/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario",
+  "output_root": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money",
+  "report_path": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/reports/smart_money_government_data_report.html",
+  "tables": {
+    "source_registry": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_source_registry.csv",
+    "holdings": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_holdings.csv",
+    "insiders": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_insiders.csv",
+    "beneficial_events": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_beneficial_events.csv",
+    "macro_positioning": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_macro_positioning.csv",
+    "capital_flows": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_capital_flows.csv",
+    "government_spending": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_government_spending.csv",
+    "ingestion_manifest": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_ingestion_manifest.csv",
+    "coverage": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_coverage.csv",
+    "entity_master": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_entity_master.csv",
+    "government_spending_matched": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_government_spending_matched.csv",
+    "smart_money_scores": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_smart_money_scores.csv",
+    "event_feed": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_event_feed.csv",
+    "sector_monitor": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_sector_monitor.csv",
+    "government_dataset_matrix": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_government_dataset_matrix.csv",
+    "open_source_pattern_matrix": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_open_source_pattern_matrix.csv",
+    "mvp_30_day_plan": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_mvp_30_day_plan.csv",
+    "dataset_priority_ranking": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_dataset_priority_ranking.csv",
+    "analyst_quick_wins": "/Users/itsgennymac/GitHub/machine-learning-for-trading/output/smart_money/tables/SmartMoney_analyst_quick_wins.csv"
+  },
+  "coverage_rows": 6,
+  "score_rows": 0,
+  "event_rows": 0,
+  "caveats": [
+    "13F is quarterly and delayed; it is not trade tape.",
+    "Form 4 signals require transaction-code and plan context.",
+    "13D/13G events need amendment tracking for stateful ownership monitoring.",
+    "COT and TIC are macro proxies, not issuer-level ownership data.",
+    "USAspending recipient-to-listed-parent matching requires audited entity resolution.",
+    "EU coverage is fragmented and proxy-based unless country connectors are implemented."
+  ]
+}
