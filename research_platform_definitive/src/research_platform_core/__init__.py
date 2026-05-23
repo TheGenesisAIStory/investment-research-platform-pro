@@ -60,6 +60,27 @@ from .loaders.market_universe import MarketUniverseBuilder
 from .loaders.ohlcv_client import OhlcvClient, normalize_ohlcv_frame, parse_yfinance_bulk
 from .ohlcv_ingest import OhlcvIngestJob, summarize_ohlcv_manifest
 from .ohlcv_store import OhlcvDatabase, default_database_url
+from .research_database import (
+    DEFAULT_SYMBOLS,
+    SCHEMA_VERSION,
+    ResearchDatabase,
+    build_data_catalog_entries,
+    build_strategy_registry,
+    build_synthetic_research_dataset,
+    default_research_database_path,
+    populate_research_database,
+)
+from .llm_lab import (
+    PROMPT_TEMPLATES,
+    ProviderConfig,
+    PromptTemplate,
+    available_templates,
+    build_context_from_database,
+    provider_registry,
+    provider_registry_frame,
+    render_prompt,
+    save_prompt_packet,
+)
 from .storage_policy import StorageRoots, export_storage_env, resolve_project_root, resolve_storage_roots
 from .aqr_factors import (
     AqrDataset,
@@ -162,6 +183,23 @@ __all__ = [
     "summarize_ohlcv_manifest",
     "OhlcvDatabase",
     "default_database_url",
+    "DEFAULT_SYMBOLS",
+    "SCHEMA_VERSION",
+    "ResearchDatabase",
+    "build_data_catalog_entries",
+    "build_strategy_registry",
+    "build_synthetic_research_dataset",
+    "default_research_database_path",
+    "populate_research_database",
+    "PROMPT_TEMPLATES",
+    "ProviderConfig",
+    "PromptTemplate",
+    "available_templates",
+    "build_context_from_database",
+    "provider_registry",
+    "provider_registry_frame",
+    "render_prompt",
+    "save_prompt_packet",
     "StorageRoots",
     "export_storage_env",
     "resolve_project_root",

@@ -20,6 +20,11 @@ Open these first:
 10. `docs/API_USAGE.md`
 11. `docs/MAINTENANCE.md`
 12. `docs/PROJECT_STATUS_2026-05-23.md`
+13. `docs/PROJECT_STATUS_FINAL.md`
+14. `docs/DATA_CENTER_OPERATING_MODEL.md`
+15. `docs/FORMULE_STRATEGIE_REASONING.md`
+16. `docs/LLM_LAB_VIBE_TRADING.md`
+17. `docs/MOBILE_QUANTDINGER_HANDOFF.md`
 
 Reference/lab material restored from the old Drive project is in:
 
@@ -61,6 +66,8 @@ Safe population and validation entrypoints:
 ```bash
 python scripts/initial_setup.py
 python scripts/initial_setup.py --execute --max-items 5
+python scripts/populate_research_database.py
+python scripts/llm_lab_cli.py packet
 python scripts/sync_prices.py --execute --universes sp500,ftsemib --max-symbols 25
 python scripts/sync_fundamentals.py --execute --universes sp500,ftsemib --max-symbols 10
 python scripts/validate_data.py
@@ -99,7 +106,7 @@ Preferred from the repository root:
 This creates/updates:
 
 ```text
-MyDrive/GitHub/machine-learning-for-trading/
+MyDrive/GitHub/investment-research-platform-pro/
 ```
 
 You can also sync only this definitive bundle from this folder:
@@ -159,6 +166,7 @@ research_platform_definitive/
 ├── company_valuation/src/             # valuation domain modules
 ├── portfolio_analysis/src/            # portfolio domain modules
 ├── output/                            # lightweight demo/runtime artifacts
+├── data/sample/                       # tracked sample extracts from the final research DB
 ├── docs/                              # canonical documentation
 ├── config/data_sources.yaml           # strategic Data Center source map
 ├── config/rate_limits.yaml            # provider throttling defaults
@@ -184,4 +192,7 @@ Legacy notebook dumps are not part of the operating source of truth. Non-identic
 - `src/` packages own reusable logic.
 - Streamlit is the operational research console.
 - `output/` contains artifact contracts consumed by the app.
+- `data/sample/` contains small CSV fixtures generated from the final database.
+- `src/research_platform_core/research_database.py` owns the final SQLite schema.
+- `src/research_platform_core/llm_lab.py` owns prompt packets and provider readiness.
 - Database Finanziario remains the preferred external data source when available.

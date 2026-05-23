@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-05-23T18:20:59.281068+00:00",
+  "paths": {
+    "backtest_diagnostic_it": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/llm_lab/backtest_diagnostic_it.md",
+    "data_quality_brief_it": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/llm_lab/data_quality_brief_it.md",
+    "quantdinger_mobile_summary_it": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/llm_lab/quantdinger_mobile_summary_it.md",
+    "strategy_review_it": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/llm_lab/strategy_review_it.md",
+    "vibe_coding_strategy_it": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/llm_lab/vibe_coding_strategy_it.md"
+  },
+  "providers": [
+    {
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": null,
+      "configured": false,
+      "model": "gpt-4.1",
+      "notes": "Provider cloud per coding/reasoning.",
+      "provider": "openai"
+    },
+    {
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "base_url": null,
+      "configured": false,
+      "model": "claude-3-7-sonnet-latest",
+      "notes": "Provider alternativo per review lunghe.",
+      "provider": "anthropic"
+    },
+    {
+      "api_key_env": "OLLAMA_BASE_URL",
+      "base_url": null,
+      "configured": false,
+      "model": "llama3.1",
+      "notes": "Provider locale quando disponibile.",
+      "provider": "ollama"
+    },
+    {
+      "api_key_env": "VIBE_TRADING_ROOT",
+      "base_url": null,
+      "configured": true,
+      "model": "local_bridge",
+      "notes": "Bridge locale per generazione strategia e backtest.",
+      "provider": "vibe_trading"
+    }
+  ],
+  "templates": [
+    "strategy_review_it",
+    "vibe_coding_strategy_it",
+    "backtest_diagnostic_it",
+    "data_quality_brief_it",
+    "quantdinger_mobile_summary_it"
+  ]
+}

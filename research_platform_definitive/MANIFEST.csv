@@ -22,3 +22,12 @@ Notebook Index,doc,notebooks/README.md,notebooks/README.md,canonical,Human-frien
 Archived Notebook Duplicates,archive,archive/notebook_duplicates/,archive/notebook_duplicates/,archive,Legacy duplicate notebook copies retained only for traceability
 DCF Monte Carlo Extension,package,company_valuation/src/valuation_monte_carlo.py,company_valuation/src/valuation_monte_carlo.py,canonical,Reusable DCF uncertainty layer with market parameters scenarios and model-based factors
 DCF Monte Carlo Documentation,doc,docs/DCF_MONTE_CARLO_EXTENSION.md,docs/DCF_MONTE_CARLO_EXTENSION.md,canonical,Documents DCF Monte Carlo artifacts and extension path
+Final Research Database,package,src/research_platform_core/research_database.py,src/research_platform_core/research_database.py,canonical,SQLite schema sample data generator and dashboard snapshots for Data Center LLM Lab and mobile
+Research Database Populator,script,scripts/populate_research_database.py,scripts/populate_research_database.py,canonical,Populates local SQLite DB and tracked sample CSV extracts
+LLM Lab Core,package,src/research_platform_core/llm_lab.py,src/research_platform_core/llm_lab.py,canonical,Italian prompt templates provider readiness and prompt packet renderer
+LLM Lab CLI,script,scripts/llm_lab_cli.py,scripts/llm_lab_cli.py,canonical,Renders LLM Lab templates and prompt packets
+Data Center Operating Model,doc,docs/DATA_CENTER_OPERATING_MODEL.md,docs/DATA_CENTER_OPERATING_MODEL.md,canonical,Explains final DB schema ingestion model and query examples
+Strategy Formula Reasoning,doc,docs/FORMULE_STRATEGIE_REASONING.md,docs/FORMULE_STRATEGIE_REASONING.md,canonical,Italian formulas pseudocode assumptions and limits for main strategies
+LLM Lab Vibe Trading,doc,docs/LLM_LAB_VIBE_TRADING.md,docs/LLM_LAB_VIBE_TRADING.md,canonical,Documents provider registry prompt templates and vibe bridge workflow
+Mobile QuantDinger Handoff,doc,docs/MOBILE_QUANTDINGER_HANDOFF.md,docs/MOBILE_QUANTDINGER_HANDOFF.md,canonical,Documents mobile endpoints configuration and UX fallback behavior
+Final Project Status,doc,docs/PROJECT_STATUS_FINAL.md,docs/PROJECT_STATUS_FINAL.md,canonical,Final component status and operating commands

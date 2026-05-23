@@ -1,0 +1,9 @@
+symbol,name,asset_class,exchange,country,currency,sector,industry,provider_symbol,active,metadata_json,created_at,updated_at
+AAPL,Apple Inc.,equity,NASDAQ,US,USD,Information Technology,Consumer Electronics,AAPL,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+MSFT,Microsoft Corp.,equity,NASDAQ,US,USD,Information Technology,Software,MSFT,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+NVDA,NVIDIA Corp.,equity,NASDAQ,US,USD,Information Technology,Semiconductors,NVDA,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+SPY,SPDR S&P 500 ETF Trust,etf,NYSEARCA,US,USD,ETF,Broad Market,SPY,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+ENEL.MI,Enel SpA,equity,MIL,IT,EUR,Utilities,Electric Utilities,ENEL.MI,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+ISP.MI,Intesa Sanpaolo SpA,equity,MIL,IT,EUR,Financials,Banks,ISP.MI,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+ASML.AS,ASML Holding NV,equity,AMS,NL,EUR,Information Technology,Semiconductor Equipment,ASML.AS,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00
+SAP.DE,SAP SE,equity,XETRA,DE,EUR,Information Technology,Software,SAP.DE,1,"{""sample"": true, ""schema_version"": ""2026-05-23-final""}",2026-05-23T18:18:53.417386+00:00,2026-05-23T18:18:53.417386+00:00

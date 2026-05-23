@@ -235,8 +235,11 @@ Current ML signals are persisted into `qd_ml_signals`.
 - `db_adapter.py`: SQLAlchemy persistence and table reads.
 - `ml_service.py`: FastAPI sidecar exposing:
   - `GET /api/v1/ml/models`
+  - `GET /api/v1/ml/strategies`
   - `GET /api/v1/ml/signals`
+  - `GET /api/v1/ml/signals/snapshot`
   - `GET /api/v1/ml/features`
+  - `GET /api/v1/ml/backtests/summary`
   - `GET /api/v1/ml/metrics`
   - `POST /api/v1/ml/backtest`
 
@@ -265,8 +268,9 @@ Proposed routes:
 | Route | Endpoint | UI |
 | --- | --- | --- |
 | `/ml/dashboard` | `/api/v1/ml/models`, `/api/v1/ml/signals` | model count, signal summary, latest signal table |
-| `/ml/signals` | `/api/v1/ml/signals` | filterable cards/table for symbol, signal, confidence, target, stop |
-| `/ml/backtests` | `/api/v1/ml/backtest` | run form, metrics, equity-curve placeholder |
+| `/ml/signals` | `/api/v1/ml/signals`, `/api/v1/ml/signals/snapshot` | filterable cards/table for symbol, signal, confidence, target, stop |
+| `/ml/backtests` | `/api/v1/ml/backtest`, `/api/v1/ml/backtests/summary` | run form, metrics, equity curve and stored run summary |
+| `/ml/strategies` | `/api/v1/ml/strategies` | formulas, assumptions and limits from the Research Platform registry |
 
 For same-origin deployment, add a reverse proxy rule in the QuantDinger Nginx
 frontend image or your outer reverse proxy:
@@ -311,10 +315,12 @@ Suggested router entries:
 
 Screen behavior:
 
-- `ML Signals`: calls `GET /api/v1/ml/signals`, supports pull-to-refresh, shows signal
-  direction, confidence, target and stop-loss.
+- `ML Signals`: calls `GET /api/v1/ml/signals`, falls back to
+  `GET /api/v1/ml/signals/snapshot`, supports pull-to-refresh, shows strategy
+  tags, signal direction, confidence, target and stop-loss.
 - `ML Backtest Summary`: calls `POST /api/v1/ml/backtest`, shows Sharpe, total return,
-  drawdown and a compact equity curve.
+  drawdown, a compact equity curve and stored summaries from
+  `GET /api/v1/ml/backtests/summary`.
 
 Keep mobile navigation shallow: expose `ML Signals` as a tab or profile menu
 entry, then link to `ML Backtest Summary` for deeper experiment review.

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SOURCE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DRIVE_ROOT="${1:-/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/GitHub/machine-learning-for-trading}"
+DRIVE_ROOT="${1:-/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/GitHub/investment-research-platform-pro}"
 MODE="${SYNC_MODE:-operational}"
 
 mkdir -p "$DRIVE_ROOT"
@@ -36,7 +36,7 @@ echo "repo_synced_OK"
 echo "mode=$MODE"
 echo "source=$SOURCE_ROOT"
 echo "drive_root=$DRIVE_ROOT"
-echo "colab_root=/content/drive/MyDrive/GitHub/machine-learning-for-trading"
+echo "colab_root=/content/drive/MyDrive/GitHub/investment-research-platform-pro"
 echo
 echo "Use full mode only if you really want local DB/cache/archive copies on Drive:"
 echo "  SYNC_MODE=full $0"

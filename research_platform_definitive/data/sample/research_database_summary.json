@@ -1,0 +1,38 @@
+{
+  "artifacts": {
+    "backtest_equity_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/backtest_equity_sample.csv",
+    "backtest_summary_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/backtest_summary_sample.csv",
+    "data_catalog_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/data_catalog_sample.csv",
+    "database": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/data_cache/research_platform.sqlite",
+    "features_labels_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/features_labels_sample.csv",
+    "instruments_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/instruments_sample.csv",
+    "ml_signals_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/ml_signals_sample.csv",
+    "ohlcv_daily_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/ohlcv_daily_sample.csv",
+    "strategy_registry_sample": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/data/sample/strategy_registry_sample.csv"
+  },
+  "backtest_id": 1,
+  "db_path": "/Users/itsgennymac/GitHub/investment-research-platform-pro/research_platform_definitive/output/data_cache/research_platform.sqlite",
+  "rows_written": {
+    "backtest_equity": 1405,
+    "backtest_results": 1,
+    "data_catalog_entries": 5,
+    "experiment_logs": 3,
+    "features_labels": 10736,
+    "instruments": 8,
+    "ml_signals": 496,
+    "ohlcv_daily": 11240,
+    "strategy_registry": 3
+  },
+  "table_counts": {
+    "backtest_equity": 1405,
+    "backtest_results": 1,
+    "data_catalog_entries": 5,
+    "experiment_logs": 3,
+    "features_labels": 10736,
+    "ingestion_runs": 1,
+    "instruments": 8,
+    "ml_signals": 496,
+    "ohlcv_daily": 11240,
+    "strategy_registry": 3
+  }
+}

@@ -39,16 +39,33 @@
         />
       </div>
     </section>
+
+    <section v-if="summaries.length" class="history-card">
+      <h3>Stored Backtests</h3>
+      <van-cell-group>
+        <van-cell
+          v-for="row in summaries"
+          :key="row.backtest_id"
+          :title="row.strategy_name"
+          :label="`${row.start_date} -> ${row.end_date}`"
+        >
+          <template #value>
+            <span>{{ pct(row.total_return) }} / S {{ metricValue(row.sharpe) }}</span>
+          </template>
+        </van-cell>
+      </van-cell-group>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { showToast } from 'vant'
 import { mlApi } from './mlApi'
 
 const loading = ref(false)
 const result = ref(null)
+const summaries = ref([])
 const form = reactive({
   universe: 'AAPL,MSFT,NVDA',
   market: 'USStock',
@@ -72,6 +89,14 @@ const runBacktest = async () => {
   }
 }
 
+const loadSummary = async () => {
+  try {
+    summaries.value = await mlApi.getBacktestSummary(5)
+  } catch (_) {
+    summaries.value = []
+  }
+}
+
 const bars = computed(() => {
   const rows = result.value?.equity_curve || []
   if (!rows.length) return []
@@ -87,7 +112,10 @@ const bars = computed(() => {
 })
 
 const metric = (key) => Number(result.value?.metrics?.[key] || 0).toFixed(2)
+const metricValue = (value) => Number(value || 0).toFixed(2)
 const pct = (value) => `${(Number(value || 0) * 100).toFixed(1)}%`
+
+onMounted(loadSummary)
 </script>
 
 <style scoped>
@@ -99,8 +127,8 @@ const pct = (value) => `${(Number(value || 0) * 100).toFixed(1)}%`
 .metric span { color: #969799; font-size: 12px; }
 .metric strong { display: block; margin-top: 6px; font-size: 18px; }
 .chart-card { margin: 0 12px; }
-.chart-card h3 { margin: 0 0 12px; font-size: 15px; }
+.chart-card h3, .history-card h3 { margin: 0 0 12px; font-size: 15px; }
 .chart-placeholder { height: 160px; display: flex; align-items: end; gap: 2px; border-bottom: 1px solid #ebedf0; }
 .chart-placeholder span { flex: 1; min-width: 2px; background: #1989fa; border-radius: 2px 2px 0 0; }
+.history-card { background: #fff; border-radius: 8px; margin: 12px; padding: 12px; }
 </style>
-

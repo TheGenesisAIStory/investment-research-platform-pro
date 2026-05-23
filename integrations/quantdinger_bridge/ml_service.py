@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
+from pathlib import Path
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -103,6 +104,20 @@ class SignalResponse(BaseModel):
     diagnostics: dict[str, Any] = Field(default_factory=dict)
 
 
+class StrategyRegistryResponse(BaseModel):
+    """Serializable strategy registry for web and mobile clients."""
+
+    strategies: list[dict[str, Any]]
+    diagnostics: dict[str, Any] = Field(default_factory=dict)
+
+
+class BacktestSummaryResponse(BaseModel):
+    """Serializable backtest summary list for dashboards."""
+
+    backtests: list[dict[str, Any]]
+    diagnostics: dict[str, Any] = Field(default_factory=dict)
+
+
 class ErrorResponse(BaseModel):
     """Structured error response shape for documented failure modes."""
 
@@ -196,6 +211,33 @@ def get_models(_: None = Depends(_authorize)) -> ModelsResponse:
     except Exception:
         pass
     return ModelsResponse(models=[ModelInfo(**model) for model in models])
+
+
+@app.get("/api/v1/ml/strategies", response_model=StrategyRegistryResponse, responses={401: {"model": ErrorResponse}})
+@app.get("/ml/strategies", response_model=StrategyRegistryResponse, include_in_schema=False)
+def get_strategy_registry(_: None = Depends(_authorize)) -> StrategyRegistryResponse:
+    """Return canonical strategies from the Research Platform registry."""
+
+    frame, diagnostics = _read_research_database_table("strategy_registry", fallback="strategies")
+    return StrategyRegistryResponse(strategies=_records(frame), diagnostics=diagnostics)
+
+
+@app.get("/api/v1/ml/signals/snapshot", response_model=SignalResponse, responses={401: {"model": ErrorResponse}})
+@app.get("/ml/signals/snapshot", response_model=SignalResponse, include_in_schema=False)
+def get_signal_snapshot(limit: int = 50, _: None = Depends(_authorize)) -> SignalResponse:
+    """Return latest stored signals without requiring live QuantDinger OHLCV calls."""
+
+    frame, diagnostics = _read_research_database_snapshot("signals", limit=limit)
+    return SignalResponse(model_name="research_database_snapshot", signals=_records(frame), diagnostics=diagnostics)
+
+
+@app.get("/api/v1/ml/backtests/summary", response_model=BacktestSummaryResponse, responses={401: {"model": ErrorResponse}})
+@app.get("/ml/backtests/summary", response_model=BacktestSummaryResponse, include_in_schema=False)
+def get_backtest_summary(limit: int = 20, _: None = Depends(_authorize)) -> BacktestSummaryResponse:
+    """Return stored backtest summaries for mobile and web dashboards."""
+
+    frame, diagnostics = _read_research_database_snapshot("backtests", limit=limit)
+    return BacktestSummaryResponse(backtests=_records(frame), diagnostics=diagnostics)
 
 
 @app.get("/api/v1/ml/signals", response_model=SignalResponse, responses={401: {"model": ErrorResponse}, 502: {"model": ErrorResponse}})
@@ -347,15 +389,65 @@ def run_ml_service() -> None:
 
 
 def _activate_repo_imports(config: QuantDingerBridgeConfig) -> None:
+    repo_root = config.service.repo_root if config.service.repo_root.exists() else Path(__file__).resolve().parents[2]
     roots = [
-        config.service.repo_root,
-        config.service.repo_root / "research_platform_definitive" / "src",
-        config.service.repo_root / "research_platform_definitive" / "portfolio_analysis" / "src",
+        repo_root,
+        repo_root / "research_platform_definitive" / "src",
+        repo_root / "research_platform_definitive" / "portfolio_analysis" / "src",
     ]
     for root in reversed(roots):
         value = str(root)
         if root.exists() and value not in sys.path:
             sys.path.insert(0, value)
+
+
+def _canonical_repo_root(config: QuantDingerBridgeConfig) -> Path:
+    return config.service.repo_root if config.service.repo_root.exists() else Path(__file__).resolve().parents[2]
+
+
+def _read_research_database_table(table_name: str, fallback: str | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
+    config = _config()
+    _activate_repo_imports(config)
+    try:
+        from research_platform_core.research_database import build_strategy_registry, default_research_database_path
+
+        db_path = default_research_database_path(_canonical_repo_root(config) / "research_platform_definitive")
+        if db_path.exists():
+            from research_platform_core.research_database import ResearchDatabase
+
+            db = ResearchDatabase(db_path)
+            return db.read_table(table_name), {"source": "research_database", "db_path": str(db_path)}
+        if fallback == "strategies":
+            return build_strategy_registry(), {"source": "fallback_strategy_registry", "db_path": str(db_path), "message": "Run populate_research_database.py for live DB snapshots."}
+    except Exception as exc:
+        if fallback == "strategies":
+            try:
+                from research_platform_core.research_database import build_strategy_registry
+
+                return build_strategy_registry(), {"source": "fallback_strategy_registry", "error": str(exc)}
+            except Exception:
+                pass
+        return pd.DataFrame(), {"source": "unavailable", "error": str(exc)}
+    return pd.DataFrame(), {"source": "missing", "message": "Research database not found."}
+
+
+def _read_research_database_snapshot(kind: str, limit: int) -> tuple[pd.DataFrame, dict[str, Any]]:
+    config = _config()
+    _activate_repo_imports(config)
+    try:
+        from research_platform_core.research_database import ResearchDatabase, default_research_database_path
+
+        db_path = default_research_database_path(_canonical_repo_root(config) / "research_platform_definitive")
+        if not db_path.exists():
+            return pd.DataFrame(), {"source": "missing", "db_path": str(db_path), "message": "Run research_platform_definitive/scripts/populate_research_database.py first."}
+        db = ResearchDatabase(db_path)
+        if kind == "signals":
+            return db.latest_signals(limit=limit), {"source": "research_database", "db_path": str(db_path)}
+        if kind == "backtests":
+            return db.latest_backtests(limit=limit), {"source": "research_database", "db_path": str(db_path)}
+    except Exception as exc:
+        return pd.DataFrame(), {"source": "unavailable", "error": str(exc)}
+    return pd.DataFrame(), {"source": "unknown_kind", "kind": kind}
 
 
 def _load_universe_bars(

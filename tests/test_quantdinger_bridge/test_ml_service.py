@@ -19,6 +19,27 @@ def test_models_endpoint() -> None:
     assert response.json()["models"][0]["name"] == "momentum_baseline"
 
 
+def test_strategy_registry_endpoint() -> None:
+    client = TestClient(ml_service.app)
+    response = client.get("/api/v1/ml/strategies")
+
+    assert response.status_code == 200
+    names = {row["strategy_name"] for row in response.json()["strategies"]}
+    assert "risk_balanced_blend" in names
+
+
+def test_snapshot_endpoints_are_dashboard_safe() -> None:
+    client = TestClient(ml_service.app)
+
+    signals = client.get("/api/v1/ml/signals/snapshot", params={"limit": 3})
+    backtests = client.get("/api/v1/ml/backtests/summary", params={"limit": 3})
+
+    assert signals.status_code == 200
+    assert "signals" in signals.json()
+    assert backtests.status_code == 200
+    assert "backtests" in backtests.json()
+
+
 def test_signals_endpoint_with_mocked_bars(monkeypatch) -> None:
     def fake_load(symbols, market, timeframe, start_date, end_date):
         dates = pd.date_range("2024-01-01", periods=80, freq="D")
@@ -51,4 +72,3 @@ def test_backtest_endpoint_with_mocked_bars(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert "metrics" in response.json()
-

@@ -24,8 +24,13 @@ REQUIRED_PATHS = [
     "src/ml_stock_lab/__init__.py",
     "src/smart_money_engine/__init__.py",
     "docs/CODEX_CANONICAL_MAINTENANCE_GUIDE.md",
+    "docs/PROJECT_STATUS_FINAL.md",
+    "docs/DATA_CENTER_OPERATING_MODEL.md",
+    "docs/FORMULE_STRATEGIE_REASONING.md",
     "scripts/validate_notebooks.py",
     "scripts/validate_artifacts.py",
+    "scripts/populate_research_database.py",
+    "scripts/llm_lab_cli.py",
 ]
 
 

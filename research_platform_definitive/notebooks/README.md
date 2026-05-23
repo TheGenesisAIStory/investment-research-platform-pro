@@ -11,6 +11,21 @@ Use these canonical notebooks:
 | ML equity / stock lab | `../machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb` |
 | Data/API operations | `../data_api_management/notebooks/Data_API_Management_Colab.ipynb` |
 
+## Final Notebook Contracts
+
+| Notebook | Cosa fa | Input principali | Output principali |
+|---|---|---|---|
+| Company Valuation | Valutazione equity, multipli, DCF e dashboard | financial statements, market data, assumptions | valuation tables, dashboard, report artifacts |
+| Portfolio Research | Analisi portafoglio, performance, rischio e allocazione | holdings, benchmark, price history | metrics, contributors, risk tables, charts |
+| ML Equity / Stock Lab | Feature, fair value, mispricing, quintili e segnali | `ml_stock_lab`, Data Center, sample/fundamental data | MLStockLab panel, signals, metrics, figures |
+| Data/API operations | Credential status, provider registry, batch export e data contracts | config, Drive/local data roots, provider metadata | DataAPI tables, contracts, status exports |
+
+All final notebooks should start from reusable modules instead of copying core logic. For local demos and Colab-friendly fixtures, regenerate:
+
+```bash
+python3 ../scripts/populate_research_database.py
+```
+
 Why no duplicate notebooks here:
 
 - notebook execution paths are used by Streamlit orchestration and validators;

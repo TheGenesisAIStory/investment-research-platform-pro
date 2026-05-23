@@ -36,6 +36,21 @@ Canonical notebooks:
 Current project status:
 
 - `research_platform_definitive/docs/PROJECT_STATUS_2026-05-23.md`
+- `research_platform_definitive/docs/PROJECT_STATUS_FINAL.md`
+
+Populate the final local research database and prompt packet:
+
+```bash
+python3 research_platform_definitive/scripts/populate_research_database.py
+python3 research_platform_definitive/scripts/llm_lab_cli.py packet
+```
+
+Key final docs:
+
+- `research_platform_definitive/docs/DATA_CENTER_OPERATING_MODEL.md`
+- `research_platform_definitive/docs/FORMULE_STRATEGIE_REASONING.md`
+- `research_platform_definitive/docs/LLM_LAB_VIBE_TRADING.md`
+- `research_platform_definitive/docs/MOBILE_QUANTDINGER_HANDOFF.md`
 
 Local databases not kept on Google Drive were preserved under:
 
