@@ -1,0 +1,8 @@
+{
+  "status": "ok",
+  "reason": null,
+  "details": {
+    "signal_rows": 75,
+    "quintile_return_rows": 6
+  }
+}

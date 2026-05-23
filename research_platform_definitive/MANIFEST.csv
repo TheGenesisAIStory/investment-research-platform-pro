@@ -1,0 +1,24 @@
+component,type,friendly_path,canonical_path,status,notes
+Company Valuation Notebook,notebook,notebooks/README.md,company_valuation/notebooks/Company_Valuation_Final_Version.ipynb,canonical,Equity valuation research and dashboard exports
+Portfolio Research Notebook,notebook,notebooks/README.md,portfolio_analysis/notebooks/Portfolio-Analysis-Model_RESEARCH_PLATFORM_PRO.ipynb,canonical,Portfolio selection allocation and diagnostics
+ML Equity Stock Lab Notebook,notebook,notebooks/README.md,machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb,canonical,ML fair value mispricing z-score and quintile tests
+Streamlit App,app,research_platform_app/app.py,research_platform_app/app.py,canonical,Research workstation and artifact viewer
+Core Platform Package,package,src/research_platform_core,src/research_platform_core,canonical,Data platform export and HTML helpers
+ML Stock Lab Package,package,src/ml_stock_lab,src/ml_stock_lab,canonical,ML valuation signals screening portfolio and evaluation
+Smart Money Package,package,src/smart_money_engine,src/smart_money_engine,canonical,Official-source government/smart-money analytics
+Company Valuation Modules,package,company_valuation/src,company_valuation/src,canonical,Valuation screener dashboard and Finviz-inspired layer
+Portfolio Modules,package,portfolio_analysis/src,portfolio_analysis/src,canonical,Portfolio engine dashboard and selection lab
+Canonical Maintenance Guide,doc,docs/CODEX_CANONICAL_MAINTENANCE_GUIDE.md,docs/CODEX_CANONICAL_MAINTENANCE_GUIDE.md,canonical,Anti-regression operating contract
+Definitive Review,doc,docs/RESEARCH_PLATFORM_DEFINITIVE_REVIEW.md,docs/RESEARCH_PLATFORM_DEFINITIVE_REVIEW.md,canonical,Architecture review and component map
+ML Stock Lab Overview,doc,docs/ML_STOCK_LAB_OVERVIEW.md,docs/ML_STOCK_LAB_OVERVIEW.md,canonical,ML lab module documentation
+Smart Money Documentation,doc,docs/SMART_MONEY_GOVERNMENT_DATA_ENGINE.md,docs/SMART_MONEY_GOVERNMENT_DATA_ENGINE.md,canonical,Government data engine documentation
+Project Status 2026-05-23,doc,docs/PROJECT_STATUS_2026-05-23.md,docs/PROJECT_STATUS_2026-05-23.md,canonical,Current component status verification matrix and sync plan
+Notebook Validator,script,scripts/validate_notebooks.py,scripts/validate_notebooks.py,canonical,Validates canonical notebooks
+Artifact Validator,script,scripts/validate_artifacts.py,scripts/validate_artifacts.py,canonical,Validates ML and Smart Money contracts
+Laboratorio Reference Library,laboratorio,laboratorio/,laboratorio/,reference,Restored useful ML4T notebooks from Drive without heavy datasets
+Laboratorio Validator,script,scripts/validate_laboratorio.py,scripts/validate_laboratorio.py,reference,Validates restored reference notebooks
+Laboratorio App Page,app,research_platform_app/pages/10_Laboratorio_Research_Library.py,research_platform_app/pages/10_Laboratorio_Research_Library.py,reference,Streamlit inventory for curated research notebooks and promotion targets
+Notebook Index,doc,notebooks/README.md,notebooks/README.md,canonical,Human-friendly notebook map without duplicate source notebooks
+Archived Notebook Duplicates,archive,archive/notebook_duplicates/,archive/notebook_duplicates/,archive,Legacy duplicate notebook copies retained only for traceability
+DCF Monte Carlo Extension,package,company_valuation/src/valuation_monte_carlo.py,company_valuation/src/valuation_monte_carlo.py,canonical,Reusable DCF uncertainty layer with market parameters scenarios and model-based factors
+DCF Monte Carlo Documentation,doc,docs/DCF_MONTE_CARLO_EXTENSION.md,docs/DCF_MONTE_CARLO_EXTENSION.md,canonical,Documents DCF Monte Carlo artifacts and extension path

@@ -1,0 +1,4 @@
+relative_path,file,suffix,size_kb,modified_utc,age_hours,exists,secret_policy
+api_credentials_master.md,api_credentials_master.md,.md,7.54,2026-05-22T23:25:11.921000004+00:00,0.67,True,private_drive_file_do_not_commit
+credentials_template.xlsx,credentials_template.xlsx,.xlsx,6.6,2026-05-22T23:32:09.469000101+00:00,0.56,True,private_drive_file_do_not_commit
+old_credentials_snapshot.xlsx,old_credentials_snapshot.xlsx,.xlsx,6.09,2026-05-22T23:33:31.068000078+00:00,0.53,True,private_drive_file_do_not_commit

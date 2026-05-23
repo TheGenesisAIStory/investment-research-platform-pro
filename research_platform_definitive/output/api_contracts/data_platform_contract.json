@@ -1,0 +1,366 @@
+{
+  "generated_at": "2026-05-23T00:05:30+00:00",
+  "financial_db_root": "/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario",
+  "tables": {
+    "inventory": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_inventory.csv",
+    "summary": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_summary.csv",
+    "data_inventory": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_data_inventory.csv",
+    "data_domains": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_data_domains.csv",
+    "api_providers": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_api_providers.csv",
+    "api_provider_health_checks": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_api_provider_health_checks.csv",
+    "credential_status_masked": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_credential_status_masked.csv",
+    "provider_fallback_plan": "/Users/itsgennymac/GitHub/machine-learning-for-trading/research_platform_definitive/output/tables/DataPlatform_provider_fallback_plan.csv"
+  },
+  "domains": [
+    {
+      "role": "other",
+      "files": 1325,
+      "size_mb": 7845.4757,
+      "newest_age_hours": 70.58,
+      "oldest_age_hours": 63916.01,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "macro_risk",
+      "files": 146,
+      "size_mb": 303.9196,
+      "newest_age_hours": 9.7,
+      "oldest_age_hours": 65532.19,
+      "freshness_status": "fresh"
+    },
+    {
+      "role": "portfolio",
+      "files": 91,
+      "size_mb": 122.3629,
+      "newest_age_hours": 70.58,
+      "oldest_age_hours": 63911.52,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "prices",
+      "files": 71,
+      "size_mb": 173.2855,
+      "newest_age_hours": 58.63,
+      "oldest_age_hours": 63915.82,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "fundamentals",
+      "files": 64,
+      "size_mb": 88.4209,
+      "newest_age_hours": 62.07,
+      "oldest_age_hours": 63869.32,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "notebook_export",
+      "files": 41,
+      "size_mb": 5.2435,
+      "newest_age_hours": 70.58,
+      "oldest_age_hours": 31473.45,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "alternative",
+      "files": 28,
+      "size_mb": 3.1818,
+      "newest_age_hours": 127.84,
+      "oldest_age_hours": 335.69,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "screener",
+      "files": 24,
+      "size_mb": 26.5938,
+      "newest_age_hours": 71.52,
+      "oldest_age_hours": 63892.42,
+      "freshness_status": "weekly"
+    },
+    {
+      "role": "provider_registry",
+      "files": 14,
+      "size_mb": 0.08460000000000001,
+      "newest_age_hours": 0.53,
+      "oldest_age_hours": 336.26,
+      "freshness_status": "fresh"
+    }
+  ],
+  "provider_fallback_plan": [
+    {
+      "domain": "prices",
+      "priority": 1,
+      "source": "drive:europe_stoxx_companies",
+      "source_type": "drive",
+      "name": "europe_stoxx_companies",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "prices",
+      "priority": 2,
+      "source": "drive:local_market_data",
+      "source_type": "drive",
+      "name": "local_market_data",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "prices",
+      "priority": 3,
+      "source": "cache:repo",
+      "source_type": "cache",
+      "name": "repo",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "prices",
+      "priority": 4,
+      "source": "api:yfinance",
+      "source_type": "api",
+      "name": "yfinance",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "prices",
+      "priority": 5,
+      "source": "api:stooq",
+      "source_type": "api",
+      "name": "stooq",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 1,
+      "source": "drive:fundamentals",
+      "source_type": "drive",
+      "name": "fundamentals",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 2,
+      "source": "drive:company_valuation_platform",
+      "source_type": "drive",
+      "name": "company_valuation_platform",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 3,
+      "source": "cache:repo",
+      "source_type": "cache",
+      "name": "repo",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 4,
+      "source": "api:yfinance",
+      "source_type": "api",
+      "name": "yfinance",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 5,
+      "source": "api:fmp",
+      "source_type": "api",
+      "name": "fmp",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 6,
+      "source": "api:finnhub",
+      "source_type": "api",
+      "name": "finnhub",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "fundamentals",
+      "priority": 7,
+      "source": "api:alpha_vantage",
+      "source_type": "api",
+      "name": "alpha_vantage",
+      "configured": false,
+      "reachable": true,
+      "free_tier": "Yes, rate-limited",
+      "env_var": "ALPHA_VANTAGE_API_KEY",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 1,
+      "source": "drive:ml_trading_risk_factors_csv",
+      "source_type": "drive",
+      "name": "ml_trading_risk_factors_csv",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 2,
+      "source": "drive:alpha_factor_library",
+      "source_type": "drive",
+      "name": "alpha_factor_library",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 3,
+      "source": "drive:alpha_factor_library/aqr",
+      "source_type": "drive",
+      "name": "alpha_factor_library/aqr",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 4,
+      "source": "cache:repo",
+      "source_type": "cache",
+      "name": "repo",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 5,
+      "source": "api:aqr_public_library",
+      "source_type": "api",
+      "name": "aqr_public_library",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 6,
+      "source": "api:fred",
+      "source_type": "api",
+      "name": "fred",
+      "configured": false,
+      "reachable": false,
+      "free_tier": "Yes",
+      "env_var": "FRED_API_KEY",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "macro_risk",
+      "priority": 7,
+      "source": "api:yfinance",
+      "source_type": "api",
+      "name": "yfinance",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "fallback_on_stale_or_missing"
+    },
+    {
+      "domain": "alternative",
+      "priority": 1,
+      "source": "drive:alternative_data",
+      "source_type": "drive",
+      "name": "alternative_data",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "alternative",
+      "priority": 2,
+      "source": "cache:repo",
+      "source_type": "cache",
+      "name": "repo",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "provider_registry",
+      "priority": 1,
+      "source": "drive:catalog",
+      "source_type": "drive",
+      "name": "catalog",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    },
+    {
+      "domain": "provider_registry",
+      "priority": 2,
+      "source": "cache:repo",
+      "source_type": "cache",
+      "name": "repo",
+      "configured": null,
+      "reachable": null,
+      "free_tier": "",
+      "env_var": "",
+      "policy": "read_first"
+    }
+  ]
+}

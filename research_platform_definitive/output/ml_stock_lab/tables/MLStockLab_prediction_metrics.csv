@@ -1,0 +1,2 @@
+split_type,split_criterion,train_rows,test_rows,train_date_count,test_date_count,train_start_date,train_end_date,test_start_date,test_end_date,status,reason,expected_return_model,r2_os
+temporal,date <= 2024-03-31; date > 2024-03-31,1,74,1,1,2024-03-31,2024-03-31,2026-05-21,2026-05-21,SKIPPED,FORWARD_RETURN_UNAVAILABLE_OR_SPLIT_TOO_SMALL,rf,

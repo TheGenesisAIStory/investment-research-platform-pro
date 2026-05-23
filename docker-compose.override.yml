@@ -1,0 +1,61 @@
+services:
+  ml-service:
+    build:
+      context: ${ML4T_REPO_ROOT:-.}
+      dockerfile: integrations/quantdinger_bridge/Dockerfile
+    container_name: quantdinger-ml-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    ports:
+      - "${ML_SERVICE_PORT:-127.0.0.1:8000}:8000"
+    volumes:
+      - ${ML4T_REPO_ROOT:-.}:/workspace/ml4t
+      - ${ML4T_REPO_ROOT:-.}/external/QuantDinger:/workspace/QuantDinger:ro
+      - ml_service_logs:/workspace/ml4t/output/quantdinger_ml_service
+    working_dir: /workspace/ml4t
+    environment:
+      PYTHONPATH: /workspace/ml4t:/workspace/ml4t/research_platform_definitive/src:/workspace/ml4t/research_platform_definitive/portfolio_analysis/src
+      ML4T_REPO_ROOT: /workspace/ml4t
+      QUANTDINGER_API_BASE_URL: http://backend:5000/api
+      QUANTDINGER_AUTH_VERIFY_URL: http://backend:5000/api/auth/info
+      QUANTDINGER_VERIFY_AUTH: ${QUANTDINGER_VERIFY_AUTH:-false}
+      QUANTDINGER_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-quantdinger123}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      QUANTDINGER_REDIS_URL: redis://redis:6379/0
+      QUANTDINGER_DEFAULT_MARKET: ${QUANTDINGER_DEFAULT_MARKET:-USStock}
+      QUANTDINGER_DEFAULT_TIMEFRAME: ${QUANTDINGER_DEFAULT_TIMEFRAME:-1D}
+      QUANTDINGER_API_RETRY_TOTAL: ${QUANTDINGER_API_RETRY_TOTAL:-3}
+      QUANTDINGER_API_RETRY_BACKOFF_SECONDS: ${QUANTDINGER_API_RETRY_BACKOFF_SECONDS:-0.3}
+      ML_SERVICE_CACHE_TTL_SECONDS: ${ML_SERVICE_CACHE_TTL_SECONDS:-30}
+      ML_SERVICE_LOG_LEVEL: ${ML_SERVICE_LOG_LEVEL:-INFO}
+      ML_SERVICE_AUTH_TOKEN: ${ML_SERVICE_AUTH_TOKEN:-}
+    networks:
+      - quantdinger-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    environment:
+      ML_SERVICE_URL: http://ml-service:8000
+
+  frontend:
+    environment:
+      ML_SERVICE_URL: http://ml-service:8000
+
+volumes:
+  ml_service_logs:
+    driver: local

@@ -1,0 +1,7 @@
+area,detail
+Keep,Notebook remains source of truth; latestcrosssection powers cross-sectional analytics.
+Keep,"Existing valuation, ML, QA, scenario and dashboard logic are reused as inputs."
+Add,"Finviz-inspired layer produces maps, groups, watchlists, events, macro boards, alerts and quick views."
+Add,All new outputs are table-first and exportable for Streamlit/web/API migration.
+Constraint,Paid-only Finviz features are approximated with local data and free-source-compatible schemas.
+Failure mode,"Unavailable data produces empty payloads with provenance/quality flags, not fabricated values."

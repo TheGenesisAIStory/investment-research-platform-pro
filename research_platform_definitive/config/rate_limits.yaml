@@ -1,0 +1,31 @@
+providers:
+  yfinance:
+    requests_per_minute: 120
+    requests_per_day: null
+    cost_tier: free
+    priority: 1
+  stooq:
+    requests_per_minute: 60
+    requests_per_day: null
+    cost_tier: free
+    priority: 2
+  alpha_vantage:
+    requests_per_minute: 5
+    requests_per_day: 500
+    cost_tier: free_limited
+    priority: 3
+  fred:
+    requests_per_minute: 60
+    requests_per_day: null
+    cost_tier: free
+    priority: 1
+  fmp:
+    requests_per_minute: 30
+    requests_per_day: null
+    cost_tier: limited
+    priority: 4
+  polygon:
+    requests_per_minute: 120
+    requests_per_day: null
+    cost_tier: paid
+    priority: 5

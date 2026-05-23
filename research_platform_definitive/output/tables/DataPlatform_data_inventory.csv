@@ -1,0 +1,9 @@
+path,exists,files,size_mb,suffix_counts,last_modified_utc,domain,publish_to_git,description
+data/data_providers/api_registry,True,6,0.024,"{"".csv"": 4, "".parquet"": 2}",2026-05-10T00:25:03+00:00,api_registry,True,"Provider metadata, masked credential status, and health checks"
+data/private_api_checks,True,3,0.008,"{"".csv"": 2, "".parquet"": 1}",2026-05-09T19:28:20.093448+00:00,private_api_checks,False,Local credentialed API smoke-check outputs
+data/europe_stoxx_companies,True,24,1.867,"{"".parquet"": 24}",2026-05-09T00:27:33.602467+00:00,europe_stoxx_companies,False,Cached Europe/STOXX OHLCV and benchmark data
+data/alternative_data,True,19,3.955,"{"".csv"": 1, "".json"": 10, "".parquet"": 7, ""<none>"": 1}",2026-05-09T18:03:31.442388+00:00,alternative_data,False,Alternative-data snapshots and engineered features
+data/alpha_factor_research,True,15,13.493,"{"".csv"": 5, "".parquet"": 10}",2026-05-09T19:01:22.210998+00:00,alpha_factor_research,False,"Alpha factors, IC diagnostics, ML predictions, and backtest returns"
+data/sec_edgar,True,2,4.131,"{"".json"": 2}",2026-05-09T00:03:07.940683+00:00,sec_edgar,False,SEC submissions and companyfacts examples
+data/storage_benchmark,True,2,0.006,"{"".csv"": 1, "".parquet"": 1}",2026-05-09T00:10:46.504837+00:00,storage_benchmark,False,Local storage benchmark outputs
+data/open_market_data,True,1,0.043,"{"".parquet"": 1}",2026-05-08T23:42:40.911682+00:00,open_market_data,False,Open market-data examples used by notebooks

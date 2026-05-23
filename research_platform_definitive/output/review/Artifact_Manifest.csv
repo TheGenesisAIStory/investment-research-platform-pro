@@ -1,0 +1,39 @@
+artifact_type,file_name,path,section,description
+table,Table_0_setup_manifest.csv,output/tables/Table_0_setup_manifest.csv,0,Notebook setup and configuration manifest.
+table,Table_1_data_source_summary.csv,output/tables/Table_1_data_source_summary.csv,1,Data source summary for portfolio panel and paper draft.
+table,Table_2a_cleaning_alignment.csv,output/tables/Table_2a_cleaning_alignment.csv,2,Cleaning and portfolio-date alignment checks.
+table,Table_2_feature_missingness.csv,output/tables/Table_2_feature_missingness.csv,3,Missingness by leakage-safe feature and block.
+table,Table_3_target_summary.csv,output/tables/Table_3_target_summary.csv,4,Forward EVA/RAROC target summary.
+table,Table_4_descriptive_stats.csv,output/tables/Table_4_descriptive_stats.csv,5,Descriptive statistics for TCEL/ECL and management metrics.
+table,Table_5_el_volatility_by_portfolio.csv,output/tables/Table_5_el_volatility_by_portfolio.csv,5,Portfolio-level TCEL vs ECL volatility comparison.
+figure,Figure_1_distribution_EL.png,output/figures/Figure_1_distribution_EL.png,5,Distribution of expected loss rates.
+figure,Figure_2_distribution_RAROC.png,output/figures/Figure_2_distribution_RAROC.png,5,Distribution of RAROC under TCEL and ECL.
+table,Table_6_time_series_aggregates.csv,output/tables/Table_6_time_series_aggregates.csv,6,Quarterly EAD-weighted TCEL/ECL and management metric aggregates.
+table,Table_7_correlations.csv,output/tables/Table_7_correlations.csv,6,"Correlation matrix for EL, macro, EVA and RAROC variables."
+figure,Figure_3_timeseries_EL_vs_GDP.png,output/figures/Figure_3_timeseries_EL_vs_GDP.png,6,TCEL/ECL time series against GDP growth.
+figure,Figure_4_timeseries_EVA.png,output/figures/Figure_4_timeseries_EVA.png,6,Aggregate EVA comparison.
+figure,Figure_5_scatter_EL_TCEL_vs_EL_ECL.png,output/figures/Figure_5_scatter_EL_TCEL_vs_EL_ECL.png,6,Scatter plot comparing TCEL and ECL rates.
+table,Table_8_single_factor_regressions.csv,output/tables/Table_8_single_factor_regressions.csv,7,Single-factor regressions against next-quarter TCEL EVA.
+table,Table_9_panel_reg_EL.csv,output/tables/Table_9_panel_reg_EL.csv,8,"Panel fixed-effect regression explaining EL_ECL with TCEL, macro and staging."
+table,Table_10_panel_reg_EVA_RAROC.csv,output/tables/Table_10_panel_reg_EVA_RAROC.csv,8,Panel fixed-effect regressions for EVA and RAROC under TCEL and ECL.
+table,Table_11_model_comparison.csv,output/tables/Table_11_model_comparison.csv,9,Aggregated walk-forward model comparison.
+table,Table_12_walkforward_results.csv,output/tables/Table_12_walkforward_results.csv,9,Fold-level chronological walk-forward results.
+figure,Figure_6_walkforward_metrics.png,output/figures/Figure_6_walkforward_metrics.png,9,Walk-forward model RMSE comparison.
+table,Table_13_ablation_results.csv,output/tables/Table_13_ablation_results.csv,10,Feature-block ablation results versus controls-only baseline.
+figure,Figure_7_ablation_blocks.png,output/figures/Figure_7_ablation_blocks.png,10,Ablation delta RMSE by feature block.
+table,Table_14_portfolio_rankings.csv,output/tables/Table_14_portfolio_rankings.csv,11,Walk-forward portfolio rankings by predicted future TCEL EVA.
+table,Table_15_backtest_long_topk.csv,output/tables/Table_15_backtest_long_topk.csv,11,Top-k portfolio allocation backtest using predicted future EVA.
+figure,Figure_8_backtest_cumulative_EVA.png,output/figures/Figure_8_backtest_cumulative_EVA.png,11,Cumulative EVA backtest for top-k portfolio ranking strategy.
+table,Table_16_feature_importance.csv,output/tables/Table_16_feature_importance.csv,12,Permutation importance for the random-forest EVA model.
+figure,Figure_9_feature_importance.png,output/figures/Figure_9_feature_importance.png,12,Permutation feature importance.
+table,Table_17_subperiod_results.csv,output/tables/Table_17_subperiod_results.csv,13,Subperiod volatility and cyclicality robustness results.
+table,Table_18_placebo_walkforward.csv,output/tables/Table_18_placebo_walkforward.csv,13,Placebo walk-forward performance with permuted EVA target.
+table,Table_19_sensitivity_grid.csv,output/tables/Table_19_sensitivity_grid.csv,13,Sensitivity of average net EVA to capital charge and transaction-cost assumptions.
+figure,Figure_10_sensitivity_heatmap.png,output/figures/Figure_10_sensitivity_heatmap.png,13,Net EVA sensitivity heatmap.
+markdown,Notebook_Review.md,output/review/Notebook_Review.md,14,Technical and methodological notebook review.
+markdown,Final_Conclusion.md,output/review/Final_Conclusion.md,14,Final paper-style conclusion.
+markdown,Final_Tables_Summary.md,output/review/Final_Tables_Summary.md,14,Summary of required tables and paper support.
+dashboard,tcel_ecl_dashboard.html,output/dashboard/tcel_ecl_dashboard.html,14,Standalone HTML dashboard for TCEL/ECL research outputs.
+notebook,Paper1_TCEL_ECL_Final.ipynb,output/notebooks/Paper1_TCEL_ECL_Final.ipynb,14,Final executed TCEL/ECL research notebook copy.
+log,experiment.log,output/logs/experiment.log,0,Execution log with warnings and runtime messages.
+table,Artifact_Manifest.csv,output/review/Artifact_Manifest.csv,14,Complete artifact manifest.

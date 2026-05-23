@@ -1,0 +1,6 @@
+provider,env_var,domain,configured,masked_value,updated_at
+FMP,FMP_API_KEY,"fundamentals, ratios, profiles",False,not_set,2026-05-20T10:01:32+00:00
+Finnhub,FINNHUB_API_KEY,"profiles, fundamentals, estimates",False,not_set,2026-05-20T10:01:32+00:00
+Alpha Vantage,ALPHA_VANTAGE_API_KEY,"prices, fundamentals, FX, macro",False,not_set,2026-05-20T10:01:32+00:00
+EODHD,EODHD_API_KEY,"prices, fundamentals, indices",False,not_set,2026-05-20T10:01:32+00:00
+FRED,FRED_API_KEY,"macro, rates",False,not_set,2026-05-20T10:01:32+00:00

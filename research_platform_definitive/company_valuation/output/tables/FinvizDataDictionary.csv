@@ -1,0 +1,15 @@
+dataset,grain,purpose
+securities_master,ticker,"Identity, sector, industry, country, exchange, market cap and provenance."
+universe_constituents,ticker x source,Universe membership and source annotations.
+latest_cross_section,ticker,Primary analytical snapshot from notebook-native latestcrosssection/screener base.
+historical_panel,ticker x date,Available dfpanel/dfmerged history for future web/API use.
+valuation_outputs,ticker/model/scenario,"DCF, residual income, relative valuation and blended outputs."
+ml_outputs,ticker/date/model,"Predictions, leaderboard, feature importance and validation windows."
+diagnostics_qa,check/ticker,"Coverage, staleness, robustness and leakage checks."
+screener_outputs,run/ticker,Filtered/ranked screen results and audit trail.
+group_summaries,group_type/group_value/view,"Sector, industry, country and bucket aggregate analytics."
+map_payload,ticker,Treemap/heatmap-ready metrics and drill-down payload.
+watchlists,watchlist/ticker,Manual and model-generated lists with timestamps.
+events,ticker/event_type/date,"News, earnings, filings, dividends, splits, insider/proxy events when available."
+macro_risk,asset/series/date,"Rates, FX, crypto, commodities and volatility context."
+alerts,timestamp/ticker/rule,Monitoring outputs for thresholds and data quality.

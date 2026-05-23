@@ -1,0 +1,7 @@
+preset,description,filters,ranking
+Core quality allocation,"High quality, diversified candidates with positive composite score.",2,weighted_score
+Risk controlled allocation,Low volatility / drawdown candidates for defensive construction.,2,weighted_score
+Value with upside,Value score and upside support with quality floor.,3,weighted_score
+Momentum sleeve,Momentum-driven candidates with portfolio risk guardrails.,2,weighted_score
+Optimizer candidates,Names preferred by the optimizer / engine weights.,1,raw_sort
+Top ranked allocation,Use the notebook-native composite/rank view.,1,raw_sort

@@ -1,0 +1,9 @@
+dataset,path,raw_rows,normalized_rows,status,modified
+13f,,0,0,MISSING,
+form4,,0,0,MISSING,
+13d,,0,0,MISSING,
+cot,/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario/Finance Database/Kaggle Database/Data/Stocks/cot.us.txt,3201,0,EMPTY_OR_UNREADABLE,2017-11-13T01:36:10
+cot,/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario/Finance Database/Kaggle Database/Data/Stocks/cotv.us.txt,370,0,EMPTY_OR_UNREADABLE,2017-11-13T01:36:10
+tic,/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario/Finance Database/Kaggle Database/Data/Stocks/ctic.us.txt,1615,0,EMPTY_OR_UNREADABLE,2017-11-13T01:35:44
+tic,/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario/Finance Database/Kaggle Database/Data/Stocks/itic.us.txt,2855,0,EMPTY_OR_UNREADABLE,2017-11-13T01:38:34
+usaspending,,0,0,MISSING,

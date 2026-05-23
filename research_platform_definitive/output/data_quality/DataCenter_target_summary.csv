@@ -1,0 +1,8 @@
+domain,targets,available,priority_min,coverage_pct
+equity_universe,14,0,1,0.0
+factor_data,18,7,1,38.9
+fx,10,0,1,0.0
+official_macro,12,0,1,0.0
+ohlcv_prices,5,3,1,60.0
+risk_factors,12,0,1,0.0
+commodities,13,0,2,0.0

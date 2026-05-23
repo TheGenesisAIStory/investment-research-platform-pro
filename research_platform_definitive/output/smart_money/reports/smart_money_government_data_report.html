@@ -1,0 +1,199 @@
+<html><head><meta charset='utf-8'>
+
+    <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:28px;color:#172033;background:#f7f9fc}
+    h1{margin-bottom:4px}.subtitle{color:#667085}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+    .card{background:white;border:1px solid #d9e2ec;border-radius:10px;padding:14px}.card b{font-size:24px}
+    section{background:white;border:1px solid #d9e2ec;border-radius:10px;padding:16px;margin:16px 0;overflow:auto}
+    .table{border-collapse:collapse;width:100%;font-size:13px}.table th,.table td{border-bottom:1px solid #edf2f7;padding:7px;text-align:left}
+    .empty{color:#b54708}.note{background:#fff7ed;border-left:5px solid #da7101;padding:12px;border-radius:8px}
+    </style>
+    
+</head><body>
+<h1>Smart Money Government Data Engine</h1>
+<p class='subtitle'>Official-source-first ownership, insider, activism, macro flow and public spending intelligence.</p>
+<div class='grid'>
+<div class='card'><span>Ranked issuers</span><br><b>0</b></div>
+<div class='card'><span>Events</span><br><b>0</b></div>
+<div class='card'><span>Datasets</span><br><b>6</b></div>
+<div class='card'><span>Sources OK</span><br><b>0</b></div>
+</div>
+<div class='note'><b>Caveat:</b> 13F is delayed, Form 4 intent needs context, TIC/COT are macro proxies, and EU coverage is fragmented by regulator/country.</div>
+<section><h2>Smart Money Leaderboard</h2><p class='empty'>No data available. Check source coverage and ingestion manifest.</p></section>
+<section><h2>Event Feed</h2><p class='empty'>No data available. Check source coverage and ingestion manifest.</p></section>
+<section><h2>Sector / Theme Monitor</h2><p class='empty'>No data available. Check source coverage and ingestion manifest.</p></section>
+<section><h2>Ingestion Coverage</h2><table border="1" class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>dataset</th>
+      <th>files</th>
+      <th>rows</th>
+      <th>status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>13d</td>
+      <td>0</td>
+      <td>0</td>
+      <td>MISSING</td>
+    </tr>
+    <tr>
+      <td>13f</td>
+      <td>0</td>
+      <td>0</td>
+      <td>MISSING</td>
+    </tr>
+    <tr>
+      <td>cot</td>
+      <td>2</td>
+      <td>0</td>
+      <td>MISSING</td>
+    </tr>
+    <tr>
+      <td>form4</td>
+      <td>0</td>
+      <td>0</td>
+      <td>MISSING</td>
+    </tr>
+    <tr>
+      <td>tic</td>
+      <td>2</td>
+      <td>0</td>
+      <td>MISSING</td>
+    </tr>
+    <tr>
+      <td>usaspending</td>
+      <td>0</td>
+      <td>0</td>
+      <td>MISSING</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>Government Dataset Matrix</h2><table border="1" class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>dataset_id</th>
+      <th>region</th>
+      <th>authority</th>
+      <th>name</th>
+      <th>use_case</th>
+      <th>frequency</th>
+      <th>limitations</th>
+      <th>priority</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>sec_13dg</td>
+      <td>USA</td>
+      <td>SEC EDGAR</td>
+      <td>Schedules 13D / 13G</td>
+      <td>Beneficial ownership above 5%, activist/passive event monitor.</td>
+      <td>Event-driven</td>
+      <td>Text extraction varies; amendments require careful event state tracking.</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>sec_13f</td>
+      <td>USA</td>
+      <td>SEC</td>
+      <td>Form 13F Data Sets</td>
+      <td>Institutional holdings, position changes, clone portfolios, crowdedness.</td>
+      <td>Quarterly with filing lag</td>
+      <td>Delayed snapshots; no intraperiod trades; long US-listed holdings focus.</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>sec_form4</td>
+      <td>USA</td>
+      <td>SEC</td>
+      <td>Insider Transactions Data Sets / Forms 3, 4, 5</td>
+      <td>Insider buys/sells, cluster buying, officer/director conviction.</td>
+      <td>Event-driven</td>
+      <td>Transaction intent is context-dependent; plans and grants need filtering.</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>usaspending</td>
+      <td>USA</td>
+      <td>USAspending.gov</td>
+      <td>USAspending API</td>
+      <td>Federal contract/grant awards and government demand beneficiaries.</td>
+      <td>Daily/API updates</td>
+      <td>Recipient-to-listed-parent mapping is non-trivial and must be audited.</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>cftc_cot</td>
+      <td>USA</td>
+      <td>CFTC</td>
+      <td>Commitments of Traders</td>
+      <td>Macro futures positioning, managed money trend/extreme percentiles.</td>
+      <td>Weekly</td>
+      <td>Aggregate futures positioning; not single-fund or issuer-level data.</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>sec_nport</td>
+      <td>USA</td>
+      <td>SEC</td>
+      <td>Form N-PORT Data Sets</td>
+      <td>Registered fund holdings, liquidity profile, ETF/mutual fund transparency.</td>
+      <td>Monthly/SEC dataset cadence</td>
+      <td>Complex fund taxonomy; disclosure lag; not hedge fund transparency.</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>treasury_tic</td>
+      <td>USA</td>
+      <td>U.S. Treasury</td>
+      <td>Treasury International Capital</td>
+      <td>Cross-border holdings and capital flow support by country/asset bucket.</td>
+      <td>Monthly/quarterly depending table</td>
+      <td>Macro flow proxy; not security-level trade attribution.</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>esma_firds</td>
+      <td>EU</td>
+      <td>ESMA</td>
+      <td>FIRDS financial instrument reference data</td>
+      <td>ISIN/MIC/issuer reference and EU security normalization.</td>
+      <td>Daily/reference data cadence</td>
+      <td>Reference data, not ownership transparency.</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>ted_procurement</td>
+      <td>EU</td>
+      <td>European Union</td>
+      <td>TED public procurement</td>
+      <td>EU public procurement awards and contractor exposure.</td>
+      <td>Daily/publication cadence</td>
+      <td>Recipient normalization and listed-parent mapping are hard; country coverage differs.</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>ecb_sdw</td>
+      <td>EU</td>
+      <td>ECB</td>
+      <td>Statistical Data Warehouse</td>
+      <td>Rates, macro-financial aggregates and flow proxies.</td>
+      <td>Series-dependent</td>
+      <td>Macro context only; no issuer-level smart money visibility.</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td>national_disclosures</td>
+      <td>EU/UK</td>
+      <td>National regulators</td>
+      <td>Major holdings / insider dealing / regulated disclosures</td>
+      <td>Country-level beneficial ownership and insider proxies.</td>
+      <td>Event-driven/country-specific</td>
+      <td>Fragmented; no single EDGAR equivalent; each connector must carry caveats.</td>
+      <td>4</td>
+    </tr>
+  </tbody>
+</table></section>
+</body></html>

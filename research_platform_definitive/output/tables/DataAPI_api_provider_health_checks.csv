@@ -1,0 +1,13 @@
+name,url,ok,reachable,status_code,error
+Alpha Vantage,https://www.alphavantage.co/,True,True,200.0,
+Tiingo,https://www.tiingo.com/,True,True,200.0,
+Financial Modeling Prep,https://financialmodelingprep.com/,False,True,403.0,
+Polygon,https://polygon.io/,True,True,200.0,
+Intrinio,https://intrinio.com/,True,True,200.0,
+FRED,https://fred.stlouisfed.org/,False,False,,"HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=8)"
+BLS,https://www.bls.gov/developers/,False,True,403.0,
+CFTC,https://publicreporting.cftc.gov/,True,True,200.0,
+Congress.gov,https://api.congress.gov/,True,True,200.0,
+EconDB,https://www.econdb.com/,True,True,200.0,
+EIA,https://www.eia.gov/opendata/,False,False,,"HTTPSConnectionPool(host='www.eia.gov', port=443): Read timed out. (read timeout=8)"
+Nasdaq Data Link,https://data.nasdaq.com/,True,True,200.0,

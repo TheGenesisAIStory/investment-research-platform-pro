@@ -1,0 +1,203 @@
+area,path,kind,exists,size_kb
+Core shared,src/research_platform_core/__init__.py,py,True,1.46
+Core shared,src/research_platform_core/data_platform.py,py,True,21.09
+Core shared,src/research_platform_core/data_utils.py,py,True,2.12
+Core shared,src/research_platform_core/export_utils.py,py,True,1.5
+Core shared,src/research_platform_core/html_utils.py,py,True,0.71
+Company valuation,company_valuation/src/__init__.py,py,True,1.47
+Company valuation,company_valuation/src/company_valuation_dashboard.py,py,True,62.02
+Company valuation,company_valuation/src/company_valuation_finviz_layer.py,py,True,26.7
+Company valuation,company_valuation/src/company_valuation_platform.py,py,True,27.43
+Company valuation,company_valuation/src/company_valuation_research_extensions.py,py,True,47.02
+Company valuation,company_valuation/src/company_valuation_screener.py,py,True,37.29
+Company valuation,company_valuation/src/company_valuation_utils.py,py,True,5.84
+Company valuation,company_valuation/src/sws_company_analysis_model.py,py,True,25.49
+Company valuation,company_valuation/notebooks/Company_Valuation_Final_Version.ipynb,file,True,434.67
+Portfolio research,portfolio_analysis/src/__init__.py,py,True,2.62
+Portfolio research,portfolio_analysis/src/ml_time_series_engine.py,py,True,15.31
+Portfolio research,portfolio_analysis/src/portfolio_analysis_model.py,py,True,15.08
+Portfolio research,portfolio_analysis/src/portfolio_dashboard.py,py,True,23.44
+Portfolio research,portfolio_analysis/src/portfolio_engine.py,py,True,15.23
+Portfolio research,portfolio_analysis/src/portfolio_research_screener.py,py,True,23.97
+Portfolio research,portfolio_analysis/notebooks/Portfolio-Analysis-Model_RESEARCH_PLATFORM_PRO.ipynb,file,True,477.84
+Streamlit app,research_platform_app/README.md,md,True,4.98
+Streamlit app,research_platform_app/__init__.py,py,True,0.08
+Streamlit app,research_platform_app/app.py,py,True,7.29
+Streamlit app,research_platform_app/generate_artifacts.py,py,True,1.53
+Streamlit app,research_platform_app/operations.py,py,True,9.57
+Streamlit app,research_platform_app/orchestration/__init__.py,py,True,0.83
+Streamlit app,research_platform_app/orchestration/artifact_contracts.py,py,True,1.65
+Streamlit app,research_platform_app/orchestration/background.py,py,True,1.45
+Streamlit app,research_platform_app/orchestration/freshness.py,py,True,1.06
+Streamlit app,research_platform_app/orchestration/job_store.py,py,True,1.1
+Streamlit app,research_platform_app/orchestration/models.py,py,True,3.17
+Streamlit app,research_platform_app/orchestration/nbclient_runner.py,py,True,1.38
+Streamlit app,research_platform_app/orchestration/notebook_parameters.py,py,True,1.61
+Streamlit app,research_platform_app/orchestration/papermill_runner.py,py,True,1.25
+Streamlit app,research_platform_app/orchestration/registry.py,py,True,11.36
+Streamlit app,research_platform_app/orchestration/runner.py,py,True,8.3
+Streamlit app,research_platform_app/orchestration/scheduler.py,py,True,2.91
+Streamlit app,research_platform_app/orchestration/scheduler_process.py,py,True,3.36
+Streamlit app,research_platform_app/orchestration/status.py,py,True,0.23
+Streamlit app,research_platform_app/orchestration/utils.py,py,True,1.31
+Streamlit app,research_platform_app/pages/1_Valuation_Research.py,py,True,9.29
+Streamlit app,research_platform_app/pages/2_Portfolio_Research.py,py,True,9.04
+Streamlit app,research_platform_app/pages/3_Screeners_Selection.py,py,True,9.57
+Streamlit app,research_platform_app/pages/4_Artifacts_Exports.py,py,True,5.32
+Streamlit app,research_platform_app/pages/5_Run_Notebooks.py,py,True,9.92
+Streamlit app,research_platform_app/pages/6_Run_History.py,py,True,5.81
+Streamlit app,research_platform_app/pages/7_Data_Platform.py,py,True,8.36
+Streamlit app,research_platform_app/pages/8_Smart_Money_Gov_Data.py,py,True,7.77
+Streamlit app,research_platform_app/pages/9_ML_Stock_Lab.py,py,True,5.09
+Streamlit app,research_platform_app/requirements.txt,txt,True,0.06
+Streamlit app,research_platform_app/runs/20260520T125308Z_screener_refresh_5ffcc2e2/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T125308Z_screener_refresh_5ffcc2e2/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T125329Z_screener_refresh_aa941d1b/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T125329Z_screener_refresh_aa941d1b/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T125357Z_screener_refresh_a7e56e10/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T125357Z_screener_refresh_a7e56e10/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130423Z_screener_refresh_2b246668/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130423Z_screener_refresh_2b246668/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130424Z_screener_refresh_e321f776/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130424Z_screener_refresh_e321f776/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130438Z_screener_refresh_754e69d4/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130438Z_screener_refresh_754e69d4/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130610Z_screener_refresh_425e4ae4/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130610Z_screener_refresh_425e4ae4/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130612Z_screener_refresh_a7c54fbe/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130612Z_screener_refresh_a7c54fbe/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130656Z_screener_refresh_4ed2d1e7/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130656Z_screener_refresh_4ed2d1e7/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T130657Z_screener_refresh_38718629/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T130657Z_screener_refresh_38718629/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T131735Z_screener_refresh_07214e1c/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T131735Z_screener_refresh_07214e1c/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T131737Z_screener_refresh_6d70eb2d/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T131737Z_screener_refresh_6d70eb2d/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T131852Z_screener_refresh_569bb93b/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T131852Z_screener_refresh_569bb93b/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T131854Z_data_platform_status_refresh_9cb1142d/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T131854Z_data_platform_status_refresh_9cb1142d/run.log,log,True,1.13
+Streamlit app,research_platform_app/runs/20260520T131854Z_screener_refresh_2852abf4/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T131854Z_screener_refresh_2852abf4/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T131904Z_data_platform_status_refresh_f49e8486/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T131904Z_data_platform_status_refresh_f49e8486/run.log,log,True,1.13
+Streamlit app,research_platform_app/runs/20260520T132724Z_screener_refresh_90079059/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T132724Z_screener_refresh_90079059/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T132727Z_screener_refresh_527cd1c2/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T132727Z_screener_refresh_527cd1c2/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T132728Z_data_platform_status_refresh_2645306c/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T132728Z_data_platform_status_refresh_2645306c/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T132739Z_europe_prices_incremental_refresh_f787b282/europe_prices_incremental_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T132739Z_europe_prices_incremental_refresh_f787b282/run.log,log,True,2.71
+Streamlit app,research_platform_app/runs/20260520T132845Z_screener_refresh_2b578314/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T132845Z_screener_refresh_2b578314/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T132846Z_screener_refresh_debb4c42/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T132846Z_screener_refresh_debb4c42/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T132847Z_data_platform_status_refresh_194db09c/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T132847Z_data_platform_status_refresh_194db09c/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T133513Z_screener_refresh_49c96b5b/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T133513Z_screener_refresh_49c96b5b/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T133514Z_screener_refresh_76e7351c/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T133514Z_screener_refresh_76e7351c/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T133515Z_data_platform_status_refresh_ee79e79a/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T133515Z_data_platform_status_refresh_ee79e79a/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T134705Z_screener_refresh_3918b6fd/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T134705Z_screener_refresh_3918b6fd/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T134707Z_screener_refresh_a7efb74b/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T134707Z_screener_refresh_a7efb74b/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T134708Z_data_platform_status_refresh_a0c7927b/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T134708Z_data_platform_status_refresh_a0c7927b/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T134756Z_screener_refresh_bb6a3f43/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T134756Z_screener_refresh_bb6a3f43/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T134758Z_screener_refresh_9d34ad0e/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T134758Z_screener_refresh_9d34ad0e/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T134800Z_data_platform_status_refresh_89039717/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T134800Z_data_platform_status_refresh_89039717/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T135348Z_screener_refresh_88ac03f4/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T135348Z_screener_refresh_88ac03f4/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T135350Z_data_platform_status_refresh_039a60eb/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T135350Z_data_platform_status_refresh_039a60eb/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T135350Z_screener_refresh_2907735e/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T135350Z_screener_refresh_2907735e/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T140816Z_screener_refresh_0764b9b9/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T140816Z_screener_refresh_0764b9b9/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T140818Z_screener_refresh_51558388/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T140818Z_screener_refresh_51558388/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T140819Z_data_platform_status_refresh_15e50222/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T140819Z_data_platform_status_refresh_15e50222/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T140852Z_screener_refresh_a8476c17/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T140852Z_screener_refresh_a8476c17/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T140854Z_data_platform_status_refresh_ea277916/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T140854Z_data_platform_status_refresh_ea277916/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T140854Z_screener_refresh_ca32d1de/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T140854Z_screener_refresh_ca32d1de/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T141904Z_screener_refresh_10ea2380/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T141904Z_screener_refresh_10ea2380/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T141906Z_screener_refresh_6b0609d0/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T141906Z_screener_refresh_6b0609d0/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T141907Z_data_platform_status_refresh_0b72c46a/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T141907Z_data_platform_status_refresh_0b72c46a/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T142043Z_smart_money_government_refresh_1548a0a9/run.log,log,True,3.59
+Streamlit app,research_platform_app/runs/20260520T142043Z_smart_money_government_refresh_1548a0a9/smart_money_government_refresh.module-run.txt,txt,True,0.06
+Streamlit app,research_platform_app/runs/20260520T142046Z_screener_refresh_125a2c1e/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T142046Z_screener_refresh_125a2c1e/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T142049Z_screener_refresh_90d999fc/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T142049Z_screener_refresh_90d999fc/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T142051Z_data_platform_status_refresh_dc7b5e32/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T142051Z_data_platform_status_refresh_dc7b5e32/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T143355Z_screener_refresh_b462b26a/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T143355Z_screener_refresh_b462b26a/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T143357Z_screener_refresh_70559771/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T143357Z_screener_refresh_70559771/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T143359Z_data_platform_status_refresh_8e17ed35/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T143359Z_data_platform_status_refresh_8e17ed35/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T144614Z_ml_stock_lab_experiments_refresh_094825fe/ML_Stock_Lab_Experiments.executed.ipynb,ipynb,True,0.05
+Streamlit app,research_platform_app/runs/20260520T144614Z_ml_stock_lab_experiments_refresh_094825fe/run.log,log,True,0.73
+Streamlit app,research_platform_app/runs/20260520T144749Z_ml_stock_lab_experiments_refresh_0b1e393f/ML_Stock_Lab_Experiments.executed.ipynb,ipynb,True,0.05
+Streamlit app,research_platform_app/runs/20260520T144749Z_ml_stock_lab_experiments_refresh_0b1e393f/run.log,log,True,0.73
+Streamlit app,research_platform_app/runs/20260520T144754Z_screener_refresh_54fa838a/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T144754Z_screener_refresh_54fa838a/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T144756Z_screener_refresh_36b4b638/run.log,log,True,0.47
+Streamlit app,research_platform_app/runs/20260520T144756Z_screener_refresh_36b4b638/screener_refresh.module-run.txt,txt,True,0.04
+Streamlit app,research_platform_app/runs/20260520T144757Z_data_platform_status_refresh_fbb0ced2/data_platform_status_refresh.module-run.txt,txt,True,0.05
+Streamlit app,research_platform_app/runs/20260520T144757Z_data_platform_status_refresh_fbb0ced2/run.log,log,True,1.41
+Streamlit app,research_platform_app/runs/20260520T145134Z_ml_stock_lab_experiments_refresh_591bd72b/ML_Stock_Lab_Experiments.executed.ipynb,ipynb,True,0.05
+Streamlit app,research_platform_app/runs/20260520T145134Z_ml_stock_lab_experiments_refresh_591bd72b/run.log,log,True,1.08
+Streamlit app,research_platform_app/scheduler.py,py,True,2.2
+Streamlit app,research_platform_app/smoke_checks.py,py,True,2.35
+Streamlit app,research_platform_app/state/job_runs.json,json,True,18.59
+Streamlit app,research_platform_app/state/scheduler_state.json,json,True,0.65
+Streamlit app,research_platform_app/support.py,py,True,15.55
+Streamlit app,research_platform_app/worker.py,py,True,1.46
+Smart Money,src/smart_money_engine/__init__.py,py,True,1.34
+Smart Money,src/smart_money_engine/analytics.py,py,True,9.11
+Smart Money,src/smart_money_engine/ingestion.py,py,True,3.6
+Smart Money,src/smart_money_engine/io.py,py,True,3.16
+Smart Money,src/smart_money_engine/normalization.py,py,True,9.45
+Smart Money,src/smart_money_engine/pipeline.py,py,True,3.87
+Smart Money,src/smart_money_engine/reporting.py,py,True,2.81
+Smart Money,src/smart_money_engine/resolution.py,py,True,4.09
+Smart Money,src/smart_money_engine/schemas.py,py,True,13.94
+Smart Money,src/smart_money_engine/visualization.py,py,True,2.96
+Smart Money,research_platform_app/pages/8_Smart_Money_Gov_Data.py,file,True,7.77
+ML Stock Lab,src/ml_stock_lab/__init__.py,py,True,1.69
+ML Stock Lab,src/ml_stock_lab/datasets.py,py,True,7.27
+ML Stock Lab,src/ml_stock_lab/evaluation.py,py,True,3.55
+ML Stock Lab,src/ml_stock_lab/features.py,py,True,3.03
+ML Stock Lab,src/ml_stock_lab/lab.py,py,True,5.19
+ML Stock Lab,src/ml_stock_lab/portfolio.py,py,True,2.44
+ML Stock Lab,src/ml_stock_lab/prediction.py,py,True,2.54
+ML Stock Lab,src/ml_stock_lab/screening.py,py,True,2.18
+ML Stock Lab,src/ml_stock_lab/signals.py,py,True,1.92
+ML Stock Lab,src/ml_stock_lab/valuation.py,py,True,4.58
+ML Stock Lab,machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb,file,True,11.03
+ML Stock Lab,research_platform_app/pages/9_ML_Stock_Lab.py,file,True,5.09
+Docs,docs/ANALYSIS_STUDIO.md,md,True,3.95
+Docs,docs/DATA_PLATFORM_INTEGRATION.md,md,True,3.99
+Docs,docs/ML_STOCK_LAB_OVERVIEW.md,md,True,2.45
+Docs,docs/NOTEBOOKS_USAGE.md,md,True,3.15
+Docs,docs/NOTEBOOK_QUALITY_STANDARD.md,md,True,6.02
+Docs,docs/RESEARCH_PLATFORM_ARCHITECTURE.md,md,True,6.74
+Docs,docs/RESEARCH_PLATFORM_ORCHESTRATION.md,md,True,3.1
+Docs,docs/SMART_MONEY_GOVERNMENT_DATA_ENGINE.md,md,True,4.29

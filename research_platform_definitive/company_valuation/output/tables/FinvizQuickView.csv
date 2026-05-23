@@ -1,0 +1,2 @@
+ticker,company_name,sector,industry,country,price,market_cap,pe_ratio,pb_ratio,ev_ebitda,ret_21d,ret_63d,volatility,valuation_score,quality_score,momentum_score,risk_score,blended_score,upside_to_fair_value,robustness_status,days_since_fundamental,ml_prediction_score,updated_at,source
+ENEL.MI,,,,Italy,,,,,,,,,,,,,,,WARN,,,2026-05-22T14:27:45+00:00,latestcrosssection/screener_base_frame

@@ -1,0 +1,2 @@
+field,operator,value,resolved_column,before,after,dropped,status,detail,updated_at,step
+composite_score,top_pct,0.35,composite_score,1,1,0,PASS,Applied,2026-05-22T14:27:45+00:00,1

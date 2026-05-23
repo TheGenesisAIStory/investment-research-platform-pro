@@ -1,0 +1,9 @@
+[submodule "vibe_trading"]
+	path = vibe_trading
+	url = https://github.com/HKUDS/Vibe-Trading.git
+[submodule "external/QuantDinger"]
+	path = external/QuantDinger
+	url = https://github.com/brokermr810/QuantDinger.git
+[submodule "external/QuantDinger-Mobile"]
+	path = external/QuantDinger-Mobile
+	url = https://github.com/brokermr810/QuantDinger-Mobile.git

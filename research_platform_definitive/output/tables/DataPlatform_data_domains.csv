@@ -1,0 +1,9 @@
+name,path,description,primary_sources,publish_to_git,notes
+api_registry,data/data_providers/api_registry,"Provider metadata, masked credential status, and health checks","Alpha Vantage, Tiingo, FMP, Polygon, Intrinio, FRED, BLS, CFTC, Congress.gov, EconDB, EIA, Nasdaq Data Link",True,Safe only if credential files remain masked.
+private_api_checks,data/private_api_checks,Local credentialed API smoke-check outputs,Configured API services from .env.local or .env,False,Private diagnostics; ignored by git.
+europe_stoxx_companies,data/europe_stoxx_companies,Cached Europe/STOXX OHLCV and benchmark data,Yahoo Chart public endpoint or configured provider APIs,False,Research cache.
+alternative_data,data/alternative_data,Alternative-data snapshots and engineered features,"Polymarket, Stocktwits, GDELT, Wikipedia, Google Trends, OpenInsider",False,Keep raw/license-sensitive data local.
+alpha_factor_research,data/alpha_factor_research,"Alpha factors, IC diagnostics, ML predictions, and backtest returns",Derived from market/fundamental/alternative inputs,False,Generated research artifacts.
+sec_edgar,data/sec_edgar,SEC submissions and companyfacts examples,SEC EDGAR APIs,False,Respect SEC fair-access policy.
+storage_benchmark,data/storage_benchmark,Local storage benchmark outputs,Synthetic benchmark data,False,Generated outputs.
+open_market_data,data/open_market_data,Open market-data examples used by notebooks,Public sample datasets,False,Verify provenance before publishing.

@@ -1,0 +1,6 @@
+job,cadence,mode,owner
+daily_prices_fx_rates_commodities,daily,cache-first then free API,notebook/batch hook
+weekly_fundamentals_profiles,weekly,local cache then yfinance/FMP/Finnhub/AlphaVantage/EODHD,notebook/batch hook
+weekly_universe_constituents,weekly,local cache then benchmark pages/static fallbacks,notebook/batch hook
+monthly_research_artifacts,monthly or pre-demo,"rerun diagnostics, ML, dashboard, report",analyst
+drive_database_sync,after every successful run,copy curated tables/cache/manifests to Google Drive data lake,notebook/batch hook

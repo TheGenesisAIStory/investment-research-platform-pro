@@ -1,0 +1,5 @@
+phase,deliverable,success_metric
+Week 1,"13F + Form 4 local parsers, source registry, schemas, Drive-first cache.",Parse official files into holdings/insider tables with provenance.
+Week 2,"Entity resolution CIK/CUSIP/ticker/name audit trail, smart money screener v1.",Issuer-level score table with coverage notes and no fabricated fields.
+Week 3,"13D/13G event monitor, USAspending recipient mapping, COT/TIC macro overlays.",Event feed and government/macro tailwind columns exported.
+Week 4,"Streamlit dashboard, notebook sections, HTML weekly report, EU proxy registry.",Analyst can run weekly refresh and review top issuers/managers/sectors.

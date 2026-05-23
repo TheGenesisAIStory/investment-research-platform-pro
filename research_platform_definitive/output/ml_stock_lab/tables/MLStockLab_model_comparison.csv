@@ -1,0 +1,6 @@
+model,fair_value_corr,mispricing_std
+ols,0.02524708718807402,
+lasso,0.025247087133383236,
+rf,0.7017243207552348,
+gbrt,1.0,
+ensemble,0.9623295593063227,

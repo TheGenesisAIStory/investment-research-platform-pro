@@ -1,0 +1,3 @@
+field,operator,value,resolved_column,before,after,dropped,status,detail,updated_at,step
+blended_score,top_pct,0.25,,74,74,0,SKIP,Field unavailable after alias resolution,2026-05-22T14:27:45+00:00,1
+blended_score,ranking,raw_sort,,74,74,0,SKIP,Ranking field unavailable,2026-05-22T14:27:45+00:00,ranking

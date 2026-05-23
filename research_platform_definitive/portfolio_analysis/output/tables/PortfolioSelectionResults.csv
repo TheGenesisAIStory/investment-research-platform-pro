@@ -1,0 +1,2 @@
+selection_rank,ticker,company_name,sector,country,weight,engine_weight,rank,composite_score,annual_return,selection_score,quality_flag,date,portfolio,model,prediction,actual,N,prediction_rank,selected_topk,source,updated_at
+1,RETAIL_MORTGAGES,Retail_Mortgages,Portfolio Sleeve,,1.0,,1.0,336.9133,252.2316,336.9133,PASS,2024-03-31,Retail_Mortgages,elastic_net,336.9133,252.2316,4,1.0,True,workspace_backtest_topk,2026-05-22T14:27:45+00:00

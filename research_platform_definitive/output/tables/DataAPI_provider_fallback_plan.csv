@@ -1,0 +1,24 @@
+domain,priority,source,source_type,name,configured,reachable,free_tier,env_var,policy
+prices,1,drive:europe_stoxx_companies,drive,europe_stoxx_companies,,,,,read_first
+prices,2,drive:local_market_data,drive,local_market_data,,,,,read_first
+prices,3,cache:repo,cache,repo,,,,,read_first
+prices,4,api:yfinance,api,yfinance,,,,,fallback_on_stale_or_missing
+prices,5,api:stooq,api,stooq,,,,,fallback_on_stale_or_missing
+fundamentals,1,drive:fundamentals,drive,fundamentals,,,,,read_first
+fundamentals,2,drive:company_valuation_platform,drive,company_valuation_platform,,,,,read_first
+fundamentals,3,cache:repo,cache,repo,,,,,read_first
+fundamentals,4,api:yfinance,api,yfinance,,,,,fallback_on_stale_or_missing
+fundamentals,5,api:fmp,api,fmp,,,,,fallback_on_stale_or_missing
+fundamentals,6,api:finnhub,api,finnhub,,,,,fallback_on_stale_or_missing
+fundamentals,7,api:alpha_vantage,api,alpha_vantage,False,True,"Yes, rate-limited",ALPHA_VANTAGE_API_KEY,fallback_on_stale_or_missing
+macro_risk,1,drive:ml_trading_risk_factors_csv,drive,ml_trading_risk_factors_csv,,,,,read_first
+macro_risk,2,drive:alpha_factor_library,drive,alpha_factor_library,,,,,read_first
+macro_risk,3,drive:alpha_factor_library/aqr,drive,alpha_factor_library/aqr,,,,,read_first
+macro_risk,4,cache:repo,cache,repo,,,,,read_first
+macro_risk,5,api:aqr_public_library,api,aqr_public_library,,,,,fallback_on_stale_or_missing
+macro_risk,6,api:fred,api,fred,False,False,Yes,FRED_API_KEY,fallback_on_stale_or_missing
+macro_risk,7,api:yfinance,api,yfinance,,,,,fallback_on_stale_or_missing
+alternative,1,drive:alternative_data,drive,alternative_data,,,,,read_first
+alternative,2,cache:repo,cache,repo,,,,,read_first
+provider_registry,1,drive:catalog,drive,catalog,,,,,read_first
+provider_registry,2,cache:repo,cache,repo,,,,,read_first

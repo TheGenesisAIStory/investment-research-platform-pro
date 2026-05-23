@@ -1,0 +1,7 @@
+repository,project_function,implementation
+QuantStats,"HTML monitoring reports, summary cards, drawdown/performance table style.",report_builder emits compact HTML sections and exportable score tables.
+pyfolio / pyfolio-reloaded,"Tear-sheet discipline, rolling diagnostics, caveat-first analytics.","issuer/manager deep dives are split into overview, exposures, events and diagnostics."
+Riskfolio-Lib,"Concentration, overlap and contribution analysis patterns.",ownership analytics exposes concentration and manager overlap-ready tables.
+Ghostfolio,"Investment dashboard UX, positions, allocation navigation.","Streamlit page uses Overview, Screener, Issuer, Manager, Sector and Governance tabs."
+Reverse-DCF-Data-Analysis,Scenario narrative and valuation context UX.,signals are designed to join valuation and portfolio modules by ticker/issuer.
+Vibe-Trading,"Research orchestration, repeatable agentic workflow, auditability.","pipeline exports manifests, caveats and report blocks for notebook/app orchestration."

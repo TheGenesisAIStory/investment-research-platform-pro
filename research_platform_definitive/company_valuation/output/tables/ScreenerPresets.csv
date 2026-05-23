@@ -1,0 +1,12 @@
+preset,description,filters,ranking
+Quality compounders,"High quality, positive momentum, acceptable leverage.",4,weighted_score
+Undervalued large caps,Large/liquid companies with internal valuation upside.,3,weighted_score
+Dividend quality,Dividend payers with quality and payout discipline.,3,weighted_score
+Growth at reasonable price,Growth with valuation guardrails.,3,weighted_score
+Deep value with quality floor,Value names after removing weakest quality tail.,3,weighted_score
+Momentum with fundamental support,Price strength backed by fundamentals.,3,weighted_score
+Italian banks / European financials,Italy/Europe financials with internal ranking context.,2,weighted_score
+"High-ROE, low-leverage",Capital efficiency plus balance-sheet control.,2,weighted_score
+Turnaround candidates,Weak momentum but upside/valuation support.,3,weighted_score
+Top-ranked internal model ideas,Use notebook-native blendedscore/blended_score first.,1,raw_sort
+DCF mispricing opportunities,"Names with DCF-implied upside, probability support and controlled scenario spread.",2,weighted_score

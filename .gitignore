@@ -1,0 +1,106 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS/editor noise
+.DS_Store
+**/.DS_Store
+
+# Local caches and heavy generated artifacts
+.cache/
+*.pkl
+*.joblib
+*.h5
+*.hdf
+*.hdf5
+
+# Large/generated data caches. Keep lightweight metadata/docs explicitly tracked.
+data/*
+data/local_market_data/
+data/**/*.parquet
+data/**/*.h5
+data/**/*.db
+data/**/*.sqlite
+data/**/*.feather
+data/**/*.pkl
+data/**/*.csv
+!data/README.md
+!data/README_drive.md
+!data/sample/
+!data/sample/**
+!data/links/
+!data/links/**
+!data/catalog/
+!data/catalog/*.csv
+!data/catalog/*.parquet
+!data/data_providers/
+data/data_providers/*.parquet
+data/data_providers/*.raw.parquet
+!data/data_providers/api_registry/
+!data/data_providers/api_registry/*.csv
+!data/data_providers/api_registry/*.parquet
+!data/alternative_data/
+!data/alternative_data/*.parquet
+data/alternative_data/earnings_calls_text_features.parquet
+!data/alternative_data/free_finance_ml_sources/
+!data/alternative_data/free_finance_ml_sources/*.csv
+!data/alternative_data/free_finance_ml_sources/*.json
+!data/alternative_data/free_finance_ml_sources/*.parquet
+!data/alternative_data/prediction_social/
+data/alternative_data/prediction_social/*
+!data/alternative_data/prediction_social/*_feature_snapshot.parquet
+!data/alternative_data/prediction_social/stocktwits_recent_messages.parquet
+!data/*.py
+!data/*.ipynb
+
+# Private generated API diagnostics
+data/private_api_checks/
+data/local_market_data/
+
+# Raw alternative-data pulls can be refreshed locally and may contain noisy payloads.
+
+# ITCH raw/decompressed data is large; notebooks and helper metadata remain trackable.
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/data/
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/*.gz
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/*.bin
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/*.h5
+02_market_and_fundamental_data/01_NASDAQ_TotalView-ITCH_Order_Book/*_parquet/
+13_unsupervised_learning/data/
+
+# Research Platform local runtime state and generated artifacts
+research_platform_app/runs/
+research_platform_app/state/
+research_platform_definitive/research_platform_app/runs/
+research_platform_definitive/research_platform_app/state/
+*.pre_parameters_backup
+*_backup_pre_*.ipynb
+company_valuation/output/cache/
+company_valuation/output/manifests/
+company_valuation/output/reports/
+company_valuation/output/dashboard/
+company_valuation/output/config/
+portfolio_analysis/output/config/
+research_platform_definitive/company_valuation/output/cache/
+research_platform_definitive/company_valuation/output/manifests/
+research_platform_definitive/company_valuation/output/reports/
+research_platform_definitive/company_valuation/output/dashboard/
+research_platform_definitive/company_valuation/output/config/
+research_platform_definitive/portfolio_analysis/output/config/
+research_platform_definitive/output/data_cache/
+output/smart_money/
+output/ml_stock_lab/
+
+# Local-only databases and large external data preserved outside GitHub.
+research_platform_definitive/local_databases_not_on_drive/**
+!research_platform_definitive/local_databases_not_on_drive/**/
+!research_platform_definitive/local_databases_not_on_drive/**/README*.md
+!research_platform_definitive/local_databases_not_on_drive/data/*.py
+!research_platform_definitive/local_databases_not_on_drive/database/definitive_database_manifest.json

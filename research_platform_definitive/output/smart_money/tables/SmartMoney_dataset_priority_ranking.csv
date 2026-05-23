@@ -1,0 +1,11 @@
+rank,dataset_id,why,mvp_status
+1,sec_13f,Highest signal for institutional positioning and clone portfolios.,implement parser first
+2,sec_form4,"Event-driven insider conviction, especially cluster buying.",implement parser first
+3,sec_13dg,Activist/passive ownership shocks above 5%.,event monitor
+4,usaspending,Government demand tailwind and industrial policy beneficiaries.,API/cache connector
+5,cftc_cot,Macro positioning overlay for commodities/rates/FX themes.,weekly macro overlay
+6,treasury_tic,Cross-border capital flow support proxy.,monthly macro overlay
+7,sec_nport,"Fund transparency beyond 13F, but more complex.",phase 2
+8,esma_firds,EU reference data and identifier resolution.,EU foundation
+9,ted_procurement,EU procurement exposure proxy.,EU phase 1
+10,national_disclosures,EU/UK ownership/insider proxies; fragmented connectors.,country-by-country
