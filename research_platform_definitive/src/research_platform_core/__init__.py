@@ -200,6 +200,30 @@ from .market_statistics import (
     load_price_return_matrix,
     summarize_correlation_matrix,
 )
+from .portfolio_analytics import (
+    compute_brinson_attribution,
+    compute_efficient_frontier,
+    compute_max_sharpe_weights,
+    compute_min_variance_weights,
+    compute_portfolio_performance_metrics,
+    compute_risk_parity_weights,
+)
+from .valuation_analytics import (
+    compute_asset_based_valuation,
+    compute_comps_valuation,
+    compute_dcf_valuation,
+    compute_ddm_valuation,
+    compute_eva_residual_income,
+    compute_market_multiples,
+    compute_wacc,
+    fair_value_summary,
+)
+from .equity_feature_engineering import (
+    add_advanced_equity_features,
+    compute_advanced_fundamental_features,
+    compute_advanced_technical_features,
+    compute_piotroski_f_score,
+)
 
 __all__ = [
     "as_df",
@@ -418,4 +442,22 @@ __all__ = [
     "compute_ticker_market_statistics",
     "load_price_return_matrix",
     "summarize_correlation_matrix",
+    "compute_brinson_attribution",
+    "compute_efficient_frontier",
+    "compute_max_sharpe_weights",
+    "compute_min_variance_weights",
+    "compute_portfolio_performance_metrics",
+    "compute_risk_parity_weights",
+    "compute_asset_based_valuation",
+    "compute_comps_valuation",
+    "compute_dcf_valuation",
+    "compute_ddm_valuation",
+    "compute_eva_residual_income",
+    "compute_market_multiples",
+    "compute_wacc",
+    "fair_value_summary",
+    "add_advanced_equity_features",
+    "compute_advanced_fundamental_features",
+    "compute_advanced_technical_features",
+    "compute_piotroski_f_score",
 ]

@@ -422,6 +422,42 @@ METRICS_METADATA.update(
 )
 
 
+METRICS_METADATA.update(
+    {
+        "calmar_ratio": MetricMetadata("calmar_ratio", "Calmar ratio", "portfolio", "CAGR per unit of maximum drawdown.", "CAGR / abs(max_drawdown)", "Higher values indicate better return per drawdown unit."),
+        "omega_ratio": MetricMetadata("omega_ratio", "Omega ratio", "portfolio", "Gain/loss payoff ratio around a threshold return.", "sum(max(r-threshold,0)) / abs(sum(min(r-threshold,0)))", "Values above 1 indicate more upside payoff than downside payoff."),
+        "kappa_ratio": MetricMetadata("kappa_ratio", "Kappa ratio", "portfolio", "Excess return scaled by lower partial moment.", "mean(r-threshold) / LPM_n^(1/n)", "Higher values indicate better compensation for downside moments."),
+        "treynor_ratio": MetricMetadata("treynor_ratio", "Treynor ratio", "portfolio", "Excess return per unit of benchmark beta.", "(return - risk_free) / beta", "Higher values indicate better systematic-risk-adjusted return."),
+        "jensen_alpha": MetricMetadata("jensen_alpha", "Jensen alpha", "portfolio", "CAPM abnormal return versus benchmark-implied return.", "return_p - [rf + beta*(return_m-rf)]", "Positive values indicate excess return after market beta adjustment."),
+        "m2_measure": MetricMetadata("m2_measure", "M-squared", "portfolio", "Sharpe ratio expressed in benchmark-volatility return units.", "Sharpe_p * vol_market + risk_free", "Makes Sharpe-like performance comparable in return units."),
+        "avg_drawdown": MetricMetadata("avg_drawdown", "Average drawdown", "risk", "Mean drawdown level across the evaluation period.", "mean(drawdown_t)", "More negative values indicate more persistent underwater periods."),
+        "avg_drawdown_duration": MetricMetadata("avg_drawdown_duration", "Average drawdown duration", "risk", "Average length of drawdown episodes in periods.", "mean(drawdown episode lengths)", "Longer durations indicate slower recovery."),
+        "max_drawdown_duration": MetricMetadata("max_drawdown_duration", "Max drawdown duration", "risk", "Longest underwater episode in periods.", "max(drawdown episode lengths)", "Long values indicate extended capital impairment."),
+        "ulcer_index": MetricMetadata("ulcer_index", "Ulcer index", "risk", "Root mean square drawdown.", "sqrt(mean(drawdown_pct^2))", "Higher values indicate deeper and/or more persistent drawdowns."),
+        "pain_index": MetricMetadata("pain_index", "Pain index", "risk", "Average absolute drawdown.", "mean(abs(drawdown_pct))", "Higher values indicate more time spent below prior highs."),
+        "recovery_factor": MetricMetadata("recovery_factor", "Recovery factor", "portfolio", "Total return per unit of maximum drawdown.", "abs(total_return) / abs(max_drawdown)", "Higher values indicate stronger recovery relative to peak loss."),
+        "skewness_returns": MetricMetadata("skewness_returns", "Return skewness", "distribution", "Asymmetry of periodic return distribution.", "skew(returns)", "Negative values indicate left-tail asymmetry."),
+        "kurtosis_returns": MetricMetadata("kurtosis_returns", "Return kurtosis", "distribution", "Excess tail thickness of return distribution.", "kurtosis(returns)", "High values indicate fat tails."),
+        "var_95": MetricMetadata("var_95", "VaR 95%", "risk", "Parametric 95% value at risk.", "mean(return) - 1.645*std(return)", "More negative values indicate larger expected tail loss."),
+        "var_99": MetricMetadata("var_99", "VaR 99%", "risk", "Parametric 99% value at risk.", "mean(return) - 2.326*std(return)", "More negative values indicate larger severe-tail loss."),
+        "cvar_95": MetricMetadata("cvar_95", "CVaR 95%", "risk", "Expected shortfall below 95% VaR threshold.", "mean(returns <= VaR_95)", "More negative values indicate worse tail-loss severity."),
+        "cvar_99": MetricMetadata("cvar_99", "CVaR 99%", "risk", "Expected shortfall below 99% VaR threshold.", "mean(returns <= VaR_99)", "More negative values indicate worse extreme-tail severity."),
+        "tail_ratio": MetricMetadata("tail_ratio", "Tail ratio", "distribution", "Upside tail divided by downside tail magnitude.", "abs(P95 return) / abs(P5 return)", "Values above 1 indicate more upside than downside tail."),
+        "avg_up_month": MetricMetadata("avg_up_month", "Average up period", "distribution", "Average return in positive periods.", "mean(return | return > 0)", "Higher values indicate stronger upside payoff."),
+        "avg_down_month": MetricMetadata("avg_down_month", "Average down period", "distribution", "Average return in negative periods.", "mean(return | return < 0)", "More negative values indicate harsher downside payoff."),
+        "up_down_capture": MetricMetadata("up_down_capture", "Up/down capture", "portfolio", "Relative participation in benchmark up periods divided by down periods.", "up_capture / down_capture", "Higher values indicate better upside participation versus downside participation."),
+        "turnover_annual": MetricMetadata("turnover_annual", "Annual turnover", "implementation", "Annualized one-way turnover from portfolio weight changes.", "sum(abs(delta weights))/2 annualized", "Higher values raise cost and capacity risk."),
+        "avg_holding_period": MetricMetadata("avg_holding_period", "Average holding period", "implementation", "Approximate days implied by annual turnover.", "252 / turnover_annual", "Longer holding periods generally imply lower implementation burden."),
+        "estimated_cost_bp": MetricMetadata("estimated_cost_bp", "Estimated cost", "implementation", "Annualized transaction cost estimate in basis points.", "turnover_annual * cost_per_turn_bp", "Higher costs reduce implementable performance."),
+        "net_sharpe": MetricMetadata("net_sharpe", "Net Sharpe", "portfolio", "Sharpe ratio after estimated transaction costs.", "Sharpe(return - cost_drag)", "Use this for implementable comparisons when costs are material."),
+        "allocation_effect": MetricMetadata("allocation_effect", "Allocation effect", "attribution", "Brinson effect from over/underweighting sectors.", "(w_p - w_b) * (r_b_sector - r_b_total)", "Positive values indicate beneficial sector allocation."),
+        "selection_effect": MetricMetadata("selection_effect", "Selection effect", "attribution", "Brinson effect from stock selection within sectors.", "w_b * (r_p_sector - r_b_sector)", "Positive values indicate beneficial security selection."),
+        "interaction_effect": MetricMetadata("interaction_effect", "Interaction effect", "attribution", "Residual Brinson interaction between allocation and selection.", "(w_p - w_b) * (r_p_sector - r_b_sector)", "Positive values indicate aligned allocation and selection."),
+        "active_return": MetricMetadata("active_return", "Active return", "portfolio", "Portfolio return minus benchmark return.", "return_portfolio - return_benchmark", "Positive values indicate outperformance before attribution split."),
+    }
+)
+
+
 ALIASES = {
     "rank_information_coefficient": "rank_ic",
     "information_coefficient": "ic",

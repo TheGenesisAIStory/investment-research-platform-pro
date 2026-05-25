@@ -66,6 +66,9 @@ except NameError:
     from pathlib import Path
 
     canonical_init = Path(__file__).resolve().parents[1] / "research_platform_definitive" / "src" / "ml_stock_lab" / "__init__.py"
+    canonical_pkg = canonical_init.parent
+    if canonical_pkg.exists() and str(canonical_pkg) not in __path__:
+        __path__.append(str(canonical_pkg))
     if canonical_init.exists():
         spec = importlib.util.spec_from_file_location(
             "_research_platform_definitive_ml_stock_lab",

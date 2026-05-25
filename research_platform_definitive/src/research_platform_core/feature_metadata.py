@@ -21,8 +21,12 @@ class FeatureMetadata:
     description: str
     formula: str
     interpretation: str
+    sub_category: str = ""
+    leakage_risk: bool = False
+    data_requirement: tuple[str, ...] = ()
+    source_paper: str = ""
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
 
@@ -665,6 +669,92 @@ FEATURE_METADATA.update(
         "net_noncommercial_oi_pct": FeatureMetadata("net_noncommercial_oi_pct", "Net non-commercial % OI", "smart_money", "Net non-commercial positioning scaled by total open interest.", "(noncommercial_long - noncommercial_short) / open_interest", "Positive values indicate net long positioning relative to market size."),
         "weekly_change_net": FeatureMetadata("weekly_change_net", "Weekly net COT change", "smart_money", "Week-over-week change in net non-commercial positioning.", "net_noncommercial_t - net_noncommercial_t-1", "Positive values indicate increasing net long positioning."),
         "net_position_percentile_3y": FeatureMetadata("net_position_percentile_3y", "3Y COT percentile", "smart_money", "Rolling three-year percentile of current net non-commercial positioning.", "percentile_rank(net_noncommercial over 156 weeks)", "High values indicate crowded long positioning versus recent history."),
+    }
+)
+
+
+FEATURE_METADATA.update(
+    {
+        "ret_1d": FeatureMetadata("ret_1d", "1D return", "price", "One-day simple return.", "close_t / close_t-1 - 1", "Short-horizon price move; noisy and mainly useful for diagnostics.", "returns"),
+        "ret_5d": FeatureMetadata("ret_5d", "5D return", "price", "One-week simple return.", "close_t / close_t-5 - 1", "Captures very short-term trend or reversal context.", "returns"),
+        "ret_21d": FeatureMetadata("ret_21d", "21D return", "price", "Approximate one-month simple return.", "close_t / close_t-21 - 1", "Positive values indicate short-term momentum.", "returns"),
+        "ret_63d": FeatureMetadata("ret_63d", "63D return", "price", "Approximate three-month simple return.", "close_t / close_t-63 - 1", "Positive values indicate medium-term momentum.", "returns"),
+        "ret_126d": FeatureMetadata("ret_126d", "126D return", "price", "Approximate six-month simple return.", "close_t / close_t-126 - 1", "Useful as a medium-term trend feature.", "returns"),
+        "ret_252d": FeatureMetadata("ret_252d", "252D return", "price", "Approximate one-year simple return.", "close_t / close_t-252 - 1", "One-year trailing trend; use 12-1M momentum for predictive tests.", "returns"),
+        "ret_52w_high_proximity": FeatureMetadata("ret_52w_high_proximity", "Distance from 52W high", "momentum", "Percentage distance from the trailing 52-week high.", "(price - high_52w) / high_52w", "Values near zero indicate proximity to the yearly high.", "52_week"),
+        "ret_52w_low_proximity": FeatureMetadata("ret_52w_low_proximity", "Distance from 52W low", "risk", "Percentage distance from the trailing 52-week low.", "(price - low_52w) / low_52w", "Low or negative values can flag recent stress.", "52_week"),
+        "price_to_52w_high": FeatureMetadata("price_to_52w_high", "Price / 52W high", "momentum", "Ratio of current price to trailing 52-week high.", "price / high_52w", "Values close to 1 indicate strong price trend or breakout proximity.", "52_week"),
+        "momentum_reversal_1m": FeatureMetadata("momentum_reversal_1m", "1M reversal", "momentum", "Short-term reversal proxy that penalizes the latest month return.", "-ret_21d", "Higher values indicate weaker recent one-month return, often used as reversal control.", "reversal", False, ("price",), "Jegadeesh 1990"),
+        "momentum_12m_1m": FeatureMetadata("momentum_12m_1m", "12-1M momentum", "momentum", "One-year momentum excluding the latest month.", "ret_252d - ret_21d", "Higher values indicate persistent medium-term trend after excluding reversal noise.", "academic_momentum", False, ("price",), "Jegadeesh and Titman 1993"),
+        "idiosyncratic_momentum": FeatureMetadata("idiosyncratic_momentum", "Idiosyncratic momentum", "momentum", "Momentum adjusted for broad market momentum exposure.", "stock 12-1M momentum - benchmark momentum proxy", "Higher values indicate stock-specific trend beyond market beta.", "residual_momentum"),
+        "vol_21d": FeatureMetadata("vol_21d", "21D realized volatility", "risk", "Annualized one-month realized volatility.", "std(daily returns, 21d) * sqrt(252)", "Higher values indicate elevated short-term risk.", "volatility"),
+        "vol_63d": FeatureMetadata("vol_63d", "63D realized volatility", "risk", "Annualized three-month realized volatility.", "std(daily returns, 63d) * sqrt(252)", "Higher values indicate elevated medium-term risk.", "volatility"),
+        "vol_126d": FeatureMetadata("vol_126d", "126D realized volatility", "risk", "Annualized six-month realized volatility.", "std(daily returns, 126d) * sqrt(252)", "Higher values indicate higher realized risk.", "volatility"),
+        "vol_252d": FeatureMetadata("vol_252d", "252D realized volatility", "risk", "Annualized one-year realized volatility.", "std(daily returns, 252d) * sqrt(252)", "Higher values indicate higher long-term realized risk.", "volatility"),
+        "realized_vol_daily": FeatureMetadata("realized_vol_daily", "Realized volatility", "risk", "Annualized realized volatility from daily returns.", "std(daily returns) * sqrt(252)", "Higher values indicate more variable returns.", "volatility"),
+        "vol_ratio": FeatureMetadata("vol_ratio", "Short / long vol ratio", "risk", "Ratio of short-term to long-term realized volatility.", "vol_21d / vol_252d", "Values above 1 indicate volatility is rising versus its yearly baseline.", "volatility"),
+        "idiosyncratic_vol": FeatureMetadata("idiosyncratic_vol", "Idiosyncratic volatility", "risk", "Annualized residual volatility from rolling market-model residuals.", "std(asset_return - beta * market_return, 252d) * sqrt(252)", "Higher values indicate stock-specific noise/risk.", "residual_risk"),
+        "downside_vol_21d": FeatureMetadata("downside_vol_21d", "21D downside volatility", "risk", "Annualized volatility using only negative daily returns.", "std(min(return, 0), 21d) * sqrt(252)", "Higher values indicate larger downside variability.", "downside_risk"),
+        "max_drawdown_1y": FeatureMetadata("max_drawdown_1y", "1Y max drawdown", "risk", "Largest peak-to-trough loss over the trailing year.", "min(price / rolling_max(price, 252d) - 1)", "More negative values indicate deeper recent drawdown.", "drawdown"),
+        "avg_true_range_21d": FeatureMetadata("avg_true_range_21d", "21D ATR / price", "risk", "Average true range normalized by price.", "mean(true_range, 21d) / close", "Higher values indicate larger intraday/trading-range risk.", "technical"),
+        "avg_volume_21d": FeatureMetadata("avg_volume_21d", "21D average volume", "liquidity", "Average daily share volume over the last month.", "mean(volume, 21d)", "Higher values indicate better trading liquidity.", "liquidity"),
+        "avg_volume_252d": FeatureMetadata("avg_volume_252d", "252D average volume", "liquidity", "Average daily share volume over the last year.", "mean(volume, 252d)", "Higher values indicate structural liquidity.", "liquidity"),
+        "volume_ratio": FeatureMetadata("volume_ratio", "Volume ratio", "liquidity", "Short-term volume relative to long-term volume.", "avg_volume_21d / avg_volume_252d", "Values above 1 indicate elevated trading activity.", "liquidity"),
+        "amihud_illiquidity": FeatureMetadata("amihud_illiquidity", "Amihud illiquidity", "liquidity", "Price impact proxy from absolute return per dollar volume.", "mean(abs(return) / dollar_volume, 21d) * 1e6", "Higher values indicate lower liquidity and higher market-impact risk.", "liquidity", False, ("price", "volume"), "Amihud 2002"),
+        "turnover_ratio_21d": FeatureMetadata("turnover_ratio_21d", "21D turnover ratio", "liquidity", "Average volume scaled by shares outstanding.", "mean(volume / shares_outstanding, 21d)", "Higher values indicate stronger trading intensity.", "liquidity"),
+        "rsi_14": FeatureMetadata("rsi_14", "RSI 14", "technical", "Relative Strength Index over 14 trading days.", "100 - 100/(1 + avg_gain_14 / avg_loss_14)", "High values can indicate overbought trend; low values can indicate oversold conditions.", "oscillator"),
+        "macd_signal": FeatureMetadata("macd_signal", "MACD signal spread", "technical", "MACD line minus its 9-day signal line.", "EMA12 - EMA26 - EMA9(MACD)", "Positive values indicate improving trend momentum.", "trend"),
+        "bb_position": FeatureMetadata("bb_position", "Bollinger band position", "technical", "Current price location inside Bollinger bands.", "(price - lower_band) / (upper_band - lower_band)", "Values near 1 sit near the upper band; near 0 sit near the lower band.", "bands"),
+        "price_to_sma_50": FeatureMetadata("price_to_sma_50", "Price / SMA50", "technical", "Price relative to 50-day moving average.", "price / SMA_50", "Values above 1 indicate price above intermediate trend.", "trend"),
+        "price_to_sma_200": FeatureMetadata("price_to_sma_200", "Price / SMA200", "technical", "Price relative to 200-day moving average.", "price / SMA_200", "Values above 1 indicate price above long-term trend.", "trend"),
+        "golden_cross": FeatureMetadata("golden_cross", "Golden cross flag", "technical", "Binary flag for SMA50 above SMA200.", "1 if SMA_50 > SMA_200 else 0", "One indicates intermediate trend above long-term trend.", "trend"),
+        "roa": FeatureMetadata("roa", "ROA", "quality", "Return on assets.", "net_income / total_assets", "Higher values indicate more profitable asset utilization.", "profitability"),
+        "net_margin": FeatureMetadata("net_margin", "Net margin", "quality", "Net income as a share of revenue.", "net_income / revenue", "Higher values indicate stronger bottom-line profitability.", "profitability"),
+        "ebitda_margin": FeatureMetadata("ebitda_margin", "EBITDA margin", "quality", "EBITDA as a share of revenue.", "EBITDA / revenue", "Higher values indicate stronger operating cash-profit margin.", "profitability"),
+        "fcf_margin": FeatureMetadata("fcf_margin", "FCF margin", "quality", "Free cash flow as a share of revenue.", "free_cash_flow / revenue", "Higher values indicate stronger cash conversion.", "cash_quality"),
+        "asset_turnover": FeatureMetadata("asset_turnover", "Asset turnover", "quality", "Revenue generated per unit of assets.", "revenue / total_assets", "Higher values indicate more efficient asset use.", "efficiency"),
+        "current_ratio": FeatureMetadata("current_ratio", "Current ratio", "quality", "Short-term assets relative to liabilities.", "current_assets / current_liabilities", "Higher values indicate stronger short-term liquidity.", "financial_health"),
+        "quick_ratio": FeatureMetadata("quick_ratio", "Quick ratio", "quality", "Liquid current assets relative to current liabilities.", "(current_assets - inventory) / current_liabilities", "Higher values indicate stronger near-cash liquidity.", "financial_health"),
+        "cash_ratio": FeatureMetadata("cash_ratio", "Cash ratio", "quality", "Cash relative to current liabilities.", "cash / current_liabilities", "Higher values indicate more conservative liquidity.", "financial_health"),
+        "debt_to_ebitda": FeatureMetadata("debt_to_ebitda", "Debt / EBITDA", "quality", "Gross debt scaled by EBITDA.", "total_debt / EBITDA", "Lower values indicate lower leverage burden.", "leverage"),
+        "net_debt_to_ebitda": FeatureMetadata("net_debt_to_ebitda", "Net debt / EBITDA", "quality", "Debt net of cash scaled by EBITDA.", "(total_debt - cash) / EBITDA", "Lower values indicate cleaner balance-sheet risk.", "leverage"),
+        "interest_coverage": FeatureMetadata("interest_coverage", "Interest coverage", "quality", "EBIT coverage of interest expense.", "EBIT / interest_expense", "Higher values indicate greater ability to service debt.", "leverage"),
+        "altman_z_score": FeatureMetadata("altman_z_score", "Altman Z-score", "quality", "Distress score using the revised non-manufacturing formulation.", "6.56*WC/TA + 3.26*RE/TA + 6.72*EBIT/TA + 1.05*Equity/Liabilities", "Higher values indicate lower distress risk.", "distress", False, ("balance_sheet", "income_statement"), "Altman 1995"),
+        "piotroski_f_score": FeatureMetadata("piotroski_f_score", "Piotroski F-Score", "quality", "Nine-point binary score covering profitability, leverage/liquidity and operating efficiency.", "sum(F1..F9 binary accounting tests)", "0-2 weak, 3-6 neutral, 7-9 strong fundamental quality.", "quality_score", False, ("fundamentals",), "Piotroski 2000"),
+        "accruals_ratio": FeatureMetadata("accruals_ratio", "Accruals ratio", "quality", "Accrual component of earnings scaled by assets.", "(net_income - operating_cash_flow) / total_assets", "Lower values indicate cleaner cash-backed earnings.", "earnings_quality", False, ("income_statement", "cash_flow"), "Sloan 1996"),
+        "book_to_market": FeatureMetadata("book_to_market", "Book-to-market", "value", "Book equity scaled by market capitalization.", "book_equity / market_cap", "Higher values indicate cheaper accounting valuation.", "valuation", False, ("book_equity", "market_cap"), "Fama-French 1993"),
+        "earnings_yield": FeatureMetadata("earnings_yield", "Earnings yield", "value", "Earnings scaled by market capitalization.", "net_income / market_cap", "Higher values indicate cheaper earnings valuation.", "valuation"),
+        "fcf_yield": FeatureMetadata("fcf_yield", "FCF yield", "value", "Free cash flow scaled by market capitalization.", "free_cash_flow / market_cap", "Higher values indicate more free cash flow per dollar of market value.", "valuation"),
+        "ebitda_yield": FeatureMetadata("ebitda_yield", "EBITDA yield", "value", "EBITDA scaled by enterprise value.", "EBITDA / enterprise_value", "Higher values indicate cheaper enterprise valuation.", "valuation"),
+        "sales_to_price": FeatureMetadata("sales_to_price", "Sales-to-price", "value", "Revenue scaled by market capitalization.", "revenue / market_cap", "Higher values indicate cheaper sales valuation.", "valuation"),
+        "ev_ebit": FeatureMetadata("ev_ebit", "EV/EBIT", "valuation", "Enterprise value relative to operating profit.", "enterprise_value / EBIT", "Lower values are cheaper if EBIT quality is comparable.", "ev_multiples"),
+        "ev_sales": FeatureMetadata("ev_sales", "EV/Sales", "valuation", "Enterprise value relative to revenue.", "enterprise_value / revenue", "Lower values are cheaper, but margins and growth matter.", "ev_multiples"),
+        "ev_fcf": FeatureMetadata("ev_fcf", "EV/FCF", "valuation", "Enterprise value relative to free cash flow.", "enterprise_value / free_cash_flow", "Lower values indicate cheaper free-cash-flow valuation.", "ev_multiples"),
+        "pcf_ratio": FeatureMetadata("pcf_ratio", "P/CF", "valuation", "Market capitalization relative to operating cash flow.", "market_cap / operating_cash_flow", "Lower values indicate cheaper cash-flow valuation.", "price_multiples"),
+        "peg_ratio": FeatureMetadata("peg_ratio", "PEG ratio", "valuation", "P/E adjusted for expected earnings growth.", "P/E / earnings_growth", "Lower values indicate cheaper growth-adjusted valuation.", "growth_adjusted"),
+        "intrinsic_pb": FeatureMetadata("intrinsic_pb", "Intrinsic P/B", "valuation", "Gordon-style fair price-to-book from ROE, WACC and growth.", "1 + (ROE - WACC) / (WACC - g)", "Higher values indicate justified premium to book when returns exceed cost of capital.", "residual_income"),
+        "wacc_spread": FeatureMetadata("wacc_spread", "ROIC - WACC spread", "valuation", "Capital efficiency spread over cost of capital.", "ROIC - WACC", "Positive values indicate value creation.", "eva"),
+        "eva": FeatureMetadata("eva", "Economic Value Added", "valuation", "Profit after charging capital at WACC.", "NOPAT - WACC * invested_capital", "Positive EVA indicates value creation after capital cost.", "eva"),
+        "revenue_growth_3y": FeatureMetadata("revenue_growth_3y", "3Y revenue CAGR", "growth", "Three-year compound revenue growth.", "(revenue_t / revenue_t-3y)^(1/3) - 1", "Higher values indicate stronger historical top-line growth.", "growth"),
+        "earnings_growth_3y": FeatureMetadata("earnings_growth_3y", "3Y EPS CAGR", "growth", "Three-year compound earnings-per-share growth.", "(EPS_t / EPS_t-3y)^(1/3) - 1", "Higher values indicate stronger earnings growth.", "growth"),
+        "fcf_growth_1y": FeatureMetadata("fcf_growth_1y", "1Y FCF growth", "growth", "Year-over-year change in free cash flow.", "FCF_t / FCF_t-1y - 1", "Higher values indicate improving cash generation.", "cash_growth"),
+        "capex_intensity": FeatureMetadata("capex_intensity", "Capex intensity", "growth", "Capital expenditure as a share of revenue.", "capex / revenue", "Higher values can indicate reinvestment, but also capital intensity.", "reinvestment"),
+        "rd_intensity": FeatureMetadata("rd_intensity", "R&D intensity", "growth", "Research and development expense as a share of revenue.", "R&D / revenue", "Higher values can indicate innovation investment.", "reinvestment"),
+        "asset_growth": FeatureMetadata("asset_growth", "Asset growth", "growth", "Year-over-year growth in total assets.", "total_assets_t / total_assets_t-1 - 1", "Very high values can indicate expansion or balance-sheet bloat.", "growth", False, ("balance_sheet",), "Cooper, Gulen and Schill 2008"),
+        "log_market_cap": FeatureMetadata("log_market_cap", "Log market cap", "size", "Natural log of market capitalization.", "ln(market_cap)", "Higher values indicate larger firms.", "size"),
+        "log_total_assets": FeatureMetadata("log_total_assets", "Log total assets", "size", "Natural log of total assets.", "ln(total_assets)", "Higher values indicate larger balance sheets.", "size"),
+        "log_revenue": FeatureMetadata("log_revenue", "Log revenue", "size", "Natural log of revenue.", "ln(revenue)", "Higher values indicate larger business scale.", "size"),
+        "intrinsic_price_dcf": FeatureMetadata("intrinsic_price_dcf", "DCF intrinsic price", "valuation", "Per-share intrinsic value from discounted cash-flow model.", "equity_value_dcf / shares_outstanding", "Compare with current price and assumptions.", "dcf"),
+        "upside_dcf": FeatureMetadata("upside_dcf", "DCF upside", "valuation", "Relative gap between DCF intrinsic price and market price.", "intrinsic_price_dcf / current_price - 1", "Positive values indicate estimated DCF upside.", "dcf"),
+        "intrinsic_price_ddm": FeatureMetadata("intrinsic_price_ddm", "DDM intrinsic price", "valuation", "Gordon dividend-discount fair value.", "D1 / (cost_of_equity - dividend_growth)", "Useful only for dividend-paying firms with stable payout policy.", "ddm"),
+        "intrinsic_price_ddm_2stage": FeatureMetadata("intrinsic_price_ddm_2stage", "Two-stage DDM price", "valuation", "Present value of high-growth dividends plus terminal Gordon value.", "PV(stage-1 dividends) + PV(terminal DDM)", "Useful for dividend payers with transition growth assumptions.", "ddm"),
+        "book_value_per_share": FeatureMetadata("book_value_per_share", "Book value / share", "valuation", "Accounting equity per share.", "total_equity / shares_outstanding", "Higher values support asset-backed valuation checks.", "asset_based"),
+        "tangible_book_per_share": FeatureMetadata("tangible_book_per_share", "Tangible book / share", "valuation", "Book value excluding intangibles and goodwill per share.", "(equity - intangibles - goodwill) / shares", "Especially useful for banks and asset-heavy firms.", "asset_based"),
+        "net_asset_value": FeatureMetadata("net_asset_value", "Net asset value", "valuation", "Assets net of liabilities, intangibles and goodwill.", "assets - liabilities - intangibles - goodwill", "Asset-backed floor proxy, not a liquidation guarantee.", "asset_based"),
+        "liquidation_value_approx": FeatureMetadata("liquidation_value_approx", "Approx. liquidation value", "valuation", "Conservative liquidation proxy using haircuts.", "0.8*current_assets + 0.5*PPE - liabilities", "Rough downside anchor for distressed cases.", "asset_based"),
+        "implied_price_pe": FeatureMetadata("implied_price_pe", "Implied price from sector P/E", "valuation", "Price implied by applying sector median P/E to EPS.", "EPS * sector_median_PE", "Above current price implies discount to sector earnings multiple.", "comps"),
+        "implied_price_ev_ebitda": FeatureMetadata("implied_price_ev_ebitda", "Implied price from sector EV/EBITDA", "valuation", "Equity price implied by sector EV/EBITDA multiple.", "(EBITDA * sector_median_EV_EBITDA - net_debt) / shares", "Above current price implies discount to sector enterprise multiple.", "comps"),
+        "premium_discount_to_sector": FeatureMetadata("premium_discount_to_sector", "Premium / discount to sector", "valuation", "Market price relative to comparable-company implied value.", "current_price / implied_price - 1", "Negative values indicate discount to sector-implied price.", "comps"),
     }
 )
 

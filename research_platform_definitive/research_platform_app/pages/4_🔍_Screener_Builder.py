@@ -7,6 +7,10 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1]
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
+PROJECT_ROOT = APP_DIR.parent
+for extra in [PROJECT_ROOT, PROJECT_ROOT / "src"]:
+    if str(extra) not in sys.path:
+        sys.path.insert(0, str(extra))
 
 import pandas as pd
 import plotly.express as px
@@ -52,6 +56,7 @@ from ui_ops import render_missing_data_cta
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
 from research_platform_core.llm_advisors import explain_stock_picks, suggest_screener_config
 from research_platform_core import compute_correlation_matrix, summarize_correlation_matrix
+from ml_stock_lab.factor_registry import FACTOR_BLOCKS
 
 
 configure_page("Screener Builder")
@@ -338,6 +343,44 @@ with left_panel:
     min_roe = st.slider("Min ROE (%)", float(roe_min), roe_hi, clamp(seed_config.get("min_roe", roe_min), roe_min, roe_hi))
     max_debt_to_equity = st.slider("Max Net Debt / Equity (x)", float(debt_min), debt_hi, clamp(seed_config.get("max_debt_to_equity", debt_max), debt_min, debt_hi))
 
+    advanced_filter_ranges = {}
+    with st.expander("Advanced factor filters", expanded=False):
+        st.caption("Optional course-style factor blocks. These columns are shown only when present in the current artifact.")
+        advanced_block_ids = ["technical_advanced", "quality_advanced", "valuation_advanced", "growth_advanced"]
+        available_advanced = []
+        for block_id in advanced_block_ids:
+            block = FACTOR_BLOCKS.get(block_id)
+            if not block:
+                continue
+            present = [col for col in block.columns if col in unified.columns]
+            if present:
+                st.markdown(f"**{block.label}** · {len(present)} available")
+                available_advanced.extend(present)
+        selected_advanced_features = st.multiselect(
+            "Advanced columns to filter",
+            sorted(dict.fromkeys(available_advanced)),
+            default=[col for col in seed_config.get("advanced_filter_ranges", {}) if col in available_advanced],
+            help="Ranges are applied after the core screener filters. Leave empty to keep all names.",
+        )
+        for feature in selected_advanced_features:
+            lo, hi = numeric_range(unified, feature, (0.0, 1.0))
+            lo, hi = float(lo), float(hi)
+            if lo == hi:
+                hi = lo + 1.0
+            default_range = seed_config.get("advanced_filter_ranges", {}).get(feature, [lo, hi])
+            selected_range = st.slider(
+                f"{feature} range",
+                lo,
+                hi,
+                (clamp(default_range[0], lo, hi), clamp(default_range[1], lo, hi)),
+                key=f"screener_adv_{feature}",
+            )
+            advanced_filter_ranges[feature] = tuple(float(x) for x in selected_range)
+        if available_advanced:
+            render_feature_metadata_expander(available_advanced[:40], "Advanced feature glossary")
+        else:
+            st.info("Advanced factor columns are not present in the current screener artifact yet. Rebuild the factor panel to enable these filters.")
+
     st.markdown("#### ML / Smart Money")
     min_ml_score = st.slider("Min ML Conviction Score", 0.0, 100.0, float(seed_config.get("min_ml_score", 0.0)))
     min_smart_money_score = st.slider("Min Smart Money Composite", 0.0, 100.0, float(seed_config.get("min_smart_money_score", 0.0)))
@@ -394,6 +437,7 @@ with left_panel:
         "min_dividend_yield": min_dividend_yield,
         "min_roe": min_roe,
         "max_debt_to_equity": max_debt_to_equity,
+        "advanced_filter_ranges": advanced_filter_ranges,
         "min_ml_score": min_ml_score,
         "min_smart_money_score": min_smart_money_score,
         "min_conviction": min_conviction,
@@ -413,6 +457,10 @@ with left_panel:
 filter_started = time.perf_counter()
 with st.spinner("Applying institutional screener filters..."):
     filtered = apply_screening_filters(unified, active_config)
+    for feature, bounds in active_config.get("advanced_filter_ranges", {}).items():
+        if feature in filtered.columns and isinstance(bounds, (list, tuple)) and len(bounds) == 2:
+            values = pd.to_numeric(filtered[feature], errors="coerce")
+            filtered = filtered[values.between(float(bounds[0]), float(bounds[1]), inclusive="both")]
 filter_elapsed = time.perf_counter() - filter_started
 st.session_state["last_screening_result_count"] = len(filtered)
 
@@ -493,11 +541,19 @@ with right_panel:
             "ev_ebitda",
             "roe",
             "debt_to_equity",
+            "piotroski_f_score",
+            "altman_z_score",
+            "fcf_yield",
+            "momentum_12m_1m",
+            "amihud_illiquidity",
         ],
         "Column glossary for Screener scores",
     )
 
     default_cols = display_columns(filtered)
+    for col in ["piotroski_f_score", "altman_z_score", "fcf_yield", "momentum_12m_1m"]:
+        if col in filtered.columns and col not in default_cols:
+            default_cols.append(col)
     column_options = [col for col in filtered.columns if col not in {"source_artifact"}]
     preferred_cols = [col for col in st.session_state.get("preferred_screening_columns", []) if col in column_options] or default_cols
     selected_cols = st.multiselect(
@@ -613,7 +669,16 @@ with right_panel:
             else:
                 st.plotly_chart(px.imshow(corr, text_auto=".2f", aspect="auto", color_continuous_scale="RdBu_r", zmin=-1, zmax=1, title="Screener subset correlation heatmap"), width="stretch")
                 st.dataframe(corr, width="stretch")
+            if "piotroski_f_score" in filtered.columns:
+                piotroski = filtered[["ticker", "piotroski_f_score"]].dropna().copy()
+                if not piotroski.empty:
+                    p1, p2, p3 = st.columns(3)
+                    p1.metric("Piotroski >= 7", int((pd.to_numeric(piotroski["piotroski_f_score"], errors="coerce") >= 7).sum()))
+                    p2.metric("Median Piotroski", f"{pd.to_numeric(piotroski['piotroski_f_score'], errors='coerce').median():.1f}")
+                    p3.metric("Weak <= 2", int((pd.to_numeric(piotroski["piotroski_f_score"], errors="coerce") <= 2).sum()))
+                    st.plotly_chart(px.histogram(piotroski, x="piotroski_f_score", nbins=10, title="Piotroski F-Score distribution", template="plotly_white"), width="stretch")
             render_metric_metadata_expander(["avg_pairwise_corr", "correlation_to_benchmark", "annualized_volatility", "annualized_variance", "beta_to_benchmark"], "Risk statistic glossary")
+            render_feature_metadata_expander(["piotroski_f_score", "altman_z_score", "accruals_ratio", "idiosyncratic_vol", "amihud_illiquidity"], "Risk & quality feature glossary")
 
     with tabs[2]:
         if selected_ticker:

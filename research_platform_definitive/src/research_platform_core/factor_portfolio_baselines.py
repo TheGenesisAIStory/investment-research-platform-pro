@@ -21,7 +21,7 @@ from .factor_benchmarks import DEFAULT_FACTORS, discover_factor_panel_path
 OUTPUT_REL = Path("factor_baselines")
 METRICS_NAME = "baseline_portfolio_metrics.csv"
 RETURNS_NAME = "baseline_portfolio_returns.csv"
-DEFAULT_BASELINE_FACTORS: tuple[str, ...] = ("value_score", "quality_score", "momentum_score")
+DEFAULT_BASELINE_FACTORS: tuple[str, ...] = ("value_score", "quality_score", "momentum_score", "piotroski_f_score")
 
 
 def _read_csv(path: Path, **kwargs: object) -> pd.DataFrame:

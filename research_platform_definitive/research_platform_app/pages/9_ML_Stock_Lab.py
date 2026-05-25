@@ -23,6 +23,7 @@ from ui_ops import render_missing_data_cta
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
 from research_platform_core.factor_benchmarks import compute_factor_benchmark_summary, load_factor_benchmark_summary
 from research_platform_core.factor_portfolio_baselines import compute_factor_portfolio_baselines, load_factor_portfolio_baselines
+from research_platform_core.feature_metadata import metadata_for_feature
 from research_platform_core.llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance
 from research_platform_core.model_monitoring import build_model_monitoring_artifacts, load_model_monitoring_artifacts
 from ml_stock_lab.factor_registry import FACTOR_BLOCKS
@@ -95,6 +96,7 @@ with st.sidebar:
             "Feature blocks",
             list(FACTOR_BLOCKS.keys()),
             default=["value", "quality", "momentum", "risk", "size", "growth", "model_based"],
+            format_func=lambda block_id: f"{FACTOR_BLOCKS[block_id].label}{' · experimental' if FACTOR_BLOCKS[block_id].experimental else ''}",
             help="Canonical factor blocks used by model refreshes and model cards.",
         )
         include_macro_regime = st.checkbox(
@@ -259,6 +261,11 @@ with tab_signals:
             "quality_score",
             "momentum_12_1",
             "risk_score",
+            "piotroski_f_score",
+            "altman_z_score",
+            "fcf_yield",
+            "momentum_12m_1m",
+            "idiosyncratic_vol",
         ],
         "Signal and feature glossary",
     )
@@ -514,19 +521,29 @@ with tab_models:
     dataframe_with_download("Model cards", data.get("training_model_cards", pd.DataFrame()), "MLTraining_model_cards.csv")
     feature_importance = data.get("training_feature_importance", pd.DataFrame())
     if not feature_importance.empty:
+        feature_importance = feature_importance.copy()
+        if "feature" in feature_importance.columns:
+            feature_importance["display_name"] = feature_importance["feature"].map(
+                lambda feature: metadata_for_feature(str(feature)).name if metadata_for_feature(str(feature)) else str(feature)
+            )
+            feature_importance["category"] = feature_importance["feature"].map(
+                lambda feature: metadata_for_feature(str(feature)).category if metadata_for_feature(str(feature)) else "artifact"
+            )
         dataframe_with_download("Feature importance", feature_importance, "MLTraining_feature_importance.csv")
         if {"feature", "importance", "model"}.issubset(feature_importance.columns):
             st.plotly_chart(
                 px.bar(
                     feature_importance.sort_values("importance", key=lambda s: pd.to_numeric(s, errors="coerce").abs(), ascending=False).head(25),
-                    x="feature",
+                    x="display_name" if "display_name" in feature_importance.columns else "feature",
                     y="importance",
-                    color="model",
+                    color="category" if "category" in feature_importance.columns else "model",
+                    hover_data=[col for col in ["feature", "model", "category"] if col in feature_importance.columns],
                     template="plotly_white",
                     title="Top model feature importances / coefficients",
                 ),
                 width="stretch",
             )
+            render_feature_metadata_expander(feature_importance["feature"].head(40).tolist(), "Feature importance glossary")
 
 with tab_docs:
     st.markdown(
