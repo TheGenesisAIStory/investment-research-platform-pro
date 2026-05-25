@@ -7,14 +7,14 @@
 - Nessun lock stage e' presente in `output/locks` dopo i run.
 - `validate_research_data_coverage.py` passa in modalita' non-strict.
 - `equity_fundamentals`: `OK`.
-- `equity_prices`: `PARTIAL` in Data Health per presenza di titoli
-  `LIMITED_HISTORY`, `DELISTED` e `NO_PRICE_DATA`, ma senza failure critiche.
+- `equity_prices`: `OK` in coverage validation non-strict, con categorie
+  esplicite per titoli a storia corta o non scaricabili.
 - Manifest OHLCV corrente:
   - `OK`: 10.074 strumenti.
   - `LIMITED_HISTORY`: 3.432 strumenti.
   - `NO_PRICE_DATA`: 126 strumenti.
   - `DELISTED`: 19 strumenti.
-  - parquet locali indicizzati: 12.098.
+  - parquet locali indicizzati: 12.537.
 
 Interpretazione: il backfill prezzi e' utilizzabile per ricerca e Screener in
 modalita' non-strict. I nomi con storia corta devono restare disponibili, ma
@@ -55,6 +55,26 @@ coverage conteneva chiavi miste stringa/float e veniva serializzato con
   - `ml_score` = expected-return/composite model.
   - `valuation_signal_score` = valuation/mispricing percentile.
   - `fair_value_hat` non e' piu' trattato come ML score.
+- Aggiunti glossari core in `research_platform_core.feature_metadata` e
+  `research_platform_core.metrics_metadata`, usati dalla UI Gen.is.IA:
+  - copertura completa delle colonne dichiarate in `RAW_FACTOR_COLUMNS`;
+  - copertura delle colonne reali principali viste in ML/Screener/Portfolio;
+  - copertura delle metriche modello/portfolio/data-quality principali.
+
+## App / UI Gen.is.IA
+
+- Branding globale: `Gen.is.IA Investment Research Workstation`.
+- Header condiviso `render_page_header(...)` su Home, Data Platform, Macro,
+  Smart Money, Screener, ML Stock Lab, Valuation, Portfolio, Banking, Library e
+  Tools.
+- Home trasformata in Command Center con quick actions, ticker search, workflow
+  cards e platform status.
+- Data Platform estesa con Single Ticker Explorer, Data Explorer, Domain Status,
+  Data Health & Restart, Failures Panel e Run Monitor.
+- Macro View separata da Smart Money, con 40 asset/proxy tra global, USA, EU,
+  Italy, crypto, FX, commodity, ETF e fixed income.
+- Screener, ML Lab, Valuation e Portfolio condividono `selected_ticker` e
+  mostrano context panel e glossari inline.
 
 ## Ollama / LLM Governance
 
@@ -71,21 +91,25 @@ Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
 
 ## Problemi Residui
 
-- Il factor panel completo va esteso oltre il run bounded da 1.000 ticker quando
-  si vuole una release dati finale su tutto l'universo.
-- Le metriche ML correnti sono validate su run bounded e non vanno ancora
-  interpretate come performance economica definitiva.
-- `macro_fx`, `factor_libraries`, `smart_money`, `banking` sono ancora
-  `PARTIAL/PLANNED` nel summary dati e vanno promossi gradualmente a run
-  operativi.
+- Il factor panel corrente e' ampio e coerente, ma il run ML validato resta
+  bounded su 1.000 ticker. Per una release dati finale serve un training full
+  su tutto l'universo disponibile.
+- Le metriche ML correnti servono come smoke/validation quantitativa, non come
+  performance economica definitiva.
+- `macro_fx`, `factor_libraries`, `smart_money`, `banking` restano `PLANNED`
+  nel coverage validator come domini di completion 2000-2026, anche se Macro
+  View e Smart Money hanno artifact applicativi separati gia' leggibili in app.
 - La sync Drive va mantenuta come pubblicazione/archivio, non come target per
   scritture batch lunghe.
 
 ## Quality Gate Eseguiti
 
 - Compileall su `src`, app e scripts.
-- Test mirati LLM/Data Health/Screener.
-- AppTest su Screener, ML Stock Lab e Data Platform.
+- Test suite completa: 69 test passati nel repo locale; 73 test passati nel
+  worktree GitHub separato dopo sync.
+- Validator: definitive bundle, artifacts, research data coverage e notebooks OK.
+- AppTest: Home, Screener, Data Platform, ML Stock Lab, Valuation e Portfolio
+  con `exceptions 0`.
 - `factor_universe_panel` bounded: completato.
 - `train_ml_models_2000_2026.py` bounded: completato, `status=OK`.
 

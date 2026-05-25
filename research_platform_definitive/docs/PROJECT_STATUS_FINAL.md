@@ -1,76 +1,102 @@
-# Project Status Final
+# Project Status Final - Gen.is.IA Investment Research Workstation
 
-Aggiornato: 2026-05-23
+Data: 2026-05-25
 
-Repository standalone: `https://github.com/TheGenesisAIStory/investment-research-platform-pro`
+## Stato sintetico
 
-## Sintesi
+La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 
-Il progetto e' organizzato intorno a quattro superfici operative:
+- core Python pacchettizzato e importabile;
+- Database Finanziario condiviso fra core, app, ML Lab, notebook e script;
+- Data Platform con health, restart, failures, run monitor, ticker explorer e
+  data explorer;
+- Home Command Center, Screener, ML Stock Lab, Valuation, Portfolio, Macro View
+  e Smart Money integrati da `selected_ticker`;
+- branding Gen.is.IA uniforme e glossari inline per fattori, feature e metriche;
+- OHLCV locali su root stabile, non su scrittura batch diretta Drive;
+- test, validator e smoke UI verdi.
 
-1. Research Platform canonica in `research_platform_definitive/`.
-2. Data Center con schema SQLite, sample data e pipeline rigenerabile.
-3. Laboratorio LLM/Vibe Trading con prompt italiani e provider registry.
-4. Bridge QuantDinger/mobile con endpoint per strategie, segnali e backtest summary.
+## Dati
 
-Il bundle resta notebook-first, ma ora ha uno strato dati condiviso che rende piu' facile testare app, LLM Lab e mobile senza aspettare provider esterni.
+- `equity_fundamentals`: `OK`.
+- `equity_prices`: `OK` in validation non-strict.
+- OHLCV manifest:
+  - `OK`: 10.074 strumenti.
+  - `LIMITED_HISTORY`: 3.432 strumenti.
+  - `NO_PRICE_DATA`: 126 strumenti.
+  - `DELISTED`: 19 strumenti.
+  - parquet locali indicizzati: 12.537.
+- Factor panel:
+  - righe: 2.173.286.
+  - ticker nel panel validato: 1.000.
+  - data range: 2000-01-03 -> 2026-05-22.
+- Macro View:
+  - 40 asset/proxy compilati fra global, USA, EU, Italy, crypto, FX,
+    commodities, ETF e fixed income.
 
-## Stato componenti
+## ML / contenuto quantitativo
 
-| Componente | Percorso | Stato | Come si usa |
-|---|---|---|---|
-| Research Platform | `research_platform_definitive/research_platform_app/app.py` | pronta | `streamlit run research_platform_definitive/research_platform_app/app.py` |
-| Data/API Control | `research_platform_definitive/data_api_app.py` | pronta | `streamlit run research_platform_definitive/data_api_app.py` |
-| Data Center DB | `src/research_platform_core/research_database.py` | pronto | `python3 research_platform_definitive/scripts/populate_research_database.py` |
-| Sample datasets | `research_platform_definitive/data/sample/` | pronti | CSV leggibili e summary JSON |
-| LLM Lab | `src/research_platform_core/llm_lab.py` | pronto | `python3 research_platform_definitive/scripts/llm_lab_cli.py packet` |
-| Vibe bridge | `integrations/vibe_trading_bridge/` | operativo fallback | `python3 scripts/vibe_cli.py ... --no-vibe` |
-| QuantDinger sidecar | `integrations/quantdinger_bridge/ml_service.py` | pronto | `uvicorn integrations.quantdinger_bridge.ml_service:app --port 8000` |
-| Mobile Vue | `integrations/quantdinger_bridge/vue/mobile/` | iniziale reale | segnali, strategie, backtest on demand e storico |
+- Modelli training presenti: OLS, RF, GBRT, ensemble.
+- Target standard: `forward_return` a 21 trading days; supporto 21/63/252 giorni
+  nel training pipeline.
+- Factor vocabulary: value, quality, momentum, risk, size, growth,
+  model-based.
+- Leakage policy attiva tramite `feature_columns_for_blocks()`.
+- Metriche: `r2_os`, `ic`, `rank_ic`, `sharpe_long_short`,
+  `sharpe_long_short_net_cost`, data/model coverage metrics.
+- Glossari:
+  - `research_platform_core.feature_metadata`;
+  - `research_platform_core.metrics_metadata`.
 
-## Cosa e' stato chiuso in questo ciclo
+## UI / app
 
-- Creato schema DB finale per strumenti, OHLCV, feature/label, segnali, backtest, esperimenti, catalogo dati e ingestion runs.
-- Aggiunto popolamento sintetico realistico con piu' di 11k barre OHLCV, oltre 10k righe feature e circa 500 segnali.
-- Salvati CSV sample tracciabili in `data/sample/`.
-- Aggiunti prompt italiani per review strategia, vibe coding, diagnostica backtest, data quality e sintesi mobile.
-- Esteso il sidecar FastAPI con endpoint dashboard-safe:
-  - `/api/v1/ml/strategies`
-  - `/api/v1/ml/signals/snapshot`
-  - `/api/v1/ml/backtests/summary`
-- Aggiornati componenti mobile per vedere strategie e storico backtest, con fallback ai segnali snapshot.
-- Aggiunta documentazione su Data Center, formule, LLM Lab e handoff mobile.
+- Branding globale: `Gen.is.IA Investment Research Workstation`.
+- Macro menu:
+  - RESEARCH: Home, Screener, Valuation, Portfolio, Macro View, Smart Money.
+  - LABS: ML Stock Lab, Banking Data Lab, Research Library.
+  - PLATFORM OPS: Data Platform, Notebook Runner, Export Center, Hi-Freq Engine,
+    Data/API Control Center.
+- Ogni pagina principale usa context bar e header Gen.is.IA.
+- Screener, ML Lab, Valuation e Portfolio condividono
+  `st.session_state.selected_ticker`.
+- Data Platform e Home sono entrypoint data-centric, non solo job-centric.
 
-## Comandi rapidi
+## Quality gate eseguiti
 
 ```bash
-python3 research_platform_definitive/scripts/populate_research_database.py
-python3 research_platform_definitive/scripts/llm_lab_cli.py packet
-python3 -m pytest tests/test_quantdinger_bridge research_platform_definitive/tests -q
-python3 research_platform_definitive/scripts/validate_definitive_bundle.py
-python3 research_platform_definitive/scripts/validate_notebooks.py
-python3 research_platform_definitive/scripts/validate_artifacts.py
+.venv/bin/python -m compileall -q research_platform_definitive/src/research_platform_core research_platform_definitive/research_platform_app
+.venv/bin/python -m pytest research_platform_definitive/tests -q
+.venv/bin/python research_platform_definitive/scripts/validate_definitive_bundle.py
+.venv/bin/python research_platform_definitive/scripts/validate_artifacts.py
+.venv/bin/python research_platform_definitive/scripts/validate_research_data_coverage.py
+.venv/bin/python research_platform_definitive/scripts/validate_notebooks.py
 ```
 
-## Notebook finali
+Risultato corrente:
 
-I notebook fonte restano questi:
+- locale: 69 test passati;
+- worktree GitHub separato: 73 test passati;
+- validator: OK;
+- AppTest principali: `exceptions 0`.
 
-- `company_valuation/notebooks/Company_Valuation_Final_Version.ipynb`
-- `portfolio_analysis/notebooks/Portfolio-Analysis-Model_RESEARCH_PLATFORM_PRO.ipynb`
-- `machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb`
-- `data_api_management/notebooks/Data_API_Management_Colab.ipynb`
+## Limiti dichiarati
 
-La mappa friendly e' in `notebooks/README.md`. I notebook devono importare logica dai package `src/` e non duplicare calcoli core.
+- Il training ML full su tutto l'universo va ancora lanciato per passare da
+  smoke/bounded validation a performance economica definitiva.
+- `macro_fx`, `factor_libraries`, `smart_money`, `banking` sono ancora `PLANNED`
+  nel validator completion 2000-2026, anche se esistono artifact/app parziali o
+  dedicati.
+- Drive resta archivio/sync; i batch parquet devono scrivere prima su filesystem
+  locale stabile.
 
-## Nice to have non bloccanti
+## Stato release
 
-- Sostituire tutti i warning `pd.Timestamp.utcnow()` con `pd.Timestamp.now(tz="UTC")`.
-- Collegare provider reali al nuovo `ResearchDatabase` con job incrementali.
-- Aggiungere grafici mobile nativi al posto della mini equity curve HTML/CSS.
-- Creare una pagina Streamlit dedicata al DB finale con query pronte.
-- Eseguire un backtest walk-forward su dati reali prima di promuovere qualunque strategia.
+Stato: `v1-ready / prod-like local workstation`.
 
-## Nota prudente
+Prossimo tag consigliato dopo eventuale review manuale UI:
 
-Il sample e' utile per sviluppo e demo, non per decisioni finanziarie. La pipeline e' pronta per dati reali, ma le strategie devono essere validate con dati point-in-time, costi realistici e review umana.
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
