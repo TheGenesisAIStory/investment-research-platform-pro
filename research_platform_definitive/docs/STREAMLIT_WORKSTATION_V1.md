@@ -55,6 +55,13 @@ Quando gli artifacts espongono colonne `score_<model_id>`, la app le mostra affi
 
 **Data Platform** mostra:
 
+- **Single Ticker Explorer**: search box per un ticker e mappa immediata di
+  OHLCV, fundamentals, factor panel, ML signals, valuation proxy e Smart Money.
+- **Data Explorer**: preview tabellare e grafica leggera su manifest OHLCV,
+  fundamentals manifest, factor panel, segnali ML e Smart Money.
+- **Domain Status**: stato esplicito per Equity, FX/Macro, Factor Libraries,
+  Smart Money e Banking. Le sezioni non popolate dichiarano se sono planned,
+  parziali o in attesa di backfill.
 - path del Database Finanziario condiviso;
 - contratto domini dati;
 - manifest OHLCV con `OK`, `LIMITED_HISTORY`, `DELISTED`, `NETWORK_TIMEOUT`, `NO_PRICE_DATA`;

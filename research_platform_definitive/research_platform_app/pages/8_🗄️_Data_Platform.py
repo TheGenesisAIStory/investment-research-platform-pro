@@ -25,6 +25,7 @@ from research_platform_core.data_platform import (
     write_data_platform_status,
 )
 from research_platform_core.data_health import get_data_health_summary, list_ohlcv_failures, list_ohlcv_provider_failures, load_run_events
+from research_platform_core.data_explorer import get_single_ticker_snapshot, list_available_tickers, load_data_explorer_preview
 from research_platform_core.run_lock import is_stage_locked, read_stage_lock, stage_lock_path
 
 configure_page("Data Platform")
@@ -40,6 +41,29 @@ platform_roots = resolve_data_platform_roots(
     financial_db_root=roots["financial_db"],
     repo_output_root=roots["workspace"],
 )
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_ticker_options(financial_db_root: str, output_root: str) -> pd.DataFrame:
+    return list_available_tickers(financial_db_root, output_root)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_ticker_snapshot(ticker: str, financial_db_root: str, output_root: str) -> dict[str, object]:
+    return get_single_ticker_snapshot(ticker, financial_db_root, output_root)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_data_preview(
+    dataset: str,
+    financial_db_root: str,
+    output_root: str,
+    universe: str,
+    start_date: str,
+    end_date: str,
+    max_rows: int,
+) -> pd.DataFrame:
+    return load_data_explorer_preview(dataset, financial_db_root, output_root, universe, start_date, end_date, max_rows)
 
 
 def _status_tone(status: str) -> str:
@@ -67,6 +91,48 @@ def _format_breakdown(value: object, limit: int = 4) -> str:
         return "No universe breakdown yet"
     ordered = sorted(data.items(), key=lambda item: int(item[1]) if str(item[1]).isdigit() else 0, reverse=True)
     return " · ".join(f"{key}: {value}" for key, value in ordered[:limit])
+
+
+def _status_message(status: object) -> tuple[str, str]:
+    value = str(status or "UNKNOWN").upper()
+    if value in {"OK", "DONE", "SUCCESS"}:
+        return "OK", "success"
+    if value in {"PARTIAL", "LIMITED_HISTORY", "PLANNED", "NOT_TICKER_SPECIFIC", "SKIPPED"}:
+        return value, "warning"
+    if value in {"MISSING", "FAILED", "ERROR"}:
+        return value, "error"
+    if value == "RUNNING":
+        return value, "info"
+    return value, "info"
+
+
+def _render_status_notice(status: object, text: str) -> None:
+    label, tone = _status_message(status)
+    message = f"**{label}** · {text}"
+    if tone == "success":
+        st.success(message)
+    elif tone == "warning":
+        st.warning(message)
+    elif tone == "error":
+        st.error(message)
+    else:
+        st.info(message)
+
+
+def _switch_to_page(page: str, ticker: str) -> None:
+    st.session_state["selected_ticker"] = ticker
+    try:
+        st.switch_page(page)
+    except Exception:
+        st.info(f"Ticker `{ticker}` salvato nel contesto. Apri `{page}` dal menu laterale.")
+
+
+def _compact_columns(frame: pd.DataFrame, preferred: list[str], max_cols: int = 14) -> pd.DataFrame:
+    if frame.empty:
+        return frame
+    cols = [col for col in preferred if col in frame.columns]
+    cols.extend([col for col in frame.columns if col not in cols][: max(0, max_cols - len(cols))])
+    return frame[cols[:max_cols]]
 
 
 def _run_dir(workspace_root: Path, prefix: str) -> Path:
@@ -262,7 +328,97 @@ with st.container(border=True):
                 st.metric(stage_labels.get(stage, stage.replace("_", " ").title()), f"{covered:,}", delta=delta, delta_color=_status_tone(status))
                 st.caption(_format_breakdown(row.get("coverage_breakdown")))
 
+with st.container(border=True):
+    st.subheader("Single Ticker Explorer")
+    st.caption("Search one issuer and see immediately which data layers are available before jumping into research pages.")
+    ticker_options = _cached_ticker_options(str(platform_roots.financial_db), str(roots["workspace"]))
+    known_tickers = ticker_options["ticker"].dropna().astype(str).tolist() if not ticker_options.empty and "ticker" in ticker_options.columns else []
+    default_ticker = st.session_state.get("data_platform_ticker") or st.session_state.get("selected_ticker") or ""
+    search_cols = st.columns([0.42, 0.36, 0.22])
+    ticker_query = search_cols[0].text_input(
+        "Ticker",
+        value=str(default_ticker),
+        placeholder="AAPL, FBYD, ORGN...",
+        help="Ticker search uses OHLCV coverage, ML signals and factor artifacts.",
+    ).strip().upper()
+    quick_pick = search_cols[1].selectbox(
+        "Known tickers",
+        [""] + known_tickers[:5000],
+        index=0,
+        help="Loaded from lightweight manifests; type in the text box for tickers outside the first 5,000 options.",
+    )
+    if quick_pick:
+        ticker_query = quick_pick
+    if search_cols[2].button("Load ticker data", disabled=not ticker_query, width="stretch"):
+        st.session_state["data_platform_ticker"] = ticker_query
+        st.session_state["selected_ticker"] = ticker_query
+    active_ticker = str(st.session_state.get("data_platform_ticker") or ticker_query or "").strip().upper()
+    if not active_ticker:
+        st.info("Enter a ticker to inspect OHLCV, fundamentals, factors, ML signals, valuation proxies and Smart Money coverage.")
+    else:
+        with st.spinner(f"Loading data map for {active_ticker}..."):
+            snapshot = _cached_ticker_snapshot(active_ticker, str(platform_roots.financial_db), str(roots["workspace"]))
+        availability = snapshot.get("availability", pd.DataFrame())
+        if isinstance(availability, pd.DataFrame) and not availability.empty:
+            status_cols = st.columns(min(4, len(availability)))
+            for idx, row in enumerate(availability.head(4).to_dict("records")):
+                with status_cols[idx % len(status_cols)]:
+                    st.metric(str(row.get("domain", "")), str(row.get("status", "UNKNOWN")), help=str(row.get("detail", "")))
+            st.dataframe(_compact_columns(availability, ["domain", "status", "rows", "detail", "path"], max_cols=5), width="stretch", hide_index=True)
+        nav_cols = st.columns(4)
+        if nav_cols[0].button("Open in ML Stock Lab", width="stretch"):
+            _switch_to_page("pages/9_ML_Stock_Lab.py", active_ticker)
+        if nav_cols[1].button("Open Valuation", width="stretch"):
+            _switch_to_page("pages/2_🔬_Valuation_Research.py", active_ticker)
+        if nav_cols[2].button("Open Screener", width="stretch"):
+            _switch_to_page("pages/4_🔍_Screener_Builder.py", active_ticker)
+        if nav_cols[3].button("Use in Portfolio", width="stretch"):
+            _switch_to_page("pages/3_📁_Portfolio_Research.py", active_ticker)
+
+        ticker_tabs = st.tabs(["OHLCV", "Factors", "ML / Valuation", "Fundamentals", "Smart Money"])
+        with ticker_tabs[0]:
+            ohlcv = snapshot.get("ohlcv", pd.DataFrame())
+            if isinstance(ohlcv, pd.DataFrame) and not ohlcv.empty:
+                price_col = "adjclose" if "adjclose" in ohlcv.columns else "close" if "close" in ohlcv.columns else None
+                if price_col and "date" in ohlcv.columns:
+                    st.plotly_chart(px.line(ohlcv, x="date", y=price_col, title=f"{active_ticker} OHLCV price preview", template="plotly_white"), width="stretch")
+                st.dataframe(_compact_columns(ohlcv.tail(20), ["date", "open", "high", "low", "close", "adjclose", "volume", "source_path"]), width="stretch", hide_index=True)
+            else:
+                _render_status_notice("MISSING", "No local OHLCV parquet found for this ticker. Check Data Health & Restart for retry options.")
+        with ticker_tabs[1]:
+            factors = snapshot.get("factors", pd.DataFrame())
+            if isinstance(factors, pd.DataFrame) and not factors.empty:
+                latest = factors.tail(1)
+                score_cols = [col for col in ["value_score", "quality_score", "momentum_score", "risk_score", "size_score", "growth_score", "factor_composite_score"] if col in factors.columns]
+                if score_cols:
+                    chart = latest.melt(id_vars=[col for col in ["ticker", "date"] if col in latest.columns], value_vars=score_cols, var_name="factor", value_name="score")
+                    st.plotly_chart(px.bar(chart, x="factor", y="score", title="Latest factor scores", template="plotly_white"), width="stretch")
+                st.dataframe(_compact_columns(factors.tail(30), ["date", "ticker", *score_cols, "ret21d", "ret63d", "ret252d", "vol63d", "vol252d"]), width="stretch", hide_index=True)
+            else:
+                _render_status_notice("MISSING", "No factor rows found. Run `factor_universe_panel` after OHLCV backfill.")
+        with ticker_tabs[2]:
+            ml_signals = snapshot.get("ml_signals", pd.DataFrame())
+            if isinstance(ml_signals, pd.DataFrame) and not ml_signals.empty:
+                preferred = ["date", "ticker", "score_ols", "score_rf", "score_gbrt", "score_composite", "ml_score", "fair_value_hat", "valuation_signal_score", "mispricing_rel", "artifact"]
+                st.dataframe(_compact_columns(ml_signals.tail(50), preferred), width="stretch", hide_index=True)
+            else:
+                _render_status_notice("PLANNED", "No trained ML signal found for this ticker yet. Run ML training or open ML Stock Lab.")
+        with ticker_tabs[3]:
+            fundamentals = snapshot.get("fundamentals", pd.DataFrame())
+            if isinstance(fundamentals, pd.DataFrame) and not fundamentals.empty:
+                st.dataframe(_compact_columns(fundamentals.tail(30), ["ticker", "statement_artifact", "asOfDate", "periodType", "currencyCode", "source_path"]), width="stretch", hide_index=True)
+            else:
+                _render_status_notice("MISSING", "No statement-level fundamentals artifact found for this ticker.")
+        with ticker_tabs[4]:
+            smart_money = snapshot.get("smart_money", pd.DataFrame())
+            if isinstance(smart_money, pd.DataFrame) and not smart_money.empty:
+                st.dataframe(_compact_columns(smart_money, ["ticker", "issuer_ticker", "score", "smart_money_score", "event_type", "event_date", "artifact"]), width="stretch", hide_index=True)
+            else:
+                _render_status_notice("PLANNED", "Smart Money engine exists, but no ticker-level issuer/event row is loaded for this ticker.")
+
 tabs = st.tabs([
+    "Data Explorer",
+    "Domain Status",
     "Data Health & Restart",
     "Shared DB Contract",
     "OHLCV Coverage",
@@ -277,6 +433,130 @@ tabs = st.tabs([
 ])
 
 with tabs[0]:
+    st.subheader("Data Explorer")
+    st.caption("Touch the data directly: pick a dataset, scope it lightly, preview rows and inspect a simple coverage chart.")
+    dataset_map = {
+        "Factor panel": "factor_panel",
+        "OHLCV coverage manifest": "ohlcv_manifest",
+        "Equity fundamentals manifest": "equity_fundamentals_manifest",
+        "ML trained signals": "ml_signals",
+        "Smart Money artifacts": "smart_money",
+    }
+    explorer_cols = st.columns([0.28, 0.22, 0.2, 0.2, 0.1])
+    dataset_label = explorer_cols[0].selectbox("Dataset", list(dataset_map.keys()), help="Bounded preview; heavy datasets are sampled server-side.")
+    universe_values = ["All"]
+    if not ticker_options.empty and "universe" in ticker_options.columns:
+        universe_values.extend(sorted(ticker_options["universe"].dropna().astype(str).replace("", pd.NA).dropna().unique().tolist())[:200])
+    universe_filter = explorer_cols[1].selectbox("Universe / source", universe_values, help="Uses manifest universe/exchange/source columns when available.")
+    start_filter = explorer_cols[2].date_input("From", value=pd.Timestamp("2000-01-01").date())
+    end_filter = explorer_cols[3].date_input("To", value=pd.Timestamp.now().date())
+    max_preview_rows = explorer_cols[4].number_input("Rows", min_value=100, max_value=10000, value=2000, step=100)
+    if st.button("Load preview", width="stretch"):
+        st.session_state["data_platform_preview_request"] = {
+            "dataset": dataset_map[dataset_label],
+            "universe": universe_filter,
+            "start": str(start_filter),
+            "end": str(end_filter),
+            "rows": int(max_preview_rows),
+        }
+    request = st.session_state.get("data_platform_preview_request")
+    if not request:
+        st.info("Load a preview to inspect data rows without opening notebooks. Factor panel previews are sampled to keep the app responsive.")
+    else:
+        with st.spinner("Loading bounded data preview..."):
+            preview = _cached_data_preview(
+                str(request["dataset"]),
+                str(platform_roots.financial_db),
+                str(roots["workspace"]),
+                str(request["universe"]),
+                str(request["start"]),
+                str(request["end"]),
+                int(request["rows"]),
+            )
+        if preview.empty:
+            _render_status_notice("MISSING", "No rows available for this dataset/scope. Check Domain Status or run the relevant job.")
+        else:
+            metric_cols = st.columns(4)
+            metric_cols[0].metric("Rows previewed", f"{len(preview):,}")
+            metric_cols[1].metric("Columns", f"{len(preview.columns):,}")
+            metric_cols[2].metric("Tickers", f"{preview['ticker'].nunique():,}" if "ticker" in preview.columns else "n/a")
+            metric_cols[3].metric("Dataset", dataset_label)
+            if "date" in preview.columns:
+                chart_frame = preview.copy()
+                chart_frame["date"] = pd.to_datetime(chart_frame["date"], errors="coerce")
+                metric = next((col for col in ["factor_composite_score", "score_composite", "ml_score", "value_score", "momentum_score"] if col in chart_frame.columns), None)
+                if metric:
+                    chart = chart_frame.dropna(subset=["date"]).set_index("date").resample("ME")[metric].mean().reset_index()
+                    if not chart.empty:
+                        st.plotly_chart(px.line(chart, x="date", y=metric, title=f"Monthly average {metric}", template="plotly_white"), width="stretch")
+                elif "ticker" in chart_frame.columns:
+                    chart = chart_frame.dropna(subset=["date"]).set_index("date").resample("ME")["ticker"].nunique().reset_index(name="tickers")
+                    if not chart.empty:
+                        st.plotly_chart(px.bar(chart, x="date", y="tickers", title="Ticker coverage over time", template="plotly_white"), width="stretch")
+            st.dataframe(preview, width="stretch", hide_index=True)
+            st.download_button("Download preview CSV", preview.to_csv(index=False), "data_platform_preview.csv", "text/csv")
+
+with tabs[3]:
+    st.subheader("Domain Status")
+    st.caption("Every data domain should say whether it is active, planned, missing data, or waiting for a job. No silent empty boxes.")
+    health_by_stage = {str(row.get("stage")): row for row in data_health.to_dict("records")} if not data_health.empty else {}
+    domain_specs = [
+        {
+            "label": "Equity Fundamentals",
+            "stage": "equity_fundamentals",
+            "what": "Universe constituents, yfinance/FMP/Finnhub-style fundamentals, valuation inputs and statement snapshots.",
+            "jobs": "`bootstrap_equity_fundamentals`, Data Platform fundamentals stage, Notebook Runner maintenance jobs.",
+            "missing": "If empty, run fundamentals backfill for the target universes.",
+        },
+        {
+            "label": "Equity Prices / OHLCV",
+            "stage": "equity_prices",
+            "what": "Daily OHLCV parquet files with LIMITED_HISTORY / DELISTED / provider failure classification.",
+            "jobs": "`bootstrap_equity_prices`, Data Health restart, failed-only retry.",
+            "missing": "If partial, inspect OHLCV provider/write failures and retry only failed assets.",
+        },
+        {
+            "label": "FX / Macro",
+            "stage": "macro_fx",
+            "what": "Benchmark/context series such as DX-Y.NYB, UUP, TLT, GLD, DBC, rates, ECB/Banca d'Italia macro panels.",
+            "jobs": "`bootstrap_macro_fx_series`, ECB/Banca d'Italia clients, yfinance macro overlays.",
+            "missing": "Currently may be PLANNED/PARTIAL until the macro stage is run; not a ticker-level failure.",
+        },
+        {
+            "label": "Factor Libraries",
+            "stage": "factor_libraries",
+            "what": "Fama-French/AQR-style factor libraries and internal factor panels for model benchmarking.",
+            "jobs": "`bootstrap_factor_libraries`, `build_factor_universe_panel`.",
+            "missing": "Run factor libraries for external benchmarks; run factor panel after OHLCV backfill for internal scores.",
+        },
+        {
+            "label": "Smart Money / Flow / Positioning",
+            "stage": "smart_money",
+            "what": "Issuer scores, government/flow/event artifacts, macro positioning and source registry.",
+            "jobs": "`bootstrap_smart_money_data`, Smart Money engine pipeline.",
+            "missing": "If no ticker rows appear, the module exists but issuer-level coverage is not populated for that ticker yet.",
+        },
+        {
+            "label": "Banking Data Lab",
+            "stage": "banking",
+            "what": "Banking universe, macro/regulatory panels, market data and diagnostics for banks.",
+            "jobs": "`bootstrap_banking_universe`, Banking Data Lab pipeline.",
+            "missing": "If empty, run Banking Data Lab Pipeline; previous stable artifacts are reused when a run fails.",
+        },
+    ]
+    for spec in domain_specs:
+        row = health_by_stage.get(spec["stage"], {})
+        status = str(row.get("status", "MISSING"))
+        with st.container(border=True):
+            c1, c2, c3 = st.columns([0.24, 0.18, 0.58])
+            c1.metric(spec["label"], status)
+            c2.metric("Covered", f"{int(row.get('covered_assets') or 0):,}")
+            with c3:
+                _render_status_notice(status, spec["missing"])
+                st.markdown(f"**What it covers:** {spec['what']}")
+                st.markdown(f"**Jobs / hooks:** {spec['jobs']}")
+
+with tabs[4]:
     st.subheader("Backfill Controls / Restart")
     st.caption("Friendly controls for restarting data jobs without opening notebooks or calling CLI commands directly.")
     latest_run = st.session_state.get("last_data_restart_run")
@@ -501,7 +781,7 @@ with tabs[2]:
         st.dataframe(view[[c for c in show_cols if c in view.columns]].head(5000), width="stretch", hide_index=True)
         st.download_button("Download OHLCV coverage manifest", ohlcv_manifest.to_csv(index=False), "ohlcv_coverage_manifest.csv", "text/csv")
 
-with tabs[3]:
+with tabs[5]:
     st.subheader("Run Monitor")
     st.caption("Structured progress from `progress.jsonl` when available. Text logs remain available in Run Logs.")
     runs_root = roots["workspace"] / "runs"
@@ -543,7 +823,7 @@ with tabs[3]:
             ]
             st.dataframe(events[[col for col in show_event_cols if col in events.columns]].tail(200), width="stretch", hide_index=True)
 
-with tabs[4]:
+with tabs[6]:
     st.subheader("Recent Run Logs")
     st.caption("Debug links for advanced review. The UI does not print raw stacktraces by default.")
     if run_logs.empty:
@@ -557,7 +837,7 @@ with tabs[4]:
                 lines = path.read_text(encoding="utf-8", errors="replace").splitlines()[-120:]
                 st.code("\n".join(lines), language="text")
 
-with tabs[5]:
+with tabs[7]:
     st.subheader("Inventory Scan")
     st.caption("Run this on demand. It can touch many Drive-backed files, so the shared contract above is the default lightweight view.")
     run_inventory = st.button("Run bounded inventory scan", width="stretch")
@@ -582,14 +862,14 @@ with tabs[5]:
         st.dataframe(view.head(2000), width="stretch", hide_index=True)
         st.download_button("Download inventory CSV", inventory.to_csv(index=False), "data_platform_inventory.csv", "text/csv")
 
-with tabs[6]:
+with tabs[8]:
     st.subheader("Providers")
     st.caption("Provider fallback reads are on-demand because registry files can live on slow Drive-backed storage.")
     if st.button("Load provider fallback plan", width="stretch"):
         fallback = provider_fallback_plan(platform_roots.financial_db)
         st.dataframe(fallback, width="stretch", hide_index=True)
 
-with tabs[7]:
+with tabs[9]:
     st.subheader("Credentials")
     st.caption("Credential registry reads are on-demand to keep the page responsive when Drive is mounted remotely.")
     if st.button("Load credential and provider tables", width="stretch"):
@@ -619,7 +899,7 @@ with tabs[7]:
             """
         )
 
-with tabs[8]:
+with tabs[10]:
     st.subheader("Incremental Europe/STOXX Price Refresh")
     st.markdown(
         """
@@ -640,7 +920,7 @@ with tabs[8]:
         )
         st.dataframe(manifest, width="stretch", hide_index=True)
 
-with tabs[9]:
+with tabs[11]:
     st.subheader("Status Exports")
     if st.button("Write DataPlatform status to workspace output", width="stretch"):
         paths = write_data_platform_status(platform_roots.financial_db, roots["workspace"], max_files=max_files)
@@ -659,7 +939,7 @@ with tabs[9]:
         manifest = publish_artifacts_to_financial_db(roots[source_root], platform_roots.financial_db, domain)
         st.dataframe(manifest, width="stretch", hide_index=True)
 
-with tabs[10]:
+with tabs[12]:
     st.subheader("Data Settings")
     st.caption("Desk-facing refresh policy stored under output/config. The DB root itself remains read-only here and is controlled by FINANCIAL_DB_ROOT/storage policy.")
     data_settings = platform_settings.get("data", {})

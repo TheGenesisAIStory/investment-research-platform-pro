@@ -126,6 +126,15 @@ from .data_health import (
     restart_equity_prices,
     restart_equity_prices_failed_only,
 )
+from .data_explorer import (
+    find_ohlcv_parquet,
+    get_single_ticker_snapshot,
+    list_available_tickers,
+    load_data_explorer_preview,
+    load_factor_rows_for_ticker,
+    load_ml_signal_rows_for_ticker,
+    load_ticker_ohlcv,
+)
 from .llm_client import LlmResponse, OllamaClient
 from .llm_prompts import PROMPT_REGISTRY
 from .llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance, explain_stock_picks, suggest_screener_config
@@ -264,6 +273,13 @@ __all__ = [
     "load_run_events",
     "restart_equity_prices",
     "restart_equity_prices_failed_only",
+    "find_ohlcv_parquet",
+    "get_single_ticker_snapshot",
+    "list_available_tickers",
+    "load_data_explorer_preview",
+    "load_factor_rows_for_ticker",
+    "load_ml_signal_rows_for_ticker",
+    "load_ticker_ohlcv",
     "LlmResponse",
     "OllamaClient",
     "PROMPT_REGISTRY",
