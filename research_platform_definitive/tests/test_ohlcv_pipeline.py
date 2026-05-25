@@ -21,6 +21,7 @@ from research_platform_core.loaders.ohlcv_client import (
     parse_yfinance_bulk,
     provider_symbol_variants,
 )
+from research_platform_core.loaders.market_universe import _provider_symbol_for_index
 from research_platform_core.loaders.kaggle_seed_loader import import_kaggle_seeds
 from research_platform_core.api_orchestrator import DataProviderPolicyEngine, DataProviderRegistry, ProviderRequest, ProviderSpec, ProviderUsageTracker
 from research_platform_core.data_health import list_ohlcv_provider_failures, load_run_events
@@ -107,9 +108,24 @@ def test_special_security_variants_skip_raw_when_requested() -> None:
 def test_validate_provider_symbol_rejects_metadata_tokens() -> None:
     assert validate_provider_symbol("FOUNDATION")[0] is False
     assert validate_provider_symbol("WEBSITE")[0] is False
+    assert validate_provider_symbol("OPERATOR")[0] is False
+    assert validate_provider_symbol("EXCHANGES")[0] is False
+    assert validate_provider_symbol("CONSTITUENTS")[0] is False
+    assert validate_provider_symbol("NAN")[0] is False
     assert validate_provider_symbol("Investor Relations")[0] is False
     assert validate_provider_symbol("ARES$B")[0] is True
     assert validate_provider_symbol("DX-Y.NYB")[0] is True
+    assert validate_provider_symbol("ENEL.MI")[0] is True
+    assert validate_provider_symbol("III.L")[0] is True
+
+
+def test_provider_symbol_for_index_uses_yahoo_suffixes() -> None:
+    assert _provider_symbol_for_index("ENEL-MI", "ftsemib") == "ENEL.MI"
+    assert _provider_symbol_for_index("ADS-DE", "dax40") == "ADS.DE"
+    assert _provider_symbol_for_index("AC-PA", "cac40") == "AC.PA"
+    assert _provider_symbol_for_index("ACS-MC", "ibex35") == "ACS.MC"
+    assert _provider_symbol_for_index("III", "ftse100") == "III.L"
+    assert _provider_symbol_for_index("BT-A", "ftse100") == "BT-A.L"
 
 
 def test_sqlite_store_upserts(tmp_path: Path) -> None:
