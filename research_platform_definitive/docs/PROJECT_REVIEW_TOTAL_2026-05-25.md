@@ -105,7 +105,7 @@ Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
 
 ## Multi-Asset, Smart Money e Baseline Fattoriali
 
-- Macro DB e' stato esteso a 92 proxy: FX, commodities, crypto, ETF equity,
+- Macro DB e' stato esteso a 95 proxy: FX, commodities, crypto, ETF equity,
   ETF fixed income, ETF commodity, ETF crypto, fixed-income proxies e indici.
 - `MultiAssetUniverseManifest.csv` rende visibile per ogni dominio lo stato
   `OK/PARTIAL/PLANNED`, numero strumenti e ultimo aggiornamento; Data Platform
@@ -113,6 +113,12 @@ Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
 - `SmartMoneySourceManifest.csv` esplicita CFTC COT, ETF flows, options
   positioning e issuer-event evidence come fonti `OK`, `READY_OPTIONAL`,
   `PARTIAL` o `PLANNED`; nessun pannello Smart Money resta vuoto senza stato.
+- CFTC COT e' attivato come prima fonte Smart Money reale: history, snapshot e
+  sample normalizzati sono scritti sotto `output/smart_money/tables`.
+- `MacroContextPanel.csv` porta i 95 proxy macro dentro un blocco opzionale
+  `macro_context` per ML Stock Lab, con lag anti-leakage prima del merge as-of.
+- `MarketRegimeHistory.csv` e `MarketRegimeLatest.csv` espongono regime
+  `risk_on/risk_off/crisis/recovery/neutral` in Home, Macro View e Portfolio.
 - `research_platform_core.factor_benchmarks` aggiunge benchmark pure-factor per
   value, quality, momentum, risk, size, growth e composite factor.
 - ML Stock Lab ha una tab `Factor Baselines` per confrontare i modelli ML con

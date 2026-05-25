@@ -22,6 +22,7 @@ class FactorBlock:
     label: str
     columns: tuple[str, ...]
     description: str
+    experimental: bool = False
 
 
 FACTOR_BLOCKS: dict[str, FactorBlock] = {
@@ -73,6 +74,36 @@ FACTOR_BLOCKS: dict[str, FactorBlock] = {
             "eva_mispricing",
         ),
         "Valuation-model mispricing factors exported by valuation artifacts.",
+    ),
+    "macro_context": FactorBlock(
+        "macro_context",
+        "Macro Context",
+        (
+            "macro_spy_ret21d",
+            "macro_spy_ret63d",
+            "macro_dxy_ret21d",
+            "macro_dxy_ret63d",
+            "macro_brent_ret21d",
+            "macro_brent_ret63d",
+            "macro_wti_ret21d",
+            "macro_wti_ret63d",
+            "macro_tlt_ret21d",
+            "macro_tlt_ret63d",
+            "macro_gld_ret21d",
+            "macro_gld_ret63d",
+            "macro_btc_ret21d",
+            "macro_btc_ret63d",
+            "macro_credit_hyg_tlt_ret63d",
+            "macro_credit_lqd_tlt_ret63d",
+            "macro_curve_tnx_irx",
+            "macro_curve_tlt_shy_ret63d",
+            "macro_vix_level",
+            "macro_vix_change21d",
+            "macro_risk_on_score",
+            "macro_context_score",
+        ),
+        "Lagged cross-asset regime/context features from the Macro DB.",
+        experimental=True,
     ),
 }
 

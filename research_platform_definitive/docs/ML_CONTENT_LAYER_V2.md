@@ -123,6 +123,27 @@ calcolare una versione interattiva campionata e confrontare immediatamente ML vs
 fattori tradizionali. Per run full-panel/scheduled, il limite `max_rows` puo'
 essere disattivato lato job.
 
+## Macro context feature block
+
+Il Macro DB multi-asset alimenta ora un blocco sperimentale opzionale:
+
+```text
+macro_context
+```
+
+Il blocco vive in `ml_stock_lab.factor_registry` ma le feature sono costruite
+in `research_platform_core.macro_context`. Le colonne principali includono
+momentum macro su SPY/DXY/Brent/WTI/TLT/GLD/BTC, credit spread proxy
+`HYG - TLT`, curve proxy `TNX - IRX`, VIX level/change e
+`macro_risk_on_score`.
+
+Regola anti-leakage: il `MacroContextPanel.csv` e' laggato di una osservazione
+prima dell'as-of join con il factor panel equity. Il blocco non entra nei
+modelli di default; va selezionato esplicitamente in ML Stock Lab per testare
+se migliora IC/RankIC/Sharpe rispetto ai fattori equity core.
+
+La metodologia e' documentata in `docs/MACRO_CONTEXT_LAYER.md`.
+
 ## Metrics metadata
 
 Le definizioni delle metriche vivono in

@@ -16,7 +16,7 @@ import streamlit as st
 
 from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 
-from research_platform_core import load_multi_asset_universe_manifest, load_time_series_forecast_artifacts, summarize_multi_asset_universe
+from research_platform_core import detect_market_regime, load_multi_asset_universe_manifest, load_time_series_forecast_artifacts, summarize_multi_asset_universe
 from research_platform_core.macro_market import compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
 from research_platform_core.sentiment_analysis import collect_ticker_sentiment
 
@@ -56,6 +56,7 @@ ts_latest = ts_artifacts.get("latest", pd.DataFrame())
 forecast_symbols = set(ts_latest["symbol"].dropna().astype(str).str.upper().tolist()) if not ts_latest.empty and "symbol" in ts_latest.columns else set()
 multi_asset_manifest = load_multi_asset_universe_manifest(roots["financial_db"], roots["workspace"])
 multi_asset_summary = summarize_multi_asset_universe(multi_asset_manifest)
+current_regime = detect_market_regime(financial_db_root=roots["financial_db"], output_root=roots["workspace"])
 
 render_page_header(
     "Macro View",
@@ -71,11 +72,14 @@ render_page_intro(
 )
 
 with st.container(border=True):
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Catalog Assets", len(catalog))
     c2.metric("Downloaded Assets", int(manifest["status"].astype(str).eq("OK").sum()) if not manifest.empty and "status" in manifest.columns else 0)
     c3.metric("Regions", catalog["region"].nunique() if not catalog.empty and "region" in catalog.columns else 0)
     c4.metric("Asset Classes", catalog["asset_class"].nunique() if not catalog.empty and "asset_class" in catalog.columns else 0)
+    c5.metric("Current Regime", str(current_regime.get("regime", "unknown")).replace("_", " ").title(), str(current_regime.get("date", "")))
+    if current_regime.get("drivers"):
+        st.caption(f"Regime drivers: {current_regime.get('drivers')}")
 
 with st.container(border=True):
     st.markdown("**Compile / refresh macro database**")

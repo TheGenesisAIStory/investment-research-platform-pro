@@ -28,7 +28,7 @@ from smart_money_engine.visualization import (
     sector_heatmap,
     tic_flow_chart,
 )
-from research_platform_core.smart_money import load_smart_money_source_manifest, summarize_smart_money_sources
+from research_platform_core.smart_money import fetch_cot_data, load_smart_money_source_manifest, summarize_smart_money_sources
 
 
 configure_page("Smart Money Intelligence")
@@ -231,6 +231,49 @@ with tabs[6]:
         with st.expander("Smart Money source coverage", expanded=True):
             st.caption("COT is the first official-source positioning family; ETF flows and options positioning are schema-ready but require provider/user data.")
             st.dataframe(source_manifest, width="stretch", hide_index=True)
+    cot_refresh_cols = st.columns([0.3, 0.7])
+    cot_max_rows = cot_refresh_cols[0].number_input("COT rows cap", min_value=1000, max_value=200000, value=50000, step=5000)
+    if cot_refresh_cols[1].button("Fetch / refresh CFTC COT positioning", width="stretch"):
+        with st.spinner("Fetching public CFTC COT data and normalizing positioning..."):
+            cot_bundle = fetch_cot_data(roots["workspace"], max_rows=int(cot_max_rows), fetch=True)
+        st.success(f"COT rows normalized: {len(cot_bundle.get('history', pd.DataFrame())):,}")
+        data = load_smart_money_artifacts(roots["workspace"])
+        source_manifest = load_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
+    cot_snapshot = data.get("cot_snapshot", pd.DataFrame())
+    cot_history = data.get("cot_history_sample", pd.DataFrame())
+    if not cot_snapshot.empty:
+        st.markdown("#### CFTC COT positioning snapshot")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Instruments", cot_snapshot["instrument"].nunique() if "instrument" in cot_snapshot.columns else len(cot_snapshot))
+        c2.metric("Latest report", cot_snapshot["report_date"].max() if "report_date" in cot_snapshot.columns else "n/a")
+        c3.metric("Asset classes", cot_snapshot["asset_class"].nunique() if "asset_class" in cot_snapshot.columns else "n/a")
+        st.dataframe(cot_snapshot, width="stretch", hide_index=True)
+        if {"instrument", "net_noncommercial_oi_pct"}.issubset(cot_snapshot.columns):
+            st.plotly_chart(
+                px.bar(
+                    cot_snapshot,
+                    x="instrument",
+                    y="net_noncommercial_oi_pct",
+                    color="asset_class" if "asset_class" in cot_snapshot.columns else None,
+                    title="Net non-commercial positioning as % of open interest",
+                    template="plotly_white",
+                ),
+                width="stretch",
+            )
+    else:
+        st.info("CFTC COT normalized snapshot is not populated yet. Use the refresh button above when network access is available.")
+    if not cot_history.empty and {"report_date", "instrument", "net_noncommercial_oi_pct"}.issubset(cot_history.columns):
+        st.plotly_chart(
+            px.line(
+                cot_history,
+                x="report_date",
+                y="net_noncommercial_oi_pct",
+                color="instrument",
+                title="CFTC COT positioning history sample",
+                template="plotly_white",
+            ),
+            width="stretch",
+        )
     c1 = cot_percentile_chart(data["macro_positioning"])
     c2 = tic_flow_chart(data["capital_flows"])
     if c1 is not None:

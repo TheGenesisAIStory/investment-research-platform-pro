@@ -44,6 +44,10 @@ def _domain_for_asset_class(asset_class: str) -> str:
         return "ETF Fixed Income"
     if "fixed_income" in value:
         return "Fixed Income"
+    if value == "rate_index":
+        return "Fixed Income"
+    if value == "volatility_index":
+        return "Volatility"
     if value in {"equity_index_etf", "sector_etf"}:
         return "ETF Equity"
     if value.endswith("_etf") or "etf" in value:

@@ -142,6 +142,7 @@ from .llm_client import LlmResponse, OllamaClient
 from .llm_prompts import PROMPT_REGISTRY
 from .llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance, explain_stock_picks, suggest_screener_config
 from .macro_market import MACRO_ASSETS, MacroAsset, compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
+from .macro_context import add_macro_context_features, build_macro_context_panel, load_macro_close_panel, load_macro_context_panel
 from .multi_asset_universe import (
     compile_multi_asset_universe_manifest,
     load_multi_asset_universe_manifest,
@@ -156,11 +157,14 @@ from .factor_benchmarks import (
 )
 from .smart_money import (
     compile_smart_money_source_manifest,
+    fetch_cot_data,
     load_smart_money_source_manifest,
+    normalize_cot_data,
     refresh_cftc_cot_snapshot,
     smart_money_source_catalog,
     summarize_smart_money_sources,
 )
+from .regime_detection import build_market_regime_history, detect_market_regime, load_market_regime_history
 from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions, fetch_stocktwits_messages, fetch_x_recent_mentions, score_sentiment_frame, score_text
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
 from .feature_metadata import FEATURE_METADATA, FeatureMetadata, category_for_feature, metadata_for_feature, metadata_frame, metadata_help
@@ -342,6 +346,10 @@ __all__ = [
     "compile_macro_asset_database",
     "load_macro_market_artifacts",
     "macro_asset_catalog",
+    "add_macro_context_features",
+    "build_macro_context_panel",
+    "load_macro_close_panel",
+    "load_macro_context_panel",
     "compile_multi_asset_universe_manifest",
     "load_multi_asset_universe_manifest",
     "summarize_multi_asset_universe",
@@ -351,10 +359,15 @@ __all__ = [
     "load_factor_benchmark_summary",
     "write_factor_benchmark_artifacts",
     "compile_smart_money_source_manifest",
+    "fetch_cot_data",
     "load_smart_money_source_manifest",
+    "normalize_cot_data",
     "refresh_cftc_cot_snapshot",
     "smart_money_source_catalog",
     "summarize_smart_money_sources",
+    "build_market_regime_history",
+    "detect_market_regime",
+    "load_market_regime_history",
     "collect_ticker_sentiment",
     "fetch_reddit_mentions",
     "fetch_stocktwits_messages",

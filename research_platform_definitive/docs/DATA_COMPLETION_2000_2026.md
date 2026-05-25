@@ -244,6 +244,12 @@ from research_platform_core import (
   `output/smart_money/tables/SmartMoneySourceManifest.csv`, distinguendo fonti
   `OK`, `READY_OPTIONAL`, `PARTIAL` e `PLANNED` per CFTC COT, ETF flows,
   options positioning e issuer events.
+- `fetch_cot_data(..., fetch=True)` scarica e normalizza CFTC COT in
+  `SmartMoney_COT_history.csv`, `SmartMoney_COT_snapshot.csv` e
+  `SmartMoney_COT_history_sample.csv`.
+- `build_macro_context_panel(...)` e `build_market_regime_history(...)`
+  generano `MacroContextPanel.csv`, `MarketRegimeHistory.csv` e
+  `MarketRegimeLatest.csv` per le feature `macro_context` e il badge regime.
 
 Macro View e Data Platform leggono questi manifest: un dominio non ancora
 popolato deve risultare `PLANNED` o `PARTIAL`, mai una sezione vuota e muta.

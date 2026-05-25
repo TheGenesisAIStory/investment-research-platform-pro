@@ -44,6 +44,7 @@ from support import (
 
 from research_platform_core.data_explorer import list_available_tickers
 from research_platform_core.data_health import get_stage_health_for_universes
+from research_platform_core.regime_detection import detect_market_regime
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -126,6 +127,11 @@ def _cached_ollama_status() -> dict[str, str]:
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return {"status": "UNAVAILABLE", "detail": f"{base_url} · {type(exc).__name__}"}
     return {"status": "UNAVAILABLE", "detail": base_url}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_market_regime(financial_db_root: str, output_root: str) -> dict[str, Any]:
+    return detect_market_regime(financial_db_root=financial_db_root, output_root=output_root)
 
 
 def _stage_status(health: pd.DataFrame, stage: str) -> str:
@@ -248,16 +254,20 @@ def _render_platform_status(
     health = _cached_stage_health(str(roots["financial_db"]), str(roots["workspace"]))
     factor = _cached_factor_snapshot(str(roots["workspace"]))
     ollama = _cached_ollama_status()
+    regime = _cached_market_regime(str(roots["financial_db"]), str(roots["workspace"]))
     model_status, model_detail = _model_status_label(ml_lab)
 
     with st.container(border=True):
-        cols = st.columns(6)
+        cols = st.columns(7)
         cols[0].metric("Fundamentals", _stage_status(health, "equity_fundamentals"))
         cols[1].metric("Prices", _stage_status(health, "equity_prices"), f"{ohlcv_counts.get('LIMITED_HISTORY', 0):,} limited")
         cols[2].metric("Factor Panel", factor["status"], f"{factor['tickers']:,} tickers")
         cols[3].metric("ML Models", model_status, model_detail[:42] + ("..." if len(model_detail) > 42 else ""))
-        cols[4].metric("Ollama", ollama["status"])
-        cols[5].metric("Data Issues", ohlcv_counts.get("NETWORK_TIMEOUT", 0), "network timeouts")
+        cols[4].metric("Regime", str(regime.get("regime", "unknown")).replace("_", " ").title(), str(regime.get("date", "")))
+        cols[5].metric("Ollama", ollama["status"])
+        cols[6].metric("Data Issues", ohlcv_counts.get("NETWORK_TIMEOUT", 0), "network timeouts")
+        if regime.get("drivers"):
+            st.caption(f"Regime drivers: {regime.get('drivers')}")
         st.caption(
             f"Factor rows: {factor['rows']:,} · latest factor date: {factor['latest_date']} · Ollama endpoint: {ollama['detail']}. "
             "Open Data Platform for full failure breakdown and restart controls."

@@ -314,6 +314,14 @@ METRICS_METADATA.update(
             "mean(return_top - return_bottom) / std(return_top - return_bottom) * sqrt(252 / horizon_days)",
             "Higher values indicate cleaner factor separation before implementation constraints.",
         ),
+        "regime_score": MetricMetadata(
+            "regime_score",
+            "Market regime score",
+            "macro_context",
+            "Explainable 0-100 score summarizing risk-on macro conditions.",
+            "mean(equity_momentum, credit_relative_strength, dollar_pressure, volatility_condition) * 100",
+            "Higher values indicate a more supportive risk-on macro backdrop.",
+        ),
         "mae": MetricMetadata(
             "mae",
             "Mean absolute error",

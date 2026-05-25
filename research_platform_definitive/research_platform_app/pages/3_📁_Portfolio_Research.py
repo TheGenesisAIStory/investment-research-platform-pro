@@ -15,7 +15,7 @@ from data_bootstrap import render_bootstrap_banner
 from screener_workbench import normalize_ticker
 from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, safe_page_link, show_empty, sidebar_roots
 from ui_ops import render_missing_data_cta
-from research_platform_core import compute_correlation_matrix, summarize_correlation_matrix, summarize_time_series_forecast_context
+from research_platform_core import compute_correlation_matrix, detect_market_regime, summarize_correlation_matrix, summarize_time_series_forecast_context
 
 
 configure_page("Portfolio Research")
@@ -131,6 +131,15 @@ with tab_macro_ts:
     st.markdown("### Macro & Time Series context")
     st.caption("Forecasts from Time Series Lab are shown as scenario context only. They do not alter portfolio construction or ranking weights.")
     benchmark = str(st.session_state.get("benchmark_ticker", "SPY") or "SPY").strip().upper()
+    current_regime = detect_market_regime(financial_db_root=roots["financial_db"], output_root=roots["workspace"])
+    regime_score_value = pd.to_numeric(pd.Series([current_regime.get("regime_score")]), errors="coerce").iloc[0]
+    with st.container(border=True):
+        r1, r2, r3 = st.columns(3)
+        r1.metric("Market regime", str(current_regime.get("regime", "unknown")).replace("_", " ").title(), str(current_regime.get("date", "")))
+        r2.metric("Regime score", f"{float(regime_score_value):.0f}/100" if pd.notna(regime_score_value) else "n/a")
+        r3.metric("Use in portfolio", "Context only")
+        if current_regime.get("drivers"):
+            st.caption(f"Drivers: {current_regime.get('drivers')}")
     context_symbols = [benchmark, "SPY", "ACWI", "FEZ", "EWI", "DXY", "TLT", "GLD", "BTC"]
     ts_context = summarize_time_series_forecast_context(context_symbols, roots["workspace"])
     if ts_context.empty:

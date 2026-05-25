@@ -360,6 +360,7 @@ class ResearchDataBootstrapper:
     def build_factor_universe_panel(self, max_symbols: int | None = None) -> pd.DataFrame:
         """Build a point-in-time-safe factor panel from local OHLCV parquet files."""
         from ml_stock_lab.factor_registry import add_factor_scores
+        from research_platform_core.macro_context import add_macro_context_features
 
         _progress("factor_universe_panel start")
         max_symbols = self.config.max_assets if max_symbols is None else max_symbols
@@ -443,6 +444,7 @@ class ResearchDataBootstrapper:
         if not panel.empty:
             panel = panel[(panel["date"].dt.year >= self.config.start_year) & (panel["date"].dt.year <= self.config.end_year)].copy()
             panel = add_factor_scores(panel)
+            panel = add_macro_context_features(panel, self.financial_db_root, self.output_root)
             panel["target_horizon_days"] = 21
             panel["data_start_year"] = self.config.start_year
             panel["data_end_year"] = self.config.end_year
