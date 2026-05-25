@@ -298,7 +298,7 @@ def _render_workflows(company: dict[str, pd.DataFrame], portfolio: dict[str, pd.
             "pages/8_🗄️_Data_Platform.py",
         )
 
-    row2 = st.columns(3)
+    row2 = st.columns(4)
     with row2[0]:
         _workflow_card(
             "🔬",
@@ -317,10 +317,19 @@ def _render_workflows(company: dict[str, pd.DataFrame], portfolio: dict[str, pd.
         )
     with row2[2]:
         _workflow_card(
+            "🌍",
+            "Macro View",
+            "WIP",
+            "Cross-asset board for global, USA, EU, Italy, crypto, FX, commodities, ETFs and fixed income metadata.",
+            "pages/13_🌍_Macro_View.py",
+            "pages/8_🗄️_Data_Platform.py",
+        )
+    with row2[3]:
+        _workflow_card(
             "📡",
-            "Smart Money / FX / Macro",
+            "Smart Money",
             smart_status,
-            "Issuer events, macro overlays and FX context are available in partial form; FX/macro ticker linkage remains roadmap.",
+            "Issuer events, ownership, insider, activist, official-source and government exposure evidence.",
             "pages/1_📡_Smart_Money_Macro.py",
             "pages/8_🗄️_Data_Platform.py",
         )

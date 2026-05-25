@@ -141,6 +141,8 @@ from .data_explorer import (
 from .llm_client import LlmResponse, OllamaClient
 from .llm_prompts import PROMPT_REGISTRY
 from .llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance, explain_stock_picks, suggest_screener_config
+from .macro_market import MACRO_ASSETS, MacroAsset, compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
+from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions, fetch_stocktwits_messages, fetch_x_recent_mentions, score_sentiment_frame, score_text
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
 
 __all__ = [
@@ -294,6 +296,17 @@ __all__ = [
     "audit_model_governance",
     "explain_stock_picks",
     "suggest_screener_config",
+    "MACRO_ASSETS",
+    "MacroAsset",
+    "compile_macro_asset_database",
+    "load_macro_market_artifacts",
+    "macro_asset_catalog",
+    "collect_ticker_sentiment",
+    "fetch_reddit_mentions",
+    "fetch_stocktwits_messages",
+    "fetch_x_recent_mentions",
+    "score_sentiment_frame",
+    "score_text",
     "LockInfo",
     "acquire_stage_lock",
     "is_stage_locked",

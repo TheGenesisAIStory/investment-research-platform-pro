@@ -16,7 +16,7 @@ import yfinance as yf
 
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import format_smart_money_explanation, normalize_ticker
-from support import configure_page, dataframe_with_download, load_smart_money_artifacts, render_context_bar, render_footer, render_page_intro, sidebar_roots
+from support import configure_page, dataframe_with_download, load_smart_money_artifacts, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 from smart_money_engine import run_smart_money_engine
@@ -30,7 +30,7 @@ from smart_money_engine.visualization import (
 )
 
 
-configure_page("Smart Money / Macro")
+configure_page("Smart Money Intelligence")
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -61,37 +61,21 @@ roots = sidebar_roots()
 smart_root = roots["workspace"] / "smart_money"
 data = load_smart_money_artifacts(roots["workspace"])
 
-st.title("Smart Money / Macro Intelligence")
-st.caption("Official-source-first ownership, insider, activism, macro flow, government spending and market context.")
+st.title("Smart Money Intelligence")
+st.caption("Official-source-first ownership, insider, activism, government spending and flow/positioning evidence.")
 render_context_bar()
 render_page_intro(
-    "Review official-source Smart Money scores, issuer events and macro context without leaving the workstation.",
-    "Start with market context, then open issuer deep dive or explain the selected Smart Money signal.",
+    "Review issuer-level Smart Money scores and event evidence separately from the cross-asset Macro View.",
+    "Start with issuer deep dive or explain the selected Smart Money signal; use Macro View for FX, rates, crypto and commodities.",
 )
 render_bootstrap_banner(roots, required=["smart_money_scores"])
 
 context_ticker = normalize_ticker(st.session_state.get("selected_ticker", ""))
 
-macro = load_live_macro_data()
 with st.container(border=True):
-    st.markdown("**Live market context · cached 5 minutes**")
-    m1, m2, m3 = st.columns(3)
-    spx_value, spx_delta = metric_from_history(macro["^GSPC"], decimals=2)
-    vix_value, vix_delta = metric_from_history(macro["^VIX"], decimals=2)
-    tnx_value, tnx_delta = metric_from_history(macro["^TNX"], decimals=2, suffix="%")
-    m1.metric("S&P 500", spx_value, spx_delta)
-    m2.metric("VIX", vix_value, vix_delta)
-    m3.metric("US 10Y Yield", tnx_value, tnx_delta)
-
-    spx = macro["^GSPC"]
-    if not spx.empty:
-        chart = spx.tail(30).reset_index()
-        st.plotly_chart(
-            px.line(chart, x=chart.columns[0], y="Close", title="S&P 500 · last 30 trading days", template="plotly_white"),
-            width="stretch",
-        )
-    else:
-        st.info("Live yfinance market data is temporarily unavailable. Existing Smart Money artifacts remain usable.")
+    st.markdown("**Macro view moved out of Smart Money**")
+    st.caption("FX, commodities, ETF proxies, fixed income, country/region boards, crypto and social sentiment now live in the dedicated Macro View.")
+    safe_page_link("pages/13_🌍_Macro_View.py", "Open Macro View")
 
 with st.container(border=True):
     c1, c2, c3 = st.columns(3)

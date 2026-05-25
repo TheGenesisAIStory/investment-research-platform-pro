@@ -105,7 +105,8 @@ def render_platform_sidebar() -> None:
     _safe_page_link("pages/4_🔍_Screener_Builder.py", "Screening & Research")
     _safe_page_link("pages/2_🔬_Valuation_Research.py", "Valuation")
     _safe_page_link("pages/3_📁_Portfolio_Research.py", "Portfolio")
-    _safe_page_link("pages/1_📡_Smart_Money_Macro.py", "Smart Money & Macro")
+    _safe_page_link("pages/13_🌍_Macro_View.py", "Macro View")
+    _safe_page_link("pages/1_📡_Smart_Money_Macro.py", "Smart Money Intelligence")
     st.sidebar.markdown("---")
 
     st.sidebar.markdown("### LABS")
