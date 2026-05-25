@@ -9,41 +9,89 @@ for candidate in [APP_DIR, PROJECT_ROOT]:
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
+import pandas as pd
 import plotly.express as px
 import streamlit as st
+import yfinance as yf
 
-from support import configure_page, dataframe_with_download, load_smart_money_artifacts, sidebar_roots
+from data_bootstrap import render_bootstrap_banner
+from screener_workbench import format_smart_money_explanation, normalize_ticker
+from support import configure_page, dataframe_with_download, load_smart_money_artifacts, render_context_bar, render_footer, render_page_intro, sidebar_roots
+from ui_ops import render_missing_data_cta
 
-try:
-    from src.smart_money_engine import run_smart_money_engine
-    from src.smart_money_engine.visualization import (
-        cot_percentile_chart,
-        government_exposure_treemap,
-        insider_bar,
-        score_ranking_chart,
-        sector_heatmap,
-        tic_flow_chart,
-    )
-except Exception:
-    from smart_money_engine import run_smart_money_engine
-    from smart_money_engine.visualization import (
-        cot_percentile_chart,
-        government_exposure_treemap,
-        insider_bar,
-        score_ranking_chart,
-        sector_heatmap,
-        tic_flow_chart,
-    )
+from smart_money_engine import run_smart_money_engine
+from smart_money_engine.visualization import (
+    cot_percentile_chart,
+    government_exposure_treemap,
+    insider_bar,
+    score_ranking_chart,
+    sector_heatmap,
+    tic_flow_chart,
+)
 
 
-configure_page("Smart Money Gov Data")
+configure_page("Smart Money / Macro")
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_live_macro_data() -> dict[str, pd.DataFrame]:
+    symbols = ["^GSPC", "^VIX", "^TNX"]
+    payload: dict[str, pd.DataFrame] = {}
+    for symbol in symbols:
+        try:
+            frame = yf.Ticker(symbol).history(period="60d", interval="1d", auto_adjust=False)
+            payload[symbol] = frame.dropna(subset=["Close"]) if not frame.empty else pd.DataFrame()
+        except Exception:
+            payload[symbol] = pd.DataFrame()
+    return payload
+
+
+def metric_from_history(frame: pd.DataFrame, decimals: int = 2, suffix: str = "") -> tuple[str, str]:
+    if frame.empty or "Close" not in frame.columns:
+        return "n/a", "waiting for data"
+    latest = float(frame["Close"].iloc[-1])
+    value = f"{latest:.{decimals}f}{suffix}"
+    if len(frame) < 2:
+        return value, "n/a"
+    previous = float(frame["Close"].iloc[-2])
+    delta = latest - previous
+    return value, f"{delta:+.{decimals}f}{suffix}"
 
 roots = sidebar_roots()
 smart_root = roots["workspace"] / "smart_money"
 data = load_smart_money_artifacts(roots["workspace"])
 
-st.title("Smart Money Government Data Engine")
-st.caption("Official-source-first ownership, insider, activism, macro flow and government spending intelligence.")
+st.title("Smart Money / Macro Intelligence")
+st.caption("Official-source-first ownership, insider, activism, macro flow, government spending and market context.")
+render_context_bar()
+render_page_intro(
+    "Review official-source Smart Money scores, issuer events and macro context without leaving the workstation.",
+    "Start with market context, then open issuer deep dive or explain the selected Smart Money signal.",
+)
+render_bootstrap_banner(roots, required=["smart_money_scores"])
+
+context_ticker = normalize_ticker(st.session_state.get("selected_ticker", ""))
+
+macro = load_live_macro_data()
+with st.container(border=True):
+    st.markdown("**Live market context · cached 5 minutes**")
+    m1, m2, m3 = st.columns(3)
+    spx_value, spx_delta = metric_from_history(macro["^GSPC"], decimals=2)
+    vix_value, vix_delta = metric_from_history(macro["^VIX"], decimals=2)
+    tnx_value, tnx_delta = metric_from_history(macro["^TNX"], decimals=2, suffix="%")
+    m1.metric("S&P 500", spx_value, spx_delta)
+    m2.metric("VIX", vix_value, vix_delta)
+    m3.metric("US 10Y Yield", tnx_value, tnx_delta)
+
+    spx = macro["^GSPC"]
+    if not spx.empty:
+        chart = spx.tail(30).reset_index()
+        st.plotly_chart(
+            px.line(chart, x=chart.columns[0], y="Close", title="S&P 500 · last 30 trading days", template="plotly_white"),
+            width="stretch",
+        )
+    else:
+        st.info("Live yfinance market data is temporarily unavailable. Existing Smart Money artifacts remain usable.")
 
 with st.container(border=True):
     c1, c2, c3 = st.columns(3)
@@ -51,14 +99,30 @@ with st.container(border=True):
     region = c2.selectbox("Region Lens", ["USA core", "EU / Italy proxy", "Global overview"])
     mode = c3.selectbox("Analyst Mode", ["Buy-side", "Macro", "Event-driven", "Government exposure"])
     if st.button("Run local Smart Money refresh", width="stretch"):
-        outputs = run_smart_money_engine(roots["financial_db"], smart_root, max_files_per_source=int(max_files))
-        st.success(f"Smart Money artifacts written to {smart_root}")
-        st.json(outputs["manifest"])
-        data = load_smart_money_artifacts(roots["workspace"])
+        try:
+            outputs = run_smart_money_engine(roots["financial_db"], smart_root, max_files_per_source=int(max_files))
+            st.success(f"Smart Money artifacts written to {smart_root}")
+            st.json(outputs["manifest"])
+            data = load_smart_money_artifacts(roots["workspace"])
+        except Exception as exc:
+            log_dir = smart_root / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_path = log_dir / f"smart_money_{pd.Timestamp.now(tz='UTC').strftime('%Y%m%d_%H%M%S')}.log"
+            log_path.write_text(f"{type(exc).__name__}: {exc}", encoding="utf-8")
+            st.error("Smart Money refresh failed cleanly. Check source paths and retry from Notebook Runner if this is a heavy refresh.")
+            st.caption(f"Diagnostic log: {log_path}")
 
 scores = data["scores"]
 events = data["events"]
 coverage = data["coverage"]
+
+if scores.empty:
+    render_missing_data_cta(
+        "Smart Money",
+        job_id="smart_money_government_refresh",
+        output_path=smart_root / "tables" / "SmartMoney_smart_money_scores.csv",
+        cli_hint="python research_platform_app/scheduler.py --once --jobs smart_money_government_refresh",
+    )
 
 cols = st.columns(4)
 cols[0].metric("Ranked Issuers", len(scores))
@@ -81,6 +145,7 @@ tabs = st.tabs([
     "Overview",
     "Smart Money Screener",
     "Issuer Deep Dive",
+    "Explain Smart Money signal",
     "Manager Deep Dive",
     "Sector / Theme Monitor",
     "Macro & Flows",
@@ -111,8 +176,10 @@ with tabs[1]:
 
 with tabs[2]:
     tickers = sorted(scores["ticker"].dropna().astype(str).unique().tolist()) if not scores.empty and "ticker" in scores.columns else []
-    selected = st.selectbox("Issuer ticker", tickers) if tickers else ""
+    default_index = tickers.index(context_ticker) if context_ticker in tickers else 0
+    selected = st.selectbox("Issuer ticker", tickers, index=default_index) if tickers else context_ticker
     if selected:
+        st.session_state["selected_ticker"] = selected
         st.dataframe(scores[scores["ticker"].astype(str).eq(selected)], width="stretch", hide_index=True)
         for key in ["holdings", "insiders", "beneficial_events", "government_spending"]:
             df = data[key]
@@ -123,6 +190,23 @@ with tabs[2]:
         st.info("No issuer-level official-source signals available yet.")
 
 with tabs[3]:
+    tickers = sorted(scores["ticker"].dropna().astype(str).unique().tolist()) if not scores.empty and "ticker" in scores.columns else []
+    default_index = tickers.index(context_ticker) if context_ticker in tickers else 0
+    selected = st.selectbox("Issuer for explanation", tickers, index=default_index, key="smart_money_explain_ticker") if tickers else context_ticker
+    if selected:
+        st.session_state["selected_ticker"] = selected
+        issuer_view = scores[scores["ticker"].map(normalize_ticker).eq(normalize_ticker(selected))] if not scores.empty and "ticker" in scores.columns else pd.DataFrame()
+        issuer_row = issuer_view.iloc[0] if not issuer_view.empty else None
+        event_view = events[events["ticker"].map(normalize_ticker).eq(normalize_ticker(selected))] if not events.empty and "ticker" in events.columns else pd.DataFrame()
+        st.write(format_smart_money_explanation(normalize_ticker(selected), issuer_row, event_view))
+        if event_view.empty:
+            st.info("No issuer-level official-source event rows are present for this ticker.")
+        else:
+            st.dataframe(event_view, width="stretch", hide_index=True)
+    else:
+        st.info("No issuer-level Smart Money row is available yet.")
+
+with tabs[4]:
     holdings = data["holdings"]
     managers = sorted(holdings["filer_name"].dropna().astype(str).unique().tolist()) if not holdings.empty and "filer_name" in holdings.columns else []
     manager = st.selectbox("Manager / filer", managers) if managers else ""
@@ -132,13 +216,13 @@ with tabs[3]:
     else:
         st.info("Manager deep dive appears when SEC 13F holdings are available.")
 
-with tabs[4]:
+with tabs[5]:
     dataframe_with_download("Sector monitor", data["sector_monitor"], "smart_money_sector_monitor.csv")
     chart = sector_heatmap(data["sector_monitor"])
     if chart is not None:
         st.plotly_chart(chart, width="stretch")
 
-with tabs[5]:
+with tabs[6]:
     c1 = cot_percentile_chart(data["macro_positioning"])
     c2 = tic_flow_chart(data["capital_flows"])
     if c1 is not None:
@@ -148,13 +232,13 @@ with tabs[5]:
     dataframe_with_download("CFTC COT positioning", data["macro_positioning"], "smart_money_cot.csv")
     dataframe_with_download("Treasury TIC flows", data["capital_flows"], "smart_money_tic.csv")
 
-with tabs[6]:
+with tabs[7]:
     chart = government_exposure_treemap(data["government_spending"])
     if chart is not None:
         st.plotly_chart(chart, width="stretch")
     dataframe_with_download("Government spending exposure", data["government_spending"], "smart_money_government_spending.csv")
 
-with tabs[7]:
+with tabs[8]:
     st.subheader("USA vs EU / Italy caveat")
     st.markdown(
         """
@@ -174,3 +258,5 @@ with tabs[7]:
 
 with st.expander("Event Feed", expanded=False):
     dataframe_with_download("Event feed", events, "smart_money_event_feed.csv")
+
+render_footer()

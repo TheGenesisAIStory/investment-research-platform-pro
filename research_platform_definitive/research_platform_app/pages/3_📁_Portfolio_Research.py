@@ -11,7 +11,10 @@ import plotly.express as px
 import pandas as pd
 import streamlit as st
 
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, show_empty, sidebar_roots
+from data_bootstrap import render_bootstrap_banner
+from screener_workbench import normalize_ticker
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, safe_page_link, show_empty, sidebar_roots
+from ui_ops import render_missing_data_cta
 
 
 configure_page("Portfolio Research")
@@ -25,6 +28,14 @@ ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
 
 st.title("Portfolio Research & Allocation")
 st.caption("Allocation-aware research view over portfolio selection, weights, risk, performance and diagnostics artifacts.")
+render_context_bar()
+render_page_intro(
+    "Inspect portfolio selection, holdings, risk/performance diagnostics and overlays from ML and Smart Money artifacts.",
+    "Start from allocation overview, then drill into selected holdings or build a sandbox from Screener ideas.",
+)
+render_bootstrap_banner(roots, required=["company_screener", "ml_signals"])
+
+context_ticker = normalize_ticker(st.session_state.get("selected_ticker", ""))
 
 selection = data["selection_results"]
 allocation = data["allocation"] if not data["allocation"].empty else selection
@@ -68,6 +79,14 @@ with st.container(border=True):
     c3.metric("engine_weights", "present" if not data["engine_weights"].empty else "missing")
     c4.metric("smart_money", "present" if not smart_scores.empty else "missing")
 
+if allocation.empty and selection.empty:
+    render_missing_data_cta(
+        "Portfolio",
+        job_id="portfolio_research_refresh",
+        output_path=root / "tables" / "PortfolioSelectionResults.csv",
+        cli_hint="python research_platform_app/scheduler.py --once --jobs portfolio_research_refresh",
+    )
+
 st.markdown(
     """
     <div class="rp-note">
@@ -77,6 +96,14 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+if context_ticker:
+    with st.expander(f"{context_ticker} · portfolio context", expanded=False):
+        portfolio_row = allocation[allocation["ticker"].map(normalize_ticker).eq(context_ticker)] if not allocation.empty and "ticker" in allocation.columns else pd.DataFrame()
+        if portfolio_row.empty:
+            st.info("This ticker is not present in the current allocation/selection artifact.")
+        else:
+            st.dataframe(portfolio_row, width="stretch", hide_index=True)
 
 tab_overview, tab_selection, tab_smart_money, tab_ml_lab, tab_uncertainty, tab_diagnostics = st.tabs(["Overview", "Selection Lab", "Smart Money Overlay", "ML Lab", "Valuation Uncertainty", "Diagnostics"])
 
@@ -110,7 +137,7 @@ with tab_smart_money:
     )
     if smart_scores.empty:
         st.info("Run `smart_money_government_refresh` from Run Notebooks to add official-source overlays.")
-        st.page_link("pages/5_Run_Notebooks.py", label="Open Run Notebooks")
+        safe_page_link("pages/6_🧪_Notebook_Runner.py", "Open Run Notebooks")
     else:
         overlay = allocation.copy() if not allocation.empty else selection.copy()
         if not overlay.empty and "ticker" in overlay.columns and "ticker" in smart_scores.columns:
@@ -144,7 +171,7 @@ with tab_ml_lab:
     st.markdown("ML Stock Lab turns model-implied mispricing into ranking and quintile diagnostics for allocation review.")
     if ml_signals.empty:
         st.info("Run ML Stock Lab to add model-implied fair value, z-score and quintile outputs.")
-        st.page_link("pages/9_ML_Stock_Lab.py", label="Open ML Stock Lab")
+        safe_page_link("pages/9_ML_Stock_Lab.py", "Open ML Stock Lab")
     else:
         overlay = allocation.copy() if not allocation.empty else selection.copy()
         if not overlay.empty and "ticker" in overlay.columns and "ticker" in ml_signals.columns:
@@ -166,7 +193,7 @@ with tab_uncertainty:
     overlay = allocation.copy() if not allocation.empty else selection.copy()
     if overlay.empty or model_factors.empty or "ticker" not in overlay.columns:
         st.info("Run Company Valuation DCF/Residual Income/EVA scenario artifacts to add portfolio uncertainty overlays.")
-        st.page_link("pages/1_Valuation_Research.py", label="Open Valuation Research")
+        safe_page_link("pages/2_🔬_Valuation_Research.py", "Open Valuation Research")
     else:
         overlay = overlay.copy()
         overlay["ticker"] = overlay["ticker"].astype(str).str.upper().str.strip()
@@ -209,3 +236,5 @@ with tab_diagnostics:
         st.plotly_chart(px.bar(scenarios, x=x, y=y, title=f"Scenario {y}", template="plotly_white"), width="stretch")
     with st.expander("Best-practice note", expanded=True):
         st.markdown("Use selection score, drawdown, volatility, scenario downside and concentration together. A high score with poor risk diagnostics needs manual review.")
+
+render_footer()

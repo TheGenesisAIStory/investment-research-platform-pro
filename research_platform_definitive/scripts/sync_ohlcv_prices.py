@@ -6,14 +6,6 @@ Default mode is dry-run. Use --execute for network calls and DB upserts.
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-for candidate in [PROJECT_ROOT, PROJECT_ROOT / "src"]:
-    if str(candidate) not in sys.path:
-        sys.path.insert(0, str(candidate))
 
 from research_platform_core.data_platform import resolve_data_platform_roots
 from research_platform_core.loaders.kaggle_seed_loader import import_kaggle_seeds

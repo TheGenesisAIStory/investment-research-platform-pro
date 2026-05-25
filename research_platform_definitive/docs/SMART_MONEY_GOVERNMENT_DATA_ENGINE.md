@@ -46,7 +46,7 @@ Output principali:
 
 1. MVP USA: 13F + Form 4 + 13D/G parser locali, coverage, screener.
 2. Smart money scoring: componenti explainable e coverage-aware.
-3. Dashboard: pagina Streamlit `8_Smart_Money_Gov_Data.py`.
+3. Dashboard: pagina Streamlit `1_📡_Smart_Money_Macro.py`.
 4. EU expansion: ESMA FIRDS, ECB SDW, TED, CONSOB/AMF/BaFin/CNMV connectors separati.
 5. Alerting: event feed, weekly report, thresholds e scheduler.
 

@@ -18,60 +18,35 @@ for candidate in [APP_DIR, PROJECT_ROOT, PROJECT_ROOT / "src"]:
         sys.path.insert(0, str(candidate))
 
 try:
-    from support import configure_page, sidebar_roots
+    from support import configure_page, render_context_bar, render_footer, render_page_intro, sidebar_roots
     from data_api_config import CONFIG_PATH, load_data_api_config
 except Exception:
-    from research_platform_app.support import configure_page, sidebar_roots
+    from research_platform_app.support import configure_page, render_context_bar, render_footer, render_page_intro, sidebar_roots
     from research_platform_app.data_api_config import CONFIG_PATH, load_data_api_config
 
-try:
-    from src.research_platform_core.api_management import (
-        accepted_api_env_vars,
-        api_control_status,
-        build_env_template,
-        resolve_api_control_roots,
-        write_api_control_status,
-    )
-    from src.research_platform_core.batch_download import (
-        EXPORT_FORMATS,
-        create_batch_download,
-        enrich_inventory_for_export,
-        estimate_batch_size,
-    )
-    from src.research_platform_core.data_bridge import DataBridge
-    from src.research_platform_core.data_center_catalog import build_target_catalog, summarize_target_catalog
-    from src.research_platform_core.data_platform import (
-        dataset_status,
-        provider_fallback_plan,
-        read_dataset_drive_first,
-        refresh_europe_stoxx_prices_incremental,
-        resolve_data_platform_roots,
-        write_data_platform_status,
-    )
-except Exception:
-    from research_platform_core.api_management import (
-        accepted_api_env_vars,
-        api_control_status,
-        build_env_template,
-        resolve_api_control_roots,
-        write_api_control_status,
-    )
-    from research_platform_core.batch_download import (
-        EXPORT_FORMATS,
-        create_batch_download,
-        enrich_inventory_for_export,
-        estimate_batch_size,
-    )
-    from research_platform_core.data_bridge import DataBridge
-    from research_platform_core.data_center_catalog import build_target_catalog, summarize_target_catalog
-    from research_platform_core.data_platform import (
-        dataset_status,
-        provider_fallback_plan,
-        read_dataset_drive_first,
-        refresh_europe_stoxx_prices_incremental,
-        resolve_data_platform_roots,
-        write_data_platform_status,
-    )
+from research_platform_core.api_management import (
+    accepted_api_env_vars,
+    api_control_status,
+    build_env_template,
+    resolve_api_control_roots,
+    write_api_control_status,
+)
+from research_platform_core.batch_download import (
+    EXPORT_FORMATS,
+    create_batch_download,
+    enrich_inventory_for_export,
+    estimate_batch_size,
+)
+from research_platform_core.data_bridge import DataBridge
+from research_platform_core.data_center_catalog import build_target_catalog, summarize_target_catalog
+from research_platform_core.data_platform import (
+    dataset_status,
+    provider_fallback_plan,
+    read_dataset_drive_first,
+    refresh_europe_stoxx_prices_incremental,
+    resolve_data_platform_roots,
+    write_data_platform_status,
+)
 
 
 def _theme_css(theme: dict[str, str]) -> str:
@@ -660,6 +635,11 @@ def render_data_api_control_center() -> None:
 
     st.title("Data/API Control Center")
     st.caption("Drive-first data lake, API governance, batch export and platform health for machine-learning-for-trading.")
+    render_context_bar()
+    render_page_intro(
+        "Manage provider registry, inventory exports, credential health and batch downloads from the shared Database Finanziario.",
+        "Use Dashboard for health, then Inventory or API Registry for operational diagnostics.",
+    )
 
     default_limit = int(config.get("app", {}).get("default_inventory_limit", 5000))
     max_files = st.sidebar.slider("Inventory scan limit", min_value=500, max_value=20000, value=default_limit, step=500)
@@ -691,3 +671,4 @@ def render_data_api_control_center() -> None:
         _render_analytics_tab(inventory, summary, providers, health, roots)
     with tabs[5]:
         _render_settings_tab(roots, platform_roots, api_roots, config, max_files)
+    render_footer()

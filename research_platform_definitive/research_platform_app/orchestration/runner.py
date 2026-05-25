@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import traceback
 import os
+import sys
 from pathlib import Path
+
+SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+if SRC_ROOT.exists() and str(SRC_ROOT) not in sys.path:
+    # Prefer the canonical editable package over legacy top-level folders with
+    # the same package names when Streamlit/AppTest runs from the repo root.
+    sys.path.insert(0, str(SRC_ROOT))
 
 try:
     from research_platform_app.operations import generate_all_artifacts
@@ -12,30 +19,18 @@ try:
 except Exception:
     from operations import generate_all_artifacts
     from support import default_roots
-try:
-    from src.research_platform_core import refresh_aqr_factor_library
-    from src.research_platform_core.api_management import write_api_control_status
-    from src.research_platform_core.data_center_catalog import build_target_catalog, summarize_target_catalog
-    from src.research_platform_core.data_platform import refresh_europe_stoxx_prices_incremental, write_data_platform_status
-    from src.research_platform_core.loaders.bditalia_client import BancaDItaliaClient
-    from src.research_platform_core.loaders.ecb_client import EcbClient
-    from src.research_platform_core.loaders.fama_french import FamaFrenchLoader
-    from src.research_platform_core.macro_features import build_credit_risk_macro_dataset, build_inflation_nowcasting_dataset, save_macro_feature_panel
-    from src.research_platform_core.ohlcv_ingest import OhlcvIngestJob, summarize_ohlcv_manifest
-    from src.smart_money_engine import run_smart_money_engine
-    from src.ml_stock_lab import run_ml_stock_lab_experiment
-except Exception:
-    from research_platform_core import refresh_aqr_factor_library
-    from research_platform_core.api_management import write_api_control_status
-    from research_platform_core.data_center_catalog import build_target_catalog, summarize_target_catalog
-    from research_platform_core.data_platform import refresh_europe_stoxx_prices_incremental, write_data_platform_status
-    from research_platform_core.loaders.bditalia_client import BancaDItaliaClient
-    from research_platform_core.loaders.ecb_client import EcbClient
-    from research_platform_core.loaders.fama_french import FamaFrenchLoader
-    from research_platform_core.macro_features import build_credit_risk_macro_dataset, build_inflation_nowcasting_dataset, save_macro_feature_panel
-    from research_platform_core.ohlcv_ingest import OhlcvIngestJob, summarize_ohlcv_manifest
-    from smart_money_engine import run_smart_money_engine
-    from ml_stock_lab import run_ml_stock_lab_experiment
+from research_platform_core import refresh_aqr_factor_library, run_banks_data_pipeline
+from research_platform_core.api_management import write_api_control_status
+from research_platform_core.data_center_catalog import build_target_catalog, summarize_target_catalog
+from research_platform_core.data_completion import CompletionConfig, ResearchDataBootstrapper, validate_completion_coverage
+from research_platform_core.data_platform import refresh_europe_stoxx_prices_incremental, write_data_platform_status
+from research_platform_core.loaders.bditalia_client import BancaDItaliaClient
+from research_platform_core.loaders.ecb_client import EcbClient
+from research_platform_core.loaders.fama_french import FamaFrenchLoader
+from research_platform_core.macro_features import build_credit_risk_macro_dataset, build_inflation_nowcasting_dataset, save_macro_feature_panel
+from research_platform_core.ohlcv_ingest import OhlcvIngestJob, summarize_ohlcv_manifest
+from smart_money_engine import run_smart_money_engine
+from ml_stock_lab import run_ml_stock_lab_experiment, train_ml_model_suite
 
 from .artifact_contracts import validate_expected_artifacts
 from .job_store import JobStore
@@ -185,6 +180,47 @@ def execute_run(
             summary.to_csv(out_dir / "DataCenter_target_summary.csv", index=False)
             append_log(log_path, f"Data Center validation written to {out_dir}; max_files={max_files}")
             output_notebook.write_text("Data Center validation module job. No notebook executed.\n", encoding="utf-8")
+        elif job.runner_type == "research_data_bootstrap":
+            max_assets_raw = int(params.get("top_n") or 0)
+            max_symbols_raw = int(params.get("max_symbols") or 0)
+            config = CompletionConfig(
+                start_year=int(params.get("start_year") or 2000),
+                end_year=int(params.get("end_year") or 2026),
+                execute=bool(params.get("execute", False)),
+                incremental=not bool(params.get("refresh_cache", False)),
+                refresh=bool(params.get("refresh_cache", False)),
+                max_assets=None if max_assets_raw == 0 else max_assets_raw,
+                max_symbols=None if max_symbols_raw == 0 else max_symbols_raw,
+            )
+            bootstrapper = ResearchDataBootstrapper(roots["financial_db"], roots["workspace"], config)
+            result = bootstrapper.run_all()
+            coverage = validate_completion_coverage(roots["financial_db"], roots["workspace"], config.start_year, config.end_year, strict=False)
+            append_log(log_path, f"Research data bootstrap config: {config}")
+            for name, frame in result.items():
+                append_log(log_path, f"{name}: rows={len(frame)}")
+            append_log(log_path, coverage.to_string(index=False))
+            output_notebook.write_text("Research data bootstrap module job. No notebook executed.\n", encoding="utf-8")
+        elif job.runner_type == "ml_training_lab":
+            max_rows_raw = int(params.get("top_n") or 0)
+            model_list = [item.strip() for item in str(params.get("model_list") or "ols,rf").split(",") if item.strip()]
+            result = train_ml_model_suite(
+                output_root=roots["workspace"],
+                financial_db_root=roots.get("financial_db"),
+                start_year=int(params.get("start_year") or 2000),
+                end_year=int(params.get("end_year") or 2026),
+                train_end_year=int(params.get("train_end_year") or 2018),
+                test_start_year=int(params.get("test_start_year") or 2019),
+                models=model_list,
+                max_rows=None if max_rows_raw == 0 else max_rows_raw,
+                use_ollama=bool(params.get("use_ollama", False)),
+                target_horizon_days=int(params.get("target_horizon_days") or 21),
+                feature_blocks=[item.strip() for item in str(params.get("feature_blocks") or "value,quality,momentum,risk,size,growth,model_based").split(",") if item.strip()],
+                cost_bps=float(params.get("cost_bps") or 10.0),
+            )
+            append_log(log_path, f"ML Training Lab result: {result.get('status')}")
+            append_log(log_path, result["metrics"].to_string(index=False) if not result["metrics"].empty else "No metrics produced")
+            append_log(log_path, f"Paths: {result.get('paths')}")
+            output_notebook.write_text("ML training lab module job. No notebook executed.\n", encoding="utf-8")
         elif job.runner_type == "official_macro":
             force = bool(params.get("refresh_cache", False))
             ecb = EcbClient(roots["financial_db"], roots["workspace"])
@@ -225,6 +261,19 @@ def execute_run(
             append_log(log_path, f"ML Stock Lab result: {result.get('status')}")
             append_log(log_path, f"ML Stock Lab paths: {result.get('paths')}")
             output_notebook.write_text("ML Stock Lab module job. No notebook executed.\n", encoding="utf-8")
+        elif job.runner_type == "banking_data":
+            output_dir = roots["workspace"] / "banks_pipeline"
+            cache_dir = output_dir / "_cache"
+            result = run_banks_data_pipeline(
+                output_dir=output_dir,
+                cache_dir=cache_dir,
+                market_start=str(params.get("market_start") or "2015-01-01"),
+                include_market=bool(params.get("include_market", False)),
+                include_ecb_macro=bool(params.get("include_ecb_macro", False)),
+            )
+            append_log(log_path, f"Banking Data Lab artifacts: {{name: len(df) for name, df in result.items()}}")
+            append_log(log_path, str({name: len(df) for name, df in result.items()}))
+            output_notebook.write_text("Banking Data Lab module job. No notebook executed.\n", encoding="utf-8")
         elif job.runner_type == "papermill":
             try:
                 run_with_papermill(job, params, output_notebook, log_path)

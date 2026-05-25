@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
+APP_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = APP_DIR.parent
+for candidate in [APP_DIR, PROJECT_ROOT]:
+    if str(candidate) not in sys.path:
+        sys.path.insert(0, str(candidate))
+
 from operations import generate_all_artifacts, generate_company_artifacts, generate_portfolio_artifacts
+from data_bootstrap import render_bootstrap_banner
 from orchestration import build_freshness_table
 from orchestration.scheduler import scheduler_tick
 from orchestration.scheduler_process import scheduler_status, start_scheduler_process, stop_scheduler_process
@@ -13,10 +23,15 @@ from support import (
     find_artifacts,
     friendly_domain,
     latest_modified_label,
+    load_ohlcv_coverage_manifest,
     run_history_frame,
     run_metrics,
     load_smart_money_artifacts,
     load_ml_stock_lab_artifacts,
+    ohlcv_coverage_counts,
+    render_context_bar,
+    render_footer,
+    render_page_intro,
     sidebar_roots,
     status_counts_label,
 )
@@ -31,9 +46,17 @@ runs = run_history_frame()
 metrics = run_metrics(runs)
 smart_money = load_smart_money_artifacts(roots["workspace"])
 ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
+ohlcv_manifest = load_ohlcv_coverage_manifest(roots)
+ohlcv_counts = ohlcv_coverage_counts(ohlcv_manifest)
 
 st.title("Research Platform · Overview")
 st.caption("Buy-side research workstation over notebook-generated valuation, portfolio, data platform and orchestration artifacts.")
+render_context_bar()
+render_page_intro(
+    "See desk health, data coverage, recent runs and the fastest links into daily research workflows.",
+    "Confirm data/model status, then continue to Screening & Research or Valuation.",
+)
+render_bootstrap_banner(roots, required=["equity_metadata", "company_screener", "ml_signals", "smart_money_scores"])
 
 st.markdown(
     """
@@ -51,23 +74,31 @@ cards[1].metric("Success Rate", metrics["success_rate"])
 cards[2].metric("Artifact Contracts", status_counts_label(freshness))
 cards[3].metric("ML Lab Signals", len(ml_lab["signals"]))
 
+coverage_cards = st.columns(4)
+coverage_cards[0].metric("OHLCV OK", ohlcv_counts["OK"])
+coverage_cards[1].metric("Limited History", ohlcv_counts["LIMITED_HISTORY"], help="Active recent listings with no valid pre-listing history.")
+coverage_cards[2].metric("Delisted", ohlcv_counts["DELISTED"])
+coverage_cards[3].metric("Network Timeouts", ohlcv_counts["NETWORK_TIMEOUT"])
+
 st.subheader("Artifact Roots")
 root_cols = st.columns(4)
 for col, domain in zip(root_cols, ["company", "portfolio", "workspace", "financial_db"]):
     root = roots[domain]
     domain_rows = artifacts[artifacts["domain"].eq(domain)] if not artifacts.empty and "domain" in artifacts.columns else pd.DataFrame()
     col.markdown(f"**{friendly_domain(domain)}**")
-    col.metric("Files", len(domain_rows), latest_modified_label(domain_rows if domain != "financial_db" else root))
+    freshness_label = ("available" if root.exists() else "missing") if domain == "financial_db" else latest_modified_label(domain_rows)
+    file_count = "shared" if domain == "financial_db" else len(domain_rows)
+    col.metric("Files", file_count, freshness_label)
     with col.expander("Path", expanded=False):
         st.code(str(root))
 
 nav_cols = st.columns(4)
-nav_cols[0].page_link("pages/1_Valuation_Research.py", label="Valuation Research")
-nav_cols[1].page_link("pages/2_Portfolio_Research.py", label="Portfolio Research")
-nav_cols[2].page_link("pages/4_Artifacts_Exports.py", label="Artifacts / Exports")
-nav_cols[3].page_link("pages/7_Data_Platform.py", label="Data Platform")
+nav_cols[0].page_link("pages/2_🔬_Valuation_Research.py", label="Valuation Research")
+nav_cols[1].page_link("pages/3_📁_Portfolio_Research.py", label="Portfolio Research")
+nav_cols[2].page_link("pages/5_📤_Export_Center.py", label="Artifacts / Exports")
+nav_cols[3].page_link("pages/8_🗄️_Data_Platform.py", label="Data Platform")
 st.page_link("pages/11_Data_API_Control_Center.py", label="Open Data/API Control Center")
-st.page_link("pages/8_Smart_Money_Gov_Data.py", label="Open Smart Money Government Data Engine")
+st.page_link("pages/1_📡_Smart_Money_Macro.py", label="Open Smart Money / Macro")
 st.page_link("pages/9_ML_Stock_Lab.py", label="Open ML Stock Lab")
 st.page_link("pages/12_Banking_Data_Lab.py", label="Open Banking Data Lab")
 
@@ -164,3 +195,5 @@ with st.expander("How to use this app", expanded=True):
         4. Use **Artifacts / Exports** as the contract view for future API and dashboard evolution.
         """
     )
+
+render_footer()

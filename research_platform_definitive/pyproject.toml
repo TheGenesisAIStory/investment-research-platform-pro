@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-platform-definitive"
+version = "1.0.0"
+description = "Investment Research Platform Pro - TheGenesisAI research workstation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "streamlit",
+  "pandas",
+  "numpy",
+  "plotly",
+  "requests",
+  "yfinance",
+  "pyarrow",
+  "lxml",
+  "sqlalchemy",
+  "papermill",
+  "nbclient",
+  "nbformat",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "scikit-learn",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src", "research_platform_app" = "research_platform_app"}
+packages = [
+  "research_platform_core",
+  "research_platform_core.loaders",
+  "ml_stock_lab",
+  "smart_money_engine",
+  "research_platform_app",
+  "research_platform_app.orchestration",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

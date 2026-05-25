@@ -141,7 +141,7 @@ class ProviderUsageTracker:
 
     @staticmethod
     def _today() -> str:
-        return pd.Timestamp.utcnow().date().isoformat()
+        return pd.Timestamp.now(tz="UTC").date().isoformat()
 
     def _load(self) -> dict[str, Any]:
         if self.path.exists():

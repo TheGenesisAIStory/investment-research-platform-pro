@@ -30,6 +30,54 @@ def sharpe_ratio(returns: pd.Series, periods_per_year: int = 252) -> float:
     return float((r.mean() / r.std(ddof=0)) * np.sqrt(periods_per_year))
 
 
+def information_coefficient(y_true: pd.Series, y_score: pd.Series, method: str = "pearson") -> float:
+    """Cross-sectional IC between realized returns and model scores."""
+    y = pd.to_numeric(y_true, errors="coerce")
+    s = pd.to_numeric(y_score, errors="coerce")
+    mask = y.notna() & s.notna()
+    if mask.sum() < 3 or y[mask].nunique() < 2 or s[mask].nunique() < 2:
+        return float("nan")
+    return float(y[mask].corr(s[mask], method=method))
+
+
+def rank_information_coefficient(y_true: pd.Series, y_score: pd.Series) -> float:
+    """Spearman rank IC, the default signal-quality metric for stock ranking."""
+    return information_coefficient(y_true, y_score, method="spearman")
+
+
+def rolling_ic_by_date(
+    frame: pd.DataFrame,
+    score_col: str = "expected_return",
+    return_col: str = "forward_return",
+    date_col: str = "date",
+) -> pd.DataFrame:
+    """Compute IC/RankIC by date for model monitoring dashboards."""
+    if frame.empty or not {score_col, return_col}.issubset(frame.columns):
+        return pd.DataFrame(columns=[date_col, "ic", "rank_ic", "name_count"])
+    if date_col not in frame.columns:
+        return pd.DataFrame(
+            [
+                {
+                    date_col: "all",
+                    "ic": information_coefficient(frame[return_col], frame[score_col]),
+                    "rank_ic": rank_information_coefficient(frame[return_col], frame[score_col]),
+                    "name_count": int(frame[[score_col, return_col]].dropna().shape[0]),
+                }
+            ]
+        )
+    rows = []
+    for date, group in frame.groupby(date_col):
+        rows.append(
+            {
+                date_col: date,
+                "ic": information_coefficient(group[return_col], group[score_col]),
+                "rank_ic": rank_information_coefficient(group[return_col], group[score_col]),
+                "name_count": int(group[[score_col, return_col]].dropna().shape[0]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def turnover(weights: pd.DataFrame, date_col: str = "date", ticker_col: str = "ticker", weight_col: str = "weight") -> float:
     if weights.empty or not {date_col, ticker_col, weight_col}.issubset(weights.columns):
         return float("nan")

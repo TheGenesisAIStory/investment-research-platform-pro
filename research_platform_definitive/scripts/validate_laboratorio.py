@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-LAB_ROOT = ROOT / "laboratorio"
+LAB_ROOT = ROOT / "archive" / "laboratorio"
 MANIFEST = LAB_ROOT / "LABORATORIO_MANIFEST.csv"
 
 
@@ -29,6 +29,8 @@ def main() -> int:
         path = Path(row["bundle_path"])
         if not path.is_absolute():
             path = ROOT.parent / path
+        if not path.exists() and "/laboratorio/" in str(path):
+            path = Path(str(path).replace("/laboratorio/", "/archive/laboratorio/"))
         if not path.exists():
             failures.append(f"MISSING {row['relative_path']}")
             continue
@@ -55,4 +57,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

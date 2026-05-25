@@ -180,7 +180,7 @@ def create_batch_download(
         data = data.head(max_files)
 
     output_root = Path(output_root).expanduser()
-    timestamp = pd.Timestamp.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = pd.Timestamp.now(tz="UTC").strftime("%Y%m%d_%H%M%S")
     label = slugify(run_label or f"{timestamp}_{export_format}_export")
     export_root = output_root / "batch_downloads" / label
     by_role_root = export_root / "by_role"

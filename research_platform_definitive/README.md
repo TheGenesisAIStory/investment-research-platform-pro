@@ -20,18 +20,11 @@ Open these first:
 10. `docs/API_USAGE.md`
 11. `docs/MAINTENANCE.md`
 12. `docs/PROJECT_STATUS_2026-05-23.md`
-13. `docs/PROJECT_STATUS_FINAL.md`
-14. `docs/DATA_CENTER_OPERATING_MODEL.md`
-15. `docs/FORMULE_STRATEGIE_REASONING.md`
-16. `docs/LLM_LAB_VIBE_TRADING.md`
-17. `docs/MOBILE_QUANTDINGER_HANDOFF.md`
-18. `docs/ACADEMIC_METHODS.md`
-19. `docs/MEMORY_RECOVERY_PLAN.md`
 
 Reference/lab material restored from the old Drive project is in:
 
 ```text
-laboratorio/
+archive/laboratorio/
 ```
 
 Use it as a research library, not as the production source of truth.
@@ -68,8 +61,6 @@ Safe population and validation entrypoints:
 ```bash
 python scripts/initial_setup.py
 python scripts/initial_setup.py --execute --max-items 5
-python scripts/populate_research_database.py
-python scripts/llm_lab_cli.py packet
 python scripts/sync_prices.py --execute --universes sp500,ftsemib --max-symbols 25
 python scripts/sync_fundamentals.py --execute --universes sp500,ftsemib --max-symbols 10
 python scripts/validate_data.py
@@ -80,6 +71,23 @@ The ML Equity Lab notebook you were looking for is:
 ```text
 research_platform_definitive/machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb
 ```
+
+The Colab-ready ML training lab for historical 2000-2026 experiments is:
+
+```text
+research_platform_definitive/machine_learning_lab/notebooks/ML_Training_Lab_Colab_Ollama.ipynb
+```
+
+Historical data completion and model training entrypoints:
+
+```bash
+python scripts/bootstrap_research_data_2000_2026.py --max-assets 25 --max-symbols 10
+python scripts/bootstrap_research_data_2000_2026.py --execute --start-year 2000 --end-year 2026 --max-assets 250 --max-symbols 25
+python scripts/train_ml_models_2000_2026.py --models ols,rf --train-end-year 2018 --test-start-year 2019
+python scripts/validate_research_data_coverage.py
+```
+
+See `docs/DATA_COMPLETION_2000_2026.md` for full-run policy, artifacts, validation and Ollama usage.
 
 `notebooks/README.md` is now the human-friendly notebook index. It intentionally does not contain duplicate source notebooks.
 
@@ -108,7 +116,7 @@ Preferred from the repository root:
 This creates/updates:
 
 ```text
-MyDrive/GitHub/investment-research-platform-pro/
+MyDrive/GitHub/machine-learning-for-trading/
 ```
 
 You can also sync only this definitive bundle from this folder:
@@ -134,6 +142,7 @@ python3 scripts/validate_definitive_bundle.py
 python3 scripts/validate_laboratorio.py
 python3 scripts/validate_notebooks.py
 python3 scripts/validate_artifacts.py
+python3 scripts/validate_research_data_coverage.py
 python3 scripts/smoke_data_api_control.py
 python3 scripts/smoke_data_center_enhancement.py
 python3 scripts/smoke_ml_stock_lab.py
@@ -148,6 +157,7 @@ python3 research_platform_definitive/scripts/validate_definitive_bundle.py
 python3 research_platform_definitive/scripts/validate_laboratorio.py
 python3 research_platform_definitive/scripts/validate_notebooks.py
 python3 research_platform_definitive/scripts/validate_artifacts.py
+python3 research_platform_definitive/scripts/validate_research_data_coverage.py
 python3 research_platform_definitive/scripts/smoke_data_api_control.py
 python3 research_platform_definitive/scripts/smoke_data_center_enhancement.py
 python3 research_platform_definitive/research_platform_app/smoke_checks.py
@@ -158,7 +168,7 @@ python3 research_platform_definitive/research_platform_app/smoke_checks.py
 ```text
 research_platform_definitive/
 ├── notebooks/                         # human-friendly notebook index, no duplicate sources
-├── laboratorio/                       # curated reference/lab notebooks from old Drive project
+├── archive/laboratorio/                       # curated reference/lab notebooks from old Drive project
 ├── company_valuation/notebooks/       # execution-compatible valuation notebook path
 ├── portfolio_analysis/notebooks/      # execution-compatible portfolio notebook path
 ├── machine_learning_lab/notebooks/    # execution-compatible ML lab notebook path
@@ -168,7 +178,6 @@ research_platform_definitive/
 ├── company_valuation/src/             # valuation domain modules
 ├── portfolio_analysis/src/            # portfolio domain modules
 ├── output/                            # lightweight demo/runtime artifacts
-├── data/sample/                       # tracked sample extracts from the final research DB
 ├── docs/                              # canonical documentation
 ├── config/data_sources.yaml           # strategic Data Center source map
 ├── config/rate_limits.yaml            # provider throttling defaults
@@ -185,8 +194,9 @@ The canonical notebooks are present and validated:
 | Company Valuation | `notebooks/README.md` | `company_valuation/notebooks/Company_Valuation_Final_Version.ipynb` | canonical |
 | Portfolio Research | `notebooks/README.md` | `portfolio_analysis/notebooks/Portfolio-Analysis-Model_RESEARCH_PLATFORM_PRO.ipynb` | canonical |
 | ML Equity / Stock Lab | `notebooks/README.md` | `machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb` | canonical |
+| ML Training Lab 2000-2026 | `notebooks/README.md` | `machine_learning_lab/notebooks/ML_Training_Lab_Colab_Ollama.ipynb` | canonical |
 
-Legacy notebook dumps are not part of the operating source of truth. Non-identical stale duplicates are kept under `archive/notebook_duplicates/` for traceability; generated executed notebooks are kept under `archive/generated_notebooks/`. Only the curated `laboratorio/` reference library remains, and each notebook has a documented promotion target in `laboratorio/LABORATORIO_MANIFEST.csv`.
+Legacy notebook dumps are not part of the operating source of truth. Non-identical stale duplicates are kept under `archive/notebook_duplicates/` for traceability; generated executed notebooks are kept under `archive/generated_notebooks/`. Only the curated `archive/laboratorio/` reference library remains, and each notebook has a documented promotion target in `archive/laboratorio/LABORATORIO_MANIFEST.csv`.
 
 ## Operating Model
 
@@ -194,7 +204,4 @@ Legacy notebook dumps are not part of the operating source of truth. Non-identic
 - `src/` packages own reusable logic.
 - Streamlit is the operational research console.
 - `output/` contains artifact contracts consumed by the app.
-- `data/sample/` contains small CSV fixtures generated from the final database.
-- `src/research_platform_core/research_database.py` owns the final SQLite schema.
-- `src/research_platform_core/llm_lab.py` owns prompt packets and provider readiness.
 - Database Finanziario remains the preferred external data source when available.

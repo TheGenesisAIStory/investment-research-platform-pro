@@ -8,7 +8,7 @@ from .risk_factors import RiskFactorsLoader, FRED_RISK_SERIES, VOLATILITY_TICKER
 from .ecb_client import EcbClient, ECB_SERIES_PRESETS
 from .bditalia_client import BancaDItaliaClient, BDITALIA_SERIES_PRESETS
 from .market_universe import MarketUniverseBuilder
-from .ohlcv_client import OhlcvClient, normalize_ohlcv_frame, parse_yfinance_bulk
+from .ohlcv_client import OhlcvClient, classify_history_window, classify_provider_error, normalize_ohlcv_frame, parse_yfinance_bulk
 from .kaggle_seed_loader import KaggleSeedLoader, import_kaggle_seeds
 
 __all__ = [
@@ -29,6 +29,8 @@ __all__ = [
     "BDITALIA_SERIES_PRESETS",
     "MarketUniverseBuilder",
     "OhlcvClient",
+    "classify_history_window",
+    "classify_provider_error",
     "normalize_ohlcv_frame",
     "parse_yfinance_bulk",
     "KaggleSeedLoader",

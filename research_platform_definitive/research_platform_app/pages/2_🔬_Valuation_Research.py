@@ -14,8 +14,12 @@ for extra in [PROJECT_ROOT, PROJECT_ROOT / "company_valuation" / "src"]:
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import yfinance as yf
 
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_workflow_steps, show_empty, sidebar_roots
+from data_bootstrap import render_bootstrap_banner
+from screener_workbench import format_valuation_explanation
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, render_workflow_steps, safe_page_link, show_empty, sidebar_roots
+from ui_ops import render_missing_data_cta
 
 try:
     from valuation_monte_carlo import (
@@ -41,6 +45,35 @@ except Exception:
 
 configure_page("Valuation Research")
 
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_live_valuation_snapshot(ticker: str) -> dict[str, object]:
+    try:
+        info = yf.Ticker(ticker).info or {}
+    except Exception as exc:
+        return {"ticker": ticker.upper(), "error": str(exc)}
+    return {
+        "ticker": ticker.upper(),
+        "shortName": info.get("shortName") or info.get("longName"),
+        "sector": info.get("sector"),
+        "industry": info.get("industry"),
+        "marketCap": info.get("marketCap"),
+        "trailingPE": info.get("trailingPE"),
+        "enterpriseToEbitda": info.get("enterpriseToEbitda"),
+        "priceToBook": info.get("priceToBook"),
+        "currency": info.get("currency"),
+    }
+
+
+def format_live_value(value: object) -> str:
+    if value is None or value == "":
+        return "n/a"
+    if isinstance(value, (int, float)):
+        if abs(float(value)) >= 1_000_000:
+            return f"{float(value) / 1_000_000_000:.2f}B"
+        return f"{float(value):.2f}"
+    return str(value)
+
 roots = sidebar_roots()
 root = roots["company"]
 data = load_company_artifacts(root)
@@ -49,6 +82,46 @@ ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
 
 st.title("Equity Valuation Research")
 st.caption("Notebook-generated fair value, ranking, screener context, diagnostics and model evidence.")
+render_context_bar()
+render_page_intro(
+    "Open a ticker-level valuation workspace with live multiples, exported DCF/EVA/RI artifacts and explainable assumptions.",
+    "Select a ticker or arrive from Screener to review Snapshot, Assumptions and Explain-this-valuation tabs.",
+)
+render_bootstrap_banner(roots, required=["equity_metadata", "company_screener"])
+
+context_ticker = str(st.session_state.get("selected_ticker", "") or "").strip().upper()
+
+with st.container(border=True):
+    st.markdown("**Live valuation snapshot · yfinance cached 5 minutes**")
+    live_ticker = st.text_input("Ticker", value=context_ticker or "AAPL", key="live_valuation_ticker").strip().upper() or "AAPL"
+    st.session_state["selected_ticker"] = live_ticker
+    live_snapshot = fetch_live_valuation_snapshot(live_ticker)
+    if live_snapshot.get("error"):
+        st.warning(f"Live valuation data is temporarily unavailable for {live_ticker}: {live_snapshot['error']}")
+    else:
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("P/E", format_live_value(live_snapshot.get("trailingPE")))
+        c2.metric("EV/EBITDA", format_live_value(live_snapshot.get("enterpriseToEbitda")))
+        c3.metric("Price / Book", format_live_value(live_snapshot.get("priceToBook")))
+        c4.metric("Market Cap", format_live_value(live_snapshot.get("marketCap")))
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "ticker": live_snapshot.get("ticker"),
+                        "name": live_snapshot.get("shortName"),
+                        "sector": live_snapshot.get("sector"),
+                        "industry": live_snapshot.get("industry"),
+                        "currency": live_snapshot.get("currency"),
+                        "trailing_pe": live_snapshot.get("trailingPE"),
+                        "ev_to_ebitda": live_snapshot.get("enterpriseToEbitda"),
+                        "price_to_book": live_snapshot.get("priceToBook"),
+                    }
+                ]
+            ),
+            width="stretch",
+            hide_index=True,
+        )
 
 valuation_gap = data["valuation_gap"]
 extended = data["extended_valuation"]
@@ -83,7 +156,10 @@ tickers = sorted(set(tickers))
 control = st.container(border=True)
 with control:
     c1, c2, c3 = st.columns(3)
-    selected = c1.selectbox("Ticker", ["All", *tickers], index=0) if tickers else "All"
+    default_index = ["All", *tickers].index(context_ticker) if context_ticker in tickers else 0
+    selected = c1.selectbox("Ticker", ["All", *tickers], index=default_index) if tickers else "All"
+    if selected != "All":
+        st.session_state["selected_ticker"] = selected
     universe_options = ["All"]
     for col in ["index_membership", "index", "country", "sector"]:
         if col in screener.columns:
@@ -121,8 +197,12 @@ cols[2].metric("Upside", metric_value(valuation_view, ["upside", "upside_to_fair
 cols[3].metric("Screener Matches", len(screener_view) if not screener_view.empty else 0)
 
 if valuation_view.empty:
-    st.warning("Run Company Valuation notebook to compute fair value and valuation outputs.")
-    st.page_link("pages/5_Run_Notebooks.py", label="Open Run Notebooks")
+    render_missing_data_cta(
+        "Valuation",
+        job_id="valuation_research_refresh",
+        output_path=root / "tables" / "ScreenerResults.csv",
+        cli_hint="python research_platform_app/scheduler.py --once --jobs valuation_research_refresh",
+    )
 
 status_box = st.container(border=True)
 with status_box:
@@ -142,6 +222,22 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+with st.expander("Explain this valuation", expanded=False):
+    explain_ticker = selected if selected != "All" else st.session_state.get("selected_ticker", live_ticker)
+    st.markdown(f"**{explain_ticker} · valuation reasoning pre-read**")
+    explanation_source = valuation_view.iloc[0] if not valuation_view.empty else pd.Series(live_snapshot)
+    st.write(format_valuation_explanation(str(explain_ticker), explanation_source))
+    e1, e2, e3, e4 = st.columns(4)
+    e1.metric("P/E", format_live_value(live_snapshot.get("trailingPE")) if not live_snapshot.get("error") else "n/a")
+    e2.metric("EV/EBITDA", format_live_value(live_snapshot.get("enterpriseToEbitda")) if not live_snapshot.get("error") else "n/a")
+    e3.metric("P/B", format_live_value(live_snapshot.get("priceToBook")) if not live_snapshot.get("error") else "n/a")
+    e4.metric("Artifact Upside", metric_value(valuation_view, ["upside", "upside_to_fair_value", "valuation_gap"], "n/a"))
+    assumptions_view = dcf_assumptions if not dcf_assumptions.empty else data["valuation_assumptions"]
+    if assumptions_view.empty:
+        st.info("DCF/WACC/growth assumption tables are not available for this ticker yet.")
+    else:
+        dataframe_with_download("Valuation assumptions", assumptions_view, "valuation_assumptions_for_selected_ticker.csv")
 
 tab_overview, tab_models, tab_dcf_mc, tab_screener, tab_smart_money, tab_ml_lab, tab_diagnostics = st.tabs(["Overview", "Models", "DCF Monte Carlo", "Screener Context", "Smart Money", "ML Lab", "Diagnostics & Caveats"])
 
@@ -342,7 +438,7 @@ with tab_smart_money:
     )
     if smart_view.empty:
         st.info("Run the Smart Money Government Data Refresh job to compute ownership, insider, activism, macro-flow and public-spending overlays.")
-        st.page_link("pages/5_Run_Notebooks.py", label="Open Run Notebooks")
+        safe_page_link("pages/6_🧪_Notebook_Runner.py", "Open Notebook Runner")
     else:
         dataframe_with_download("Smart Money issuer overlay", smart_view, "valuation_smart_money_overlay.csv")
         if "composite_institutional_interest_score" in smart_view.columns:
@@ -355,7 +451,7 @@ with tab_ml_lab:
     st.markdown("ML Stock Lab provides model-implied fair value and mispricing signals that can be compared with the valuation engine.")
     if ml_signal_view.empty:
         st.info("Run ML Stock Lab refresh to compute fair value ML, mispricing and quintile artifacts.")
-        st.page_link("pages/9_ML_Stock_Lab.py", label="Open ML Stock Lab")
+        safe_page_link("pages/9_ML_Stock_Lab.py", "Open ML Stock Lab")
     else:
         dataframe_with_download("ML Stock Lab valuation overlay", ml_signal_view, "valuation_ml_stock_lab_overlay.csv")
         if {"market_value", "fair_value_hat"}.issubset(ml_signal_view.columns):
@@ -377,3 +473,5 @@ with tab_diagnostics:
             - ML outputs are overlays and should not override valuation assumptions without review.
             """
         )
+
+render_footer()

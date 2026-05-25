@@ -36,7 +36,7 @@ class DataCache:
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             created = pd.Timestamp(meta.get("created_at"), tz="UTC")
-            age_hours = (pd.Timestamp.utcnow() - created).total_seconds() / 3600
+            age_hours = (pd.Timestamp.now(tz="UTC") - created).total_seconds() / 3600
             if ttl_hours is not None and age_hours > ttl_hours:
                 return None
             with data_path.open("rb") as handle:
