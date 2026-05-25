@@ -355,6 +355,26 @@ def _render_workflows(company: dict[str, pd.DataFrame], portfolio: dict[str, pd.
             "pages/13_🌍_Macro_View.py",
             "Open Macro View",
         )
+    with row3[1]:
+        _workflow_card(
+            "◎",
+            "Multi-Asset Context",
+            "READY",
+            "Data Platform → Macro View → Time Series Lab. Start from FX, commodities, ETFs, crypto and fixed income coverage, then inspect regime and forecasts.",
+            "pages/8_🗄️_Data_Platform.py",
+            "pages/13_🌍_Macro_View.py",
+            "Open Macro View",
+        )
+    with row3[2]:
+        _workflow_card(
+            "◇",
+            "Smart Money Check",
+            smart_status,
+            "Smart Money → Macro View → Portfolio Context. Review positioning/flows, then carry the macro and issuer context into portfolio risk framing.",
+            "pages/1_📡_Smart_Money_Macro.py",
+            "pages/3_📁_Portfolio_Research.py",
+            "Open Portfolio",
+        )
 
 
 def _render_advanced_ops(roots: dict[str, Path], artifacts: pd.DataFrame, freshness: pd.DataFrame, runs: pd.DataFrame) -> None:

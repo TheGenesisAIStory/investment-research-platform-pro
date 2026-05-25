@@ -261,6 +261,11 @@ stesso catalogo per far vedere asset scaricati e asset pianificati. Le fonti
 Smart Money non ancora disponibili non sono mostrate come pannelli vuoti:
 restano `PLANNED` o `READY_OPTIONAL` finche' un job/fonte reale non le popola.
 
+Home espone ora due workflow trasversali:
+
+- **Multi-Asset Context**: Data Platform -> Macro View -> Time Series Lab.
+- **Smart Money Check**: Smart Money -> Macro View -> Portfolio Context.
+
 ## Factor baselines and monitoring
 
 Il ML Stock Lab ha due layer di governance quantitativa:
