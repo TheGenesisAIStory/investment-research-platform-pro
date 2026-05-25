@@ -18,7 +18,7 @@ import yfinance as yf
 
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import format_valuation_explanation
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, render_selected_ticker_context, render_workflow_steps, safe_page_link, show_empty, sidebar_roots
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, render_workflow_steps, safe_page_link, show_empty, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 try:
@@ -80,8 +80,13 @@ data = load_company_artifacts(root)
 smart_money = load_smart_money_artifacts(roots["workspace"])
 ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
 
-st.title("Equity Valuation Research")
-st.caption("Notebook-generated fair value, ranking, screener context, diagnostics and model evidence.")
+render_page_header(
+    "Valuation",
+    "Ticker-level valuation workspace with live multiples, exported DCF/EVA/residual-income artifacts and explainable assumptions.",
+    "◇",
+    module="RESEARCH",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Open a ticker-level valuation workspace with live multiples, exported DCF/EVA/RI artifacts and explainable assumptions.",
@@ -240,6 +245,10 @@ with st.expander("Explain this valuation", expanded=False):
         st.info("DCF/WACC/growth assumption tables are not available for this ticker yet.")
     else:
         dataframe_with_download("Valuation assumptions", assumptions_view, "valuation_assumptions_for_selected_ticker.csv")
+    render_feature_metadata_expander(
+        ["fair_value_hat", "mispricing_rel", "zscore", "valuation_signal_score", "pe", "pb", "ev_ebitda", "roe"],
+        "Valuation score glossary",
+    )
 
 tab_overview, tab_models, tab_dcf_mc, tab_screener, tab_smart_money, tab_ml_lab, tab_diagnostics = st.tabs(["Overview", "Models", "DCF Monte Carlo", "Screener Context", "Smart Money", "ML Lab", "Diagnostics & Caveats"])
 
@@ -257,6 +266,7 @@ with tab_models:
     dataframe_with_download("Extended valuation results", filter_ticker(extended), "extended_valuation_results.csv")
     dataframe_with_download("Valuation model registry", data["valuation_models"], "valuation_model_registry.csv")
     dataframe_with_download("Valuation assumptions", data["valuation_assumptions"], "valuation_assumptions.csv")
+    render_metric_metadata_expander(["alpha", "beta", "volatility", "cvar", "max_drawdown"], "Valuation risk metric glossary")
     with st.expander("Model interpretation", expanded=True):
         st.markdown("DCF, residual income, multiples and scenario outputs should be compared as a range. Wide dispersion is a model-risk signal, not just noise.")
 

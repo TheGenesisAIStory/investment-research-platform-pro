@@ -16,7 +16,7 @@ for path in [APP_DIR, PROJECT_ROOT, SRC_DIR]:
         sys.path.insert(0, str(path))
 
 from data_bootstrap import render_bootstrap_banner
-from support import configure_page, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
+from support import configure_page, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 from ui_ops import render_missing_data_cta, render_safe_log_preview
 
 try:
@@ -112,8 +112,13 @@ roots = sidebar_roots()
 default_output = roots["workspace"] / "banks_pipeline"
 default_cache = roots["workspace"] / "banks_pipeline" / "_cache"
 
-st.title("Banking Data Lab")
-st.caption("Open-source Italian and euro-area bank universe, regulatory/macro placeholders and listed-bank market panels.")
+render_page_header(
+    "Banking Data Lab",
+    "Open-source Italian and euro-area bank universe, regulatory/macro artifacts and listed-bank market panels.",
+    "▤",
+    module="LABS",
+    status="WIP",
+)
 render_context_bar()
 render_page_intro(
     "Refresh and inspect the banking universe, listed-bank market panel and diagnostics from one controlled interface.",

@@ -38,7 +38,9 @@ from support import (
     load_portfolio_artifacts,
     load_smart_money_artifacts,
     render_context_bar,
+    render_feature_metadata_expander,
     render_footer,
+    render_page_header,
     render_page_intro,
     render_selected_ticker_context,
     safe_page_link,
@@ -125,8 +127,13 @@ portfolio = load_portfolio_artifacts(roots["portfolio"])
 smart_money = load_smart_money_artifacts(roots["workspace"])
 ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
 
-st.title("Screener Builder")
-st.caption("Buy-side idea generation layer integrated with valuation, portfolio, ML Stock Lab and Smart Money artifacts.")
+render_page_header(
+    "Screener",
+    "Buy-side idea generation layer integrated with fundamentals, factor scores, ML Stock Lab, valuation, portfolio and Smart Money artifacts.",
+    "⌕",
+    module="RESEARCH",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Build reusable equity idea screens from fundamentals, ML signals, Smart Money events and valuation artifacts.",
@@ -466,6 +473,27 @@ with right_panel:
     k4.metric("Avg Conviction", metric_or_na(filtered["composite_conviction_score"].mean() if "composite_conviction_score" in filtered and not filtered.empty else None))
     model_stack = ", ".join(active_config.get("active_models") or []) or "default artifact score"
     st.caption(f"ML model stack in use: {model_stack}. Composite weights are saved with the screener config for reproducibility.")
+    render_feature_metadata_expander(
+        [
+            "value_score",
+            "quality_score",
+            "momentum_score",
+            "risk_score",
+            "size_score",
+            "growth_score",
+            "ml_score",
+            "score_composite",
+            "valuation_signal_score",
+            "smart_money_score",
+            "composite_institutional_interest_score",
+            "pe",
+            "pb",
+            "ev_ebitda",
+            "roe",
+            "debt_to_equity",
+        ],
+        "Column glossary for Screener scores",
+    )
 
     default_cols = display_columns(filtered)
     column_options = [col for col in filtered.columns if col not in {"source_artifact"}]

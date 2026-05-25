@@ -14,7 +14,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
+from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 
 from research_platform_core.macro_market import compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
 from research_platform_core.sentiment_analysis import collect_ticker_sentiment
@@ -51,8 +51,13 @@ manifest = artifacts["manifest"]
 latest = artifacts["latest"]
 history = artifacts["history_sample"]
 
-st.title("Macro View")
-st.caption("Global, USA, Europe, Italy, crypto, FX, commodities, ETFs and fixed-income context in one macro cockpit.")
+render_page_header(
+    "Macro View",
+    "Global, USA, Europe, Italy, crypto, FX, commodities, ETFs and fixed-income context separated from issuer-level Smart Money evidence.",
+    "◎",
+    module="RESEARCH",
+    status="WIP",
+)
 render_context_bar()
 render_page_intro(
     "Explore broad market regimes and cross-asset proxies separately from issuer-level Smart Money signals.",

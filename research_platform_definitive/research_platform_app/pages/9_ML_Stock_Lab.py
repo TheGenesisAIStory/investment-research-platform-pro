@@ -17,7 +17,7 @@ import streamlit as st
 from app_settings import build_model_score_view, load_platform_settings, model_registry_frame, save_platform_settings
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import explain_ml_signal, normalize_ticker
-from support import configure_page, dataframe_with_download, load_ml_stock_lab_artifacts, metric_value, render_context_bar, render_footer, render_page_intro, render_selected_ticker_context, safe_page_link, sidebar_roots
+from support import configure_page, dataframe_with_download, load_ml_stock_lab_artifacts, metric_value, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, safe_page_link, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
@@ -59,8 +59,13 @@ active_model_ids = [model_id for model_id in model_settings.get("active_models",
 composite_weights = {str(k): float(v) for k, v in model_settings.get("composite_weights", {}).items()}
 data = load_ml_stock_lab_artifacts(roots["workspace"])
 
-st.title("ML Stock Lab")
-st.caption("Fair value ML, mispricing, z-score screening, expected return prediction and quintile portfolio diagnostics.")
+render_page_header(
+    "ML Stock Lab",
+    "Compare OLS/RF/GBRT/ensemble signals, inspect factor drivers, monitor model diagnostics and route validated scores back into Screener.",
+    "△",
+    module="LABS",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Review model signals, compare model stacks and refresh ML artifacts without opening the training notebooks.",
@@ -225,6 +230,23 @@ with tab_overview:
 
 with tab_signals:
     dataframe_with_download("ML signals", model_score_view if not model_score_view.empty else signals, "MLStockLab_signals.csv")
+    render_feature_metadata_expander(
+        [
+            "score_ols",
+            "score_rf",
+            "score_gbrt",
+            "score_composite",
+            "ml_score",
+            "fair_value_hat",
+            "mispricing_rel",
+            "zscore",
+            "value_score",
+            "quality_score",
+            "momentum_12_1",
+            "risk_score",
+        ],
+        "Signal and feature glossary",
+    )
     chart_frame = model_score_view if not model_score_view.empty else signals
     if not chart_frame.empty and signal in chart_frame.columns:
         st.plotly_chart(px.histogram(chart_frame, x=signal, nbins=30, title=f"{signal} distribution", template="plotly_white"), width="stretch")
@@ -239,6 +261,7 @@ with tab_signals:
 with tab_quintiles:
     dataframe_with_download("Quintile returns", quintiles, "MLStockLab_quintile_returns.csv")
     dataframe_with_download("Quintile metrics", data["quintile_metrics"], "MLStockLab_quintile_metrics.csv")
+    render_metric_metadata_expander(["rank_ic", "ic", "sharpe_long_short", "hit_ratio", "turnover", "max_drawdown"], "Backtest metric glossary")
     if not quintiles.empty and {"quantile", "return"}.issubset(quintiles.columns):
         st.plotly_chart(px.bar(quintiles, x="quantile", y="return", color="date" if "date" in quintiles.columns else None, title="Quintile / Long-Short Returns", template="plotly_white"), width="stretch")
 
@@ -282,6 +305,7 @@ with tab_models:
             st.dataframe(model_score_view[show_cols].head(500), width="stretch", hide_index=True)
     dataframe_with_download("Model comparison", data["model_comparison"], "MLStockLab_model_comparison.csv")
     dataframe_with_download("Prediction metrics", data["prediction_metrics"], "MLStockLab_prediction_metrics.csv")
+    render_metric_metadata_expander(["r2_os", "rank_ic", "ic", "hit_ratio", "sharpe"], "Model validation metric glossary")
     with st.expander("LLM Model Advisor", expanded=False):
         st.caption("Ollama reviews configurations and governance; quantitative rankings remain produced by the ML/factor models.")
         use_case = st.text_input("Use case", value="medium-term stock picking for a buy-side research workflow")

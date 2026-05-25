@@ -68,8 +68,10 @@ except Exception:
         return values
 
 
-APP_TITLE = "Investment Research Platform"
-FOOTER_TEXT = "Investment Research Platform | TheGenesisAI"
+APP_TITLE = "Gen.is.IA Investment Research Workstation"
+APP_VERSION = "v2"
+DATA_SNAPSHOT_LABEL = "Data snapshot: 2000-2026 · factor v2 · ML v2"
+FOOTER_TEXT = "Gen.is.IA Investment Research Workstation | TheGenesisAI"
 DEFAULT_MARKET_CONTEXT = {
     "reporting_currency": "USD",
     "fx_pair": "DX-Y.NYB",
@@ -96,8 +98,9 @@ def safe_page_link(page: str, label: str) -> None:
 def render_platform_sidebar() -> None:
     import streamlit as st
 
-    st.sidebar.markdown("## Investment Research Platform")
-    st.sidebar.caption("TheGenesisAI research workstation")
+    st.sidebar.markdown("## Gen.is.IA")
+    st.sidebar.caption("Investment Research Workstation")
+    st.sidebar.caption(f"{APP_VERSION} · {DATA_SNAPSHOT_LABEL}")
     st.sidebar.markdown("---")
 
     st.sidebar.markdown("### RESEARCH")
@@ -332,6 +335,10 @@ def configure_page(page_title: str) -> None:
             --rp-bg:#F6F8FB;
             --rp-primary:#006D77;
             --rp-accent:#2A9D8F;
+            --rp-lab:#4C5FD7;
+            --rp-ops:#6A4C93;
+            --rp-macro:#0B6E99;
+            --rp-smart:#7A5C00;
             --rp-warn:#B54708;
             --rp-bad:#B42318;
         }
@@ -386,6 +393,71 @@ def configure_page(page_title: str) -> None:
         }
         .rp-note { background:#ECFDF3; border-left:5px solid var(--rp-primary); padding:12px 14px; border-radius:8px; color:#344054; }
         .rp-warn { background:#FFF7ED; border-left:5px solid #DA7101; padding:12px 14px; border-radius:8px; color:#344054; }
+        .genisia-brand-strip {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:10px;
+            border:1px solid var(--rp-border);
+            border-radius:8px;
+            padding:10px 13px;
+            background:#FFFFFF;
+            box-shadow:0 1px 2px rgba(16,24,40,0.04);
+            margin-bottom:0.9rem;
+        }
+        .genisia-logo {
+            font-weight:820;
+            color:var(--rp-primary);
+            font-size:0.98rem;
+        }
+        .genisia-snapshot {
+            color:var(--rp-muted);
+            font-size:0.78rem;
+            text-align:right;
+        }
+        .genisia-page-header {
+            border:1px solid var(--rp-border);
+            background:linear-gradient(180deg,#FFFFFF 0%,#F9FBFC 100%);
+            border-radius:8px;
+            padding:17px 18px;
+            margin:0.25rem 0 0.8rem 0;
+            box-shadow:0 1px 2px rgba(16,24,40,0.04);
+        }
+        .genisia-title-row {
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            gap:14px;
+        }
+        .genisia-title {
+            font-size:2rem;
+            font-weight:780;
+            line-height:1.15;
+            color:var(--rp-ink);
+            margin:0;
+        }
+        .genisia-subtitle {
+            max-width:880px;
+            color:var(--rp-muted);
+            line-height:1.45;
+            margin-top:6px;
+            font-size:0.94rem;
+        }
+        .genisia-module-pill {
+            display:inline-block;
+            border-radius:999px;
+            padding:5px 9px;
+            font-size:0.72rem;
+            font-weight:760;
+            text-transform:uppercase;
+            background:#E6F4F7;
+            color:var(--rp-primary);
+            margin-left:5px;
+            white-space:nowrap;
+        }
+        .genisia-status-ready { background:#ECFDF3; color:#067647; }
+        .genisia-status-wip { background:#FFF4DF; color:#8A4B00; }
+        .genisia-status-planned { background:#EEF2FF; color:#363F72; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -401,6 +473,49 @@ def render_card(title: str, caption: str = "", body: str = "") -> None:
         f"<div class='rp-card-caption'>{caption}</div>"
         f"{body}"
         "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_page_header(
+    title: str,
+    subtitle: str = "",
+    icon: str = "",
+    *,
+    module: str = "RESEARCH",
+    status: str = "READY",
+) -> None:
+    """Render the Gen.is.IA page header shared by all major pages."""
+    import streamlit as st
+
+    status_clean = str(status or "READY").upper()
+    status_class = {
+        "READY": "genisia-status-ready",
+        "OK": "genisia-status-ready",
+        "WIP": "genisia-status-wip",
+        "PARTIAL": "genisia-status-wip",
+        "PLANNED": "genisia-status-planned",
+    }.get(status_clean, "genisia-status-wip")
+    icon_html = f"{escape(icon)} " if icon else ""
+    st.markdown(
+        f"""
+        <div class="genisia-brand-strip">
+            <div>
+                <span class="genisia-logo">Gen.is.IA</span>
+                <span class="genisia-module-pill">{escape(module)}</span>
+                <span class="genisia-module-pill {status_class}">{escape(status_clean)}</span>
+            </div>
+            <div class="genisia-snapshot">{escape(APP_VERSION)} · {escape(DATA_SNAPSHOT_LABEL)}</div>
+        </div>
+        <div class="genisia-page-header">
+            <div class="genisia-title-row">
+                <div>
+                    <div class="genisia-title">{icon_html}{escape(title)}</div>
+                    <div class="genisia-subtitle">{escape(subtitle)}</div>
+                </div>
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -424,6 +539,40 @@ def render_section_kicker(text: str) -> None:
     import streamlit as st
 
     st.markdown(f"<div class='rp-section-kicker'>{text}</div>", unsafe_allow_html=True)
+
+
+def render_feature_metadata_expander(columns: Iterable[str], title: str = "Feature and factor glossary") -> None:
+    import streamlit as st
+
+    try:
+        from research_platform_core import metadata_frame
+
+        frame = metadata_frame(columns)
+    except Exception:
+        frame = pd.DataFrame()
+    if frame.empty:
+        return
+    with st.expander(title, expanded=False):
+        st.caption("Definitions used by Gen.is.IA UI labels and explainers. These are metadata only; they do not change model calculations.")
+        show = [col for col in ["id", "name", "category", "description", "formula", "interpretation"] if col in frame.columns]
+        st.dataframe(frame[show], width="stretch", hide_index=True)
+
+
+def render_metric_metadata_expander(metrics: Iterable[str], title: str = "Metric glossary") -> None:
+    import streamlit as st
+
+    try:
+        from research_platform_core import metrics_metadata_frame
+
+        frame = metrics_metadata_frame(metrics)
+    except Exception:
+        frame = pd.DataFrame()
+    if frame.empty:
+        return
+    with st.expander(title, expanded=False):
+        st.caption("Metric definitions for model diagnostics, portfolio risk and validation panels.")
+        show = [col for col in ["id", "name", "category", "definition", "formula", "interpretation"] if col in frame.columns]
+        st.dataframe(frame[show], width="stretch", hide_index=True)
 
 
 def render_workflow_steps(steps: list[tuple[str, str]], active_index: int = 0) -> None:
@@ -832,6 +981,7 @@ def dataframe_with_download(label: str, df: pd.DataFrame, file_name: str) -> Non
     if df.empty:
         show_empty(label)
         return
+    st.caption(f"{label}: {len(df):,} rows · {len(df.columns):,} columns")
     st.dataframe(df, width="stretch", hide_index=True)
     st.download_button(
         f"Download {label}",

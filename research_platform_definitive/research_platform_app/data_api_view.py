@@ -18,10 +18,10 @@ for candidate in [APP_DIR, PROJECT_ROOT, PROJECT_ROOT / "src"]:
         sys.path.insert(0, str(candidate))
 
 try:
-    from support import configure_page, render_context_bar, render_footer, render_page_intro, sidebar_roots
+    from support import configure_page, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
     from data_api_config import CONFIG_PATH, load_data_api_config
 except Exception:
-    from research_platform_app.support import configure_page, render_context_bar, render_footer, render_page_intro, sidebar_roots
+    from research_platform_app.support import configure_page, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
     from research_platform_app.data_api_config import CONFIG_PATH, load_data_api_config
 
 from research_platform_core.api_management import (
@@ -633,8 +633,13 @@ def render_data_api_control_center() -> None:
     )
     api_roots = resolve_api_control_roots(financial_db_root=platform_roots.financial_db)
 
-    st.title("Data/API Control Center")
-    st.caption("Drive-first data lake, API governance, batch export and platform health for machine-learning-for-trading.")
+    render_page_header(
+        "Data/API Control Center",
+        "Drive-first data lake, API governance, batch export and platform health for Gen.is.IA.",
+        "⌘",
+        module="PLATFORM OPS",
+        status="READY",
+    )
     render_context_bar()
     render_page_intro(
         "Manage provider registry, inventory exports, credential health and batch downloads from the shared Database Finanziario.",

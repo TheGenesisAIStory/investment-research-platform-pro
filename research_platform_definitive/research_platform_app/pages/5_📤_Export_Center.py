@@ -12,7 +12,7 @@ import streamlit as st
 
 from orchestration import JobStore, build_freshness_table, get_job_registry, validate_expected_artifacts
 from orchestration.background import launch_job_process
-from support import add_artifact_usage, configure_page, find_artifacts, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
+from support import add_artifact_usage, configure_page, find_artifacts, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 from ui_ops import job_status_board, render_job_board
 
 
@@ -25,8 +25,13 @@ store = JobStore()
 registry = get_job_registry()
 runs_df = pd.DataFrame([run.to_dict() for run in store.list_runs()])
 
-st.title("Export Center")
-st.caption("Contract-level visibility into CSV, JSON and HTML outputs consumed by the app and future APIs.")
+render_page_header(
+    "Export Center",
+    "Contract-level visibility into CSV, JSON and HTML outputs consumed by the app, notebooks and future APIs.",
+    "⇧",
+    module="PLATFORM OPS",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Inspect exported artifacts, freshness contracts and job outputs from one contract-level operations page.",

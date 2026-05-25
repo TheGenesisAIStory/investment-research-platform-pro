@@ -13,7 +13,7 @@ from orchestration.freshness import freshness_badge
 from orchestration.notebook_parameters import ensure_parameters_cell, has_parameters_cell
 from orchestration.scheduler import scheduler_tick
 from orchestration.scheduler_process import scheduler_status, start_scheduler_process, stop_scheduler_process
-from support import configure_page, render_context_bar, render_footer, render_page_intro, sidebar_roots
+from support import configure_page, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
 from ui_ops import job_status_board, render_job_board, render_safe_log_preview
 
 configure_page("Notebook Runner")
@@ -46,8 +46,13 @@ store = JobStore()
 registry = get_job_registry()
 runs_df = pd.DataFrame([run.to_dict() for run in store.list_runs()])
 
-st.title("Notebook Runner")
-st.caption("Operational launcher for notebook-safe jobs and lightweight artifact refreshes.")
+render_page_header(
+    "Notebook Runner",
+    "Advanced launcher for notebook-safe jobs, data bootstrap, ML training and lightweight artifact refreshes.",
+    "▹",
+    module="PLATFORM OPS",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Advanced operations live here: data bootstrap, notebook execution, ML training and artifact refresh jobs.",

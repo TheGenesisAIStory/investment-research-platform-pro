@@ -14,7 +14,7 @@ for candidate in [APP_DIR, PROJECT_ROOT]:
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
-from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_intro, sidebar_roots
+from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
 
 
 configure_page("Laboratorio Research Library")
@@ -25,9 +25,12 @@ manifest_path = lab_root / "LABORATORIO_MANIFEST.csv"
 repo_map_path = lab_root / "BEST_PRACTICE_REPOSITORIES.csv"
 review_path = lab_root / "BEST_PRACTICE_REVIEW.md"
 
-st.title("Laboratorio Research Library")
-st.caption(
-    "Curated notebook library: only references that can improve the canonical Research Platform are retained."
+render_page_header(
+    "Research Library",
+    "Curated notebook library: only references that can improve the canonical Gen.is.IA platform are retained.",
+    "▧",
+    module="LABS",
+    status="WIP",
 )
 render_context_bar()
 render_page_intro(

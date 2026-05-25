@@ -11,7 +11,7 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from app_settings import load_platform_settings, save_platform_settings
-from support import configure_page, load_ohlcv_coverage_manifest, ohlcv_coverage_counts, render_context_bar, render_footer, render_page_intro, sidebar_roots
+from support import configure_page, load_ohlcv_coverage_manifest, ohlcv_coverage_counts, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
 
 from research_platform_core.data_platform import (
     dataset_status,
@@ -251,8 +251,13 @@ sys.exit(0 if status == "SUCCESS" else 1)
     metadata_path.write_text(json.dumps(metadata, indent=2, default=str), encoding="utf-8")
     return {"run_id": run_dir.name, "pid": str(proc.pid), "log_path": str(log_path)}
 
-st.title("Data Platform / Database Finanziario")
-st.caption("Drive-first data lake status, provider coverage, freshness and sync controls.")
+render_page_header(
+    "Data Platform",
+    "Single shared Database Finanziario control room: explore one ticker, inspect domain coverage, monitor runs and restart data jobs safely.",
+    "▦",
+    module="PLATFORM OPS",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Monitor the single shared Database Finanziario, coverage manifests, provider health and refresh jobs.",

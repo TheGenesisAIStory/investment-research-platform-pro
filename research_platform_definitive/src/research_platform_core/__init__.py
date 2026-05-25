@@ -144,6 +144,8 @@ from .llm_advisors import advise_forecast_horizon, advise_model_configuration, a
 from .macro_market import MACRO_ASSETS, MacroAsset, compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
 from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions, fetch_stocktwits_messages, fetch_x_recent_mentions, score_sentiment_frame, score_text
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
+from .feature_metadata import FEATURE_METADATA, FeatureMetadata, category_for_feature, metadata_for_feature, metadata_frame, metadata_help
+from .metrics_metadata import METRICS_METADATA, MetricMetadata, metadata_for_metric, metric_help, metrics_metadata_frame
 
 __all__ = [
     "as_df",
@@ -313,4 +315,15 @@ __all__ = [
     "read_stage_lock",
     "release_stage_lock",
     "stage_lock_path",
+    "FEATURE_METADATA",
+    "FeatureMetadata",
+    "category_for_feature",
+    "metadata_for_feature",
+    "metadata_frame",
+    "metadata_help",
+    "METRICS_METADATA",
+    "MetricMetadata",
+    "metadata_for_metric",
+    "metric_help",
+    "metrics_metadata_frame",
 ]

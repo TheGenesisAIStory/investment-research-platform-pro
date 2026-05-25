@@ -10,7 +10,7 @@ if str(APP_DIR) not in sys.path:
 
 from orchestration import JobStore, JobStatus, get_job_registry
 from orchestration.background import launch_job_process
-from support import configure_page, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
+from support import configure_page, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 from ui_ops import job_status_board, render_job_board, render_safe_log_preview
 
 configure_page("Run Hi-Freq Engine")
@@ -25,8 +25,13 @@ registry = get_job_registry()
 runs = store.list_runs()
 
 
-st.title("Run Hi-Freq Engine")
-st.caption("Operational run monitor for notebook jobs, lightweight refreshes and future high-frequency research tasks.")
+render_page_header(
+    "Hi-Freq Engine",
+    "Operational run monitor for notebook jobs, lightweight refreshes and future high-frequency research tasks.",
+    "⚙",
+    module="PLATFORM OPS",
+    status="WIP",
+)
 render_context_bar()
 render_page_intro(
     "Monitor active and historical runs, retry selected jobs and inspect logs without exposing raw stacktraces in the main UI.",

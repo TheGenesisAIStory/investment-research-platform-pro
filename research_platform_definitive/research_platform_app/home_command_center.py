@@ -31,6 +31,7 @@ from support import (
     ohlcv_coverage_counts,
     render_context_bar,
     render_footer,
+    render_page_header,
     render_page_intro,
     render_section_kicker,
     render_selected_ticker_context,
@@ -434,8 +435,13 @@ def render_home_command_center() -> None:
     market = load_market_snapshot()
     factor = _cached_factor_snapshot(str(roots["workspace"]))
 
-    st.title("Investment Research Command Center")
-    st.caption("TheGenesisAI research workstation: data, factors, ML, valuation, portfolio construction and LLM-assisted governance.")
+    render_page_header(
+        "Command Center",
+        "Start from one ticker, one workflow, or one platform health check. The workstation links data, factors, ML, valuation, portfolio and LLM governance without forcing notebook-first usage.",
+        "◇",
+        module="RESEARCH",
+        status="READY",
+    )
     render_context_bar()
     render_page_intro(
         "Choose a ticker, workflow or health check from one screen. Advanced jobs and artifact contracts stay available, but no longer block daily research.",

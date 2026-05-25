@@ -16,7 +16,7 @@ import yfinance as yf
 
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import format_smart_money_explanation, normalize_ticker
-from support import configure_page, dataframe_with_download, load_smart_money_artifacts, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
+from support import configure_page, dataframe_with_download, load_smart_money_artifacts, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 from smart_money_engine import run_smart_money_engine
@@ -61,8 +61,13 @@ roots = sidebar_roots()
 smart_root = roots["workspace"] / "smart_money"
 data = load_smart_money_artifacts(roots["workspace"])
 
-st.title("Smart Money Intelligence")
-st.caption("Official-source-first ownership, insider, activism, government spending and flow/positioning evidence.")
+render_page_header(
+    "Smart Money Intelligence",
+    "Official-source-first ownership, insider, activism, government spending and flow/positioning evidence at issuer level.",
+    "◇",
+    module="RESEARCH",
+    status="WIP",
+)
 render_context_bar()
 render_page_intro(
     "Review issuer-level Smart Money scores and event evidence separately from the cross-asset Macro View.",

@@ -13,7 +13,7 @@ import streamlit as st
 
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import normalize_ticker
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, render_selected_ticker_context, safe_page_link, show_empty, sidebar_roots
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, safe_page_link, show_empty, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 
@@ -26,8 +26,13 @@ company_data = load_company_artifacts(roots["company"])
 smart_money = load_smart_money_artifacts(roots["workspace"])
 ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
 
-st.title("Portfolio Research & Allocation")
-st.caption("Allocation-aware research view over portfolio selection, weights, risk, performance and diagnostics artifacts.")
+render_page_header(
+    "Portfolio",
+    "Allocation-aware research view over portfolio selection, holdings, weights, risk, performance and diagnostics artifacts.",
+    "▣",
+    module="RESEARCH",
+    status="READY",
+)
 render_context_bar()
 render_page_intro(
     "Inspect portfolio selection, holdings, risk/performance diagnostics and overlays from ML and Smart Money artifacts.",
@@ -119,12 +124,17 @@ with tab_overview:
         if not allocation.empty and weight_col and "ticker" in allocation.columns:
             st.plotly_chart(px.pie(allocation.head(25), names="ticker", values=weight_col, title="Top Holdings", template="plotly_white"), width="stretch")
     dataframe_with_download("Performance summary", performance, "portfolio_performance.csv")
+    render_metric_metadata_expander(["sharpe", "turnover", "volatility", "max_drawdown", "tracking_error", "information_ratio"], "Portfolio metric glossary")
 
 with tab_selection:
     dataframe_with_download("Portfolio selection summary", data["selection_summary"], "portfolio_selection_summary.csv")
     dataframe_with_download("Portfolio selection results", selection, "portfolio_selection_results.csv")
     if not selection.empty and "selection_score" in selection.columns:
         st.plotly_chart(px.bar(selection.head(30), x="ticker" if "ticker" in selection.columns else selection.index, y="selection_score", color="sector" if "sector" in selection.columns else None, title="Selection Score Ranking", template="plotly_white"), width="stretch")
+    render_feature_metadata_expander(
+        ["factor_composite_score", "ml_score", "score_composite", "valuation_signal_score", "smart_money_score", "quality_score", "risk_score"],
+        "Portfolio selection score glossary",
+    )
     with st.expander("Ranking modes and active filters", expanded=False):
         dataframe_with_download("Selection presets", data["selection_presets"], "portfolio_selection_presets.csv")
         dataframe_with_download("Selection schema", data["selection_schema"], "portfolio_selection_schema.csv")
