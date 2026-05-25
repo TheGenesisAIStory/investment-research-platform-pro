@@ -22,6 +22,47 @@ Il factor panel prodotto da `research_platform_core.data_completion` aggiunge
 `forward_return_21d`, `forward_return_63d`, `forward_return_252d` e gli score
 canonici calcolabili dai dati disponibili.
 
+## Feature metadata e glossario UI
+
+Il glossario operativo vive in `src/research_platform_core/feature_metadata.py`.
+Questo layer non modifica i calcoli: serve a rendere leggibili in app le colonne
+usate da Screener, ML Stock Lab, Valuation e Portfolio.
+
+Ogni entry contiene:
+
+- `id`: nome tecnico della colonna.
+- `name`: label leggibile in UI.
+- `category`: famiglia (`value`, `quality`, `momentum`, `risk`, `size`,
+  `growth`, `model_based`, `ml`, `valuation`, `portfolio`, `target`).
+- `description`: cosa misura.
+- `formula`: pseudo-formula o definizione operativa.
+- `interpretation`: cosa significa un valore alto/basso.
+
+Copertura consolidata:
+
+- `value`: `pe`, `pb`, `ev_ebit`, `ev_ebitda`, `dividend_yield`,
+  `valuation_score`, `value_score`.
+- `quality`: `roe`, `roic`, `gross_margin`, `operating_margin`,
+  `debt_to_equity`, `quality_score`, `quality_flag`.
+- `momentum`: `ret21d`, `ret63d`, `ret126d`, `ret252d`,
+  `momentum_12_1`, `momentum_12_1_score`, `momentum_score`.
+- `risk`: `vol63d`, `vol126d`, `vol252d`, `beta`, `max_drawdown`,
+  `risk_score`.
+- `size`: `market_value`, `market_cap`, `marketcap`, `log_market_value`,
+  `size_score`.
+- `growth`: `revenue_growth`, `revenue_cagr`, `sales_cagr`, `eps_growth`,
+  `growth_score`.
+- `model_based`: `model_mispricing`, `model_mispricing_zscore`,
+  `model_mispricing_rank`, `dcf_mispricing`,
+  `residual_income_mispricing`, `eva_mispricing`.
+- `target/leakage`: `forward_return`, `forward_return_21d`,
+  `forward_return_63d`, `forward_return_252d`, `actual`,
+  `target_horizon_days`.
+
+Nota importante: le colonne `forward_return_*` e `actual` sono documentate nel
+glossario per trasparenza, ma restano target/validation fields. La selezione
+feature continua a escluderle tramite la leakage policy.
+
 ## Target e leakage policy
 
 Il target expected-return standard e' `forward_return` a 21 trading days.
@@ -52,6 +93,32 @@ Il training scrive:
   e split.
 - `MLStockLab_trained_model_signals.csv`: segnali wide consumabili dallo
   Screener.
+
+## Metrics metadata
+
+Le definizioni delle metriche vivono in
+`src/research_platform_core/metrics_metadata.py`. La UI usa questo registro per
+spiegare metriche di validazione, portfolio e data quality senza duplicare
+testo nelle pagine.
+
+Metriche coperte:
+
+- Validazione modello: `r2_os`, `ic`, `rank_ic`, `hit_ratio`,
+  `prediction_rows`, `train_rows`, `test_rows`, `train_date_count`,
+  `test_date_count`.
+- Portfolio/risk: `sharpe`, `sharpe_long_short`,
+  `sharpe_long_short_net_cost`, `sortino`, `volatility`,
+  `volatility_long_short`, `max_drawdown`, `cvar`, `turnover`, `alpha`,
+  `beta`, `tracking_error`, `information_ratio`.
+- Data/model governance: `rows`, `panel_rows`, `ticker_count`,
+  `date_count`, `feature_count`, `avg_names`, `avg_names_long_short`.
+
+I test `test_feature_metric_metadata.py` verificano che:
+
+- tutte le colonne dichiarate in `RAW_FACTOR_COLUMNS` abbiano una definizione;
+- le colonne reali viste negli artifact ML/Screener/Portfolio principali
+  abbiano una definizione o un alias;
+- le metriche principali dei training artifacts siano spiegabili in UI.
 
 ## Screener semantics
 

@@ -9,6 +9,7 @@ from research_platform_core import (
     metric_help,
     metrics_metadata_frame,
 )
+from ml_stock_lab.factor_registry import RAW_FACTOR_COLUMNS
 
 
 def test_feature_metadata_lookup_and_aliases() -> None:
@@ -19,7 +20,7 @@ def test_feature_metadata_lookup_and_aliases() -> None:
 
     alias = metadata_for_feature("ret252d")
     assert alias is not None
-    assert alias.id == "return_1y"
+    assert alias.id == "ret252d"
     assert category_for_feature("score_composite") == "ml"
 
 
@@ -43,3 +44,48 @@ def test_metrics_metadata_frame_is_filtered() -> None:
     assert set(frame["id"]) == {"r2_os", "rank_ic"}
     assert {"definition", "formula", "interpretation"}.issubset(frame.columns)
 
+
+def test_all_factor_registry_columns_have_metadata() -> None:
+    missing = [column for column in RAW_FACTOR_COLUMNS if metadata_for_feature(column) is None]
+    assert missing == []
+
+
+def test_real_artifact_columns_have_metadata() -> None:
+    feature_columns = [
+        "ret21d",
+        "ret63d",
+        "ret126d",
+        "ret252d",
+        "vol63d",
+        "vol126d",
+        "vol252d",
+        "forward_return_21d",
+        "target_horizon_days",
+        "screener_score",
+        "selection_score",
+        "composite_score",
+        "annual_return",
+        "scenario_downside",
+        "percentile_rank",
+        "prediction",
+        "actual",
+    ]
+    missing_features = [column for column in feature_columns if metadata_for_feature(column) is None]
+    assert missing_features == []
+
+    metric_columns = [
+        "r2_os",
+        "ic",
+        "rank_ic",
+        "sharpe_long_short",
+        "sharpe_long_short_net_cost",
+        "volatility_long_short",
+        "avg_names_long_short",
+        "feature_count",
+        "train_rows",
+        "test_rows",
+        "prediction_rows",
+        "panel_rows",
+    ]
+    missing_metrics = [column for column in metric_columns if metadata_for_metric(column) is None]
+    assert missing_metrics == []
