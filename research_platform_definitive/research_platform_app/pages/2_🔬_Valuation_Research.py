@@ -18,7 +18,7 @@ import yfinance as yf
 
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import format_valuation_explanation
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, render_workflow_steps, safe_page_link, show_empty, sidebar_roots
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, render_selected_ticker_context, render_workflow_steps, safe_page_link, show_empty, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 try:
@@ -122,6 +122,8 @@ with st.container(border=True):
             width="stretch",
             hide_index=True,
         )
+
+render_selected_ticker_context(roots, st.session_state.get("selected_ticker", live_ticker), expanded=False)
 
 valuation_gap = data["valuation_gap"]
 extended = data["extended_valuation"]

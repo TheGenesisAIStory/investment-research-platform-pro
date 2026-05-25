@@ -6,6 +6,7 @@ import pandas as pd
 
 from research_platform_core.data_explorer import (
     get_single_ticker_snapshot,
+    get_ticker_context,
     list_available_tickers,
     load_data_explorer_preview,
 )
@@ -133,3 +134,39 @@ def test_data_explorer_preview_filters_factor_panel_by_date(tmp_path: Path) -> N
 
     assert len(preview) == 1
     assert preview["date"].iloc[0] == "2024-02-02"
+
+
+def test_ticker_context_summarizes_modules_and_basic_info(tmp_path: Path) -> None:
+    db, output = _seed_ticker_artifacts(tmp_path)
+    company = tmp_path / "company_valuation" / "output"
+    portfolio = tmp_path / "portfolio_analysis" / "output"
+    (company / "tables").mkdir(parents=True)
+    (portfolio / "tables").mkdir(parents=True)
+    pd.DataFrame(
+        [
+            {
+                "ticker": "AAA",
+                "company_name": "Alpha Analytics Inc.",
+                "sector": "Technology",
+                "industry": "Software",
+                "country": "US",
+                "index_membership": "sp500",
+                "fair_value": 13.0,
+                "upside": 0.15,
+            }
+        ]
+    ).to_csv(company / "tables" / "ScreenerResults.csv", index=False)
+    pd.DataFrame([{"ticker": "AAA", "weight": 0.025, "portfolio": "core"}]).to_csv(
+        portfolio / "tables" / "portfolio_allocation.csv",
+        index=False,
+    )
+
+    context = get_ticker_context("AAA", db, output, company, portfolio)
+    modules = context["modules"]
+
+    assert context["basic_info"]["name"] == "Alpha Analytics Inc."
+    assert context["basic_info"]["sector"] == "Technology"
+    assert modules.query("module_key == 'factor'")["status"].iloc[0] == "OK"
+    assert modules.query("module_key == 'ml'")["status"].iloc[0] == "OK"
+    assert modules.query("module_key == 'valuation'")["status"].iloc[0] == "OK"
+    assert modules.query("module_key == 'portfolio'")["status"].iloc[0] == "OK"

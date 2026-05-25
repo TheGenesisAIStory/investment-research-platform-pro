@@ -129,10 +129,13 @@ from .data_health import (
 from .data_explorer import (
     find_ohlcv_parquet,
     get_single_ticker_snapshot,
+    get_ticker_context,
     list_available_tickers,
+    load_company_rows_for_ticker,
     load_data_explorer_preview,
     load_factor_rows_for_ticker,
     load_ml_signal_rows_for_ticker,
+    load_portfolio_rows_for_ticker,
     load_ticker_ohlcv,
 )
 from .llm_client import LlmResponse, OllamaClient
@@ -275,10 +278,13 @@ __all__ = [
     "restart_equity_prices_failed_only",
     "find_ohlcv_parquet",
     "get_single_ticker_snapshot",
+    "get_ticker_context",
     "list_available_tickers",
+    "load_company_rows_for_ticker",
     "load_data_explorer_preview",
     "load_factor_rows_for_ticker",
     "load_ml_signal_rows_for_ticker",
+    "load_portfolio_rows_for_ticker",
     "load_ticker_ohlcv",
     "LlmResponse",
     "OllamaClient",

@@ -17,7 +17,7 @@ import streamlit as st
 from app_settings import build_model_score_view, load_platform_settings, model_registry_frame, save_platform_settings
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import explain_ml_signal, normalize_ticker
-from support import configure_page, dataframe_with_download, load_ml_stock_lab_artifacts, metric_value, render_context_bar, render_footer, render_page_intro, safe_page_link, sidebar_roots
+from support import configure_page, dataframe_with_download, load_ml_stock_lab_artifacts, metric_value, render_context_bar, render_footer, render_page_intro, render_selected_ticker_context, safe_page_link, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
@@ -180,6 +180,8 @@ if signal_tickers:
     default_index = signal_tickers.index(context_ticker) if context_ticker in signal_tickers else 0
     selected_signal_ticker = st.selectbox("Selected ticker for ML explanation", signal_tickers, index=default_index)
     st.session_state["selected_ticker"] = selected_signal_ticker
+
+render_selected_ticker_context(roots, st.session_state.get("selected_ticker", ""), expanded=False)
 
 cols = st.columns(4)
 cols[0].metric("Panel Rows", len(data["panel"]))

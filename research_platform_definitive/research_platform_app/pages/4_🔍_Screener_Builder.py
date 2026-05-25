@@ -40,6 +40,7 @@ from support import (
     render_context_bar,
     render_footer,
     render_page_intro,
+    render_selected_ticker_context,
     safe_page_link,
     sidebar_roots,
 )
@@ -526,6 +527,8 @@ with right_panel:
         safe_page_link("pages/9_ML_Stock_Lab.py", "ML Stock Lab")
     with link_cols[3]:
         safe_page_link("pages/1_📡_Smart_Money_Macro.py", "Smart Money")
+
+    render_selected_ticker_context(roots, selected_ticker, expanded=False)
 
     tabs = st.tabs(["Results Diagnostics", "ML reasoning", "Smart Money", "Valuation summary", "Saved configs"])
 

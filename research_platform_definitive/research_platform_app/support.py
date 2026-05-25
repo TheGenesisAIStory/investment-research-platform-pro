@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from html import escape
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -204,6 +205,99 @@ def render_context_bar(context: dict[str, str] | None = None, show_actions: bool
                 st.switch_page("pages/4_🔍_Screener_Builder.py")
             except Exception:
                 st.info("Open the Screener Builder from the sidebar.")
+
+
+def render_selected_ticker_context(
+    roots: dict[str, Path],
+    ticker: str | None = None,
+    *,
+    title: str = "Selected Ticker Context",
+    expanded: bool = False,
+) -> dict[str, Any] | None:
+    """Render a compact shared ticker context panel.
+
+    The lookup lives in research_platform_core; this function only translates it
+    into a consistent Streamlit panel shared by Screener, ML, Valuation and
+    Portfolio pages.
+    """
+    import streamlit as st
+
+    selected = str(ticker or st.session_state.get("selected_ticker", "") or "").strip().upper()
+    with st.container(border=True):
+        st.markdown(f"**{title}**")
+        if not selected:
+            st.caption("No selected ticker yet. Select a row in Screener, ML Stock Lab, Valuation or Portfolio to share context across pages.")
+            nav_cols = st.columns([0.25, 0.75])
+            with nav_cols[0]:
+                safe_page_link("pages/4_🔍_Screener_Builder.py", "Open Screener")
+            return None
+
+        try:
+            from research_platform_core import get_ticker_context
+
+            context = get_ticker_context(
+                selected,
+                financial_db_root=roots.get("financial_db"),
+                output_root=roots.get("workspace"),
+                company_root=roots.get("company"),
+                portfolio_root=roots.get("portfolio"),
+            )
+        except Exception as exc:
+            st.warning(f"Selected ticker context is temporarily unavailable for {selected}: {type(exc).__name__}.")
+            return None
+
+        info = context.get("basic_info", {}) or {}
+        name = str(info.get("name") or "Name not available")
+        sector = str(info.get("sector") or "Sector not set")
+        universes = str(info.get("universes") or "Universe not set")
+        coverage = str(info.get("coverage") or "UNKNOWN").upper()
+        last_price_date = str(info.get("last_price_date") or "n/a")
+
+        c1, c2, c3, c4 = st.columns([0.18, 0.34, 0.22, 0.26])
+        c1.metric("Ticker", selected)
+        c2.metric("Name", name[:42] + ("..." if len(name) > 42 else ""))
+        c3.metric("Sector", sector[:26] + ("..." if len(sector) > 26 else ""))
+        c4.metric("Coverage", coverage, f"last price {last_price_date}" if last_price_date != "n/a" else None)
+
+        detail = f"Industry: {info.get('industry') or 'not set'} · Country: {info.get('country') or 'not set'} · Universes: {universes}"
+        st.caption(detail)
+
+        modules = context.get("modules")
+        if isinstance(modules, pd.DataFrame) and not modules.empty:
+            tone_for = {
+                "OK": "ok",
+                "RUNNING": "warn",
+                "PARTIAL": "warn",
+                "LIMITED_HISTORY": "warn",
+                "PLANNED": "info",
+                "NOT_TICKER_SPECIFIC": "info",
+                "MISSING": "warn",
+                "FAILED": "bad",
+            }
+            badges = []
+            for row in modules.itertuples(index=False):
+                module = escape(str(getattr(row, "module", "")))
+                status = str(getattr(row, "status", "MISSING") or "MISSING").upper()
+                badges.append(small_badge(module, escape(status), tone_for.get(status, "neutral")))
+            st.markdown("".join(badges), unsafe_allow_html=True)
+            with st.expander("Module availability details", expanded=expanded):
+                show_cols = [col for col in ["module", "status", "rows", "detail", "path"] if col in modules.columns]
+                st.dataframe(modules[show_cols], width="stretch", hide_index=True)
+
+        action_cols = st.columns(4)
+        if action_cols[0].button("Open Screener", key=f"{selected}_ctx_screener", width="stretch"):
+            st.session_state["selected_ticker"] = selected
+            st.switch_page("pages/4_🔍_Screener_Builder.py")
+        if action_cols[1].button("Open ML Lab", key=f"{selected}_ctx_ml", width="stretch"):
+            st.session_state["selected_ticker"] = selected
+            st.switch_page("pages/9_ML_Stock_Lab.py")
+        if action_cols[2].button("Open Valuation", key=f"{selected}_ctx_valuation", width="stretch"):
+            st.session_state["selected_ticker"] = selected
+            st.switch_page("pages/2_🔬_Valuation_Research.py")
+        if action_cols[3].button("Open Portfolio", key=f"{selected}_ctx_portfolio", width="stretch"):
+            st.session_state["selected_ticker"] = selected
+            st.switch_page("pages/3_📁_Portfolio_Research.py")
+        return context
 
 
 def default_roots() -> dict[str, Path]:

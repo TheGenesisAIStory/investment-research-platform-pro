@@ -13,7 +13,7 @@ import streamlit as st
 
 from data_bootstrap import render_bootstrap_banner
 from screener_workbench import normalize_ticker
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, safe_page_link, show_empty, sidebar_roots
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_footer, render_page_intro, render_selected_ticker_context, safe_page_link, show_empty, sidebar_roots
 from ui_ops import render_missing_data_cta
 
 
@@ -36,6 +36,7 @@ render_page_intro(
 render_bootstrap_banner(roots, required=["company_screener", "ml_signals"])
 
 context_ticker = normalize_ticker(st.session_state.get("selected_ticker", ""))
+render_selected_ticker_context(roots, context_ticker, expanded=False)
 
 selection = data["selection_results"]
 allocation = data["allocation"] if not data["allocation"].empty else selection
@@ -98,7 +99,7 @@ st.markdown(
 )
 
 if context_ticker:
-    with st.expander(f"{context_ticker} · portfolio context", expanded=False):
+    with st.expander(f"{context_ticker} · selected holding details", expanded=False):
         portfolio_row = allocation[allocation["ticker"].map(normalize_ticker).eq(context_ticker)] if not allocation.empty and "ticker" in allocation.columns else pd.DataFrame()
         if portfolio_row.empty:
             st.info("This ticker is not present in the current allocation/selection artifact.")

@@ -27,6 +27,20 @@ SMART_MONEY_RELS = [
     Path("smart_money") / "tables" / "SmartMoney_event_feed.csv",
     Path("smart_money") / "tables" / "SmartMoney_entity_master.csv",
 ]
+COMPANY_RELS = [
+    Path("tables") / "ScreenerResults.csv",
+    Path("tables") / "screener_results.csv",
+    Path("tables") / "valuation_gap_table.csv",
+    Path("tables") / "ValuationGapTable.csv",
+    Path("tables") / "extended_valuation_results.csv",
+    Path("tables") / "ExtendedValuationResults.csv",
+]
+PORTFOLIO_RELS = [
+    Path("tables") / "portfolio_allocation.csv",
+    Path("tables") / "PortfolioAllocation.csv",
+    Path("tables") / "PortfolioSelectionResults.csv",
+    Path("tables") / "PortfolioSelectionSummary.csv",
+]
 
 
 def _read_csv(path: Path, **kwargs: Any) -> pd.DataFrame:
@@ -68,6 +82,74 @@ def _ticker_mask(frame: pd.DataFrame, ticker: str) -> pd.Series:
 
 def _first_existing(paths: list[Path]) -> Path | None:
     return next((path for path in paths if path.exists() and path.stat().st_size > 1), None)
+
+
+def _artifact_rows_for_ticker(ticker: str, paths: list[Path], max_rows: int = 500) -> pd.DataFrame:
+    frames: list[pd.DataFrame] = []
+    for path in paths:
+        frame = _read_csv(path)
+        if frame.empty:
+            continue
+        match = frame[_ticker_mask(frame, ticker)].copy()
+        if match.empty:
+            continue
+        match["artifact"] = path.name
+        match["source_path"] = str(path)
+        frames.append(match)
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True, sort=False).head(int(max_rows)).reset_index(drop=True)
+
+
+def _first_value(frames: list[pd.DataFrame], columns: list[str]) -> str:
+    for frame in frames:
+        if frame.empty:
+            continue
+        for col in columns:
+            if col not in frame.columns:
+                continue
+            values = frame[col].dropna().astype(str).str.strip()
+            values = values[values.str.len() > 0]
+            if not values.empty:
+                return values.iloc[0]
+    return ""
+
+
+def _unique_values(frames: list[pd.DataFrame], columns: list[str], max_values: int = 6) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for frame in frames:
+        if frame.empty:
+            continue
+        for col in columns:
+            if col not in frame.columns:
+                continue
+            for value in frame[col].dropna().astype(str).str.strip():
+                if not value:
+                    continue
+                key = value.lower()
+                if key in seen:
+                    continue
+                values.append(value)
+                seen.add(key)
+                if len(values) >= int(max_values):
+                    return values
+    return values
+
+
+def _availability_row(availability: pd.DataFrame, domain: str) -> dict[str, Any]:
+    if availability.empty or "domain" not in availability.columns:
+        return {"status": "MISSING", "rows": 0, "detail": "", "path": ""}
+    matches = availability[availability["domain"].astype(str).str.lower().eq(domain.lower())]
+    if matches.empty:
+        return {"status": "MISSING", "rows": 0, "detail": "", "path": ""}
+    row = matches.iloc[0].to_dict()
+    return {
+        "status": str(row.get("status", "MISSING") or "MISSING").upper(),
+        "rows": int(row.get("rows", 0) or 0),
+        "detail": str(row.get("detail", "") or ""),
+        "path": str(row.get("path", "") or ""),
+    }
 
 
 def list_available_tickers(
@@ -286,6 +368,30 @@ def load_smart_money_rows_for_ticker(
     return pd.concat(frames, ignore_index=True, sort=False).head(int(max_rows)).reset_index(drop=True)
 
 
+def load_company_rows_for_ticker(
+    ticker: str,
+    company_root: str | Path | None = None,
+    max_rows: int = 500,
+) -> pd.DataFrame:
+    """Load lightweight valuation/screener rows for one ticker from company artifacts."""
+    if company_root is None:
+        return pd.DataFrame()
+    root = Path(company_root).expanduser()
+    return _artifact_rows_for_ticker(ticker, [root / rel for rel in COMPANY_RELS], max_rows=max_rows)
+
+
+def load_portfolio_rows_for_ticker(
+    ticker: str,
+    portfolio_root: str | Path | None = None,
+    max_rows: int = 500,
+) -> pd.DataFrame:
+    """Load allocation/selection rows for one ticker from portfolio artifacts."""
+    if portfolio_root is None:
+        return pd.DataFrame()
+    root = Path(portfolio_root).expanduser()
+    return _artifact_rows_for_ticker(ticker, [root / rel for rel in PORTFOLIO_RELS], max_rows=max_rows)
+
+
 def get_single_ticker_snapshot(
     ticker: str,
     financial_db_root: str | Path | None = None,
@@ -364,6 +470,129 @@ def get_single_ticker_snapshot(
         "factors": factors,
         "ml_signals": ml_signals,
         "smart_money": smart_money,
+    }
+
+
+def get_ticker_context(
+    ticker: str,
+    financial_db_root: str | Path | None = None,
+    output_root: str | Path | None = None,
+    company_root: str | Path | None = None,
+    portfolio_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Return a shared ticker context for Streamlit pages.
+
+    This is a compact, read-only view over the same artifacts used by Data
+    Platform. It intentionally avoids business decisions: pages can use it to
+    show what is available for a ticker before opening the heavier domain tabs.
+    """
+    roots = resolve_data_platform_roots(financial_db_root=financial_db_root, repo_output_root=output_root)
+    ticker = _normalize_ticker(ticker)
+    if not ticker:
+        return {
+            "ticker": "",
+            "basic_info": {},
+            "modules": pd.DataFrame(columns=["module", "module_key", "status", "rows", "detail", "path"]),
+            "availability": pd.DataFrame(),
+            "company_rows": pd.DataFrame(),
+            "portfolio_rows": pd.DataFrame(),
+            "snapshot": {},
+        }
+
+    snapshot = get_single_ticker_snapshot(ticker, roots.financial_db, roots.repo_output)
+    availability = snapshot.get("availability", pd.DataFrame())
+    company_rows = load_company_rows_for_ticker(ticker, company_root)
+    portfolio_rows = load_portfolio_rows_for_ticker(ticker, portfolio_root)
+    tickers = list_available_tickers(roots.financial_db, roots.repo_output)
+    manifest_rows = tickers[tickers["ticker"].astype(str).str.upper().eq(ticker)] if not tickers.empty and "ticker" in tickers.columns else pd.DataFrame()
+    status = snapshot.get("status", {}) or {}
+    factors = snapshot.get("factors", pd.DataFrame())
+    ml_signals = snapshot.get("ml_signals", pd.DataFrame())
+    smart_money = snapshot.get("smart_money", pd.DataFrame())
+
+    info_frames = [company_rows, smart_money, ml_signals, factors, manifest_rows]
+    universes = _unique_values(
+        info_frames,
+        ["universe", "index_membership", "index", "market", "exchange", "country", "region"],
+    )
+    name = _first_value(info_frames, ["company_name", "name", "company", "shortName", "short_name", "longName", "issuer_name"])
+    sector = _first_value(info_frames, ["sector", "gics_sector", "sector_name"])
+    industry = _first_value(info_frames, ["industry", "gics_industry", "industry_name"])
+    country = _first_value(info_frames, ["country", "country_code", "region"])
+    coverage = (
+        str(status.get("overall_status") or "")
+        or _first_value([manifest_rows], ["coverage_status", "status"])
+        or _availability_row(availability, "OHLCV")["status"]
+    )
+    last_price_date = str(status.get("last_price_date") or _first_value([manifest_rows], ["last_price_date", "date"]))
+
+    valuation_cols = {
+        "fair_value",
+        "target_price",
+        "blended_fair_value",
+        "valuation_gap",
+        "upside",
+        "upside_to_fair_value",
+        "fair_value_hat",
+        "valuation_signal_score",
+        "mispricing_rel",
+    }
+    valuation_available = (
+        _availability_row(availability, "Valuation")["status"] == "OK"
+        or any(col in set(company_rows.columns) for col in valuation_cols)
+        or any(col in set(ml_signals.columns) for col in valuation_cols)
+    )
+
+    modules: list[dict[str, Any]] = []
+    for domain, key, label in [
+        ("OHLCV", "prices", "Prices / OHLCV"),
+        ("Fundamentals", "fundamentals", "Fundamentals"),
+        ("Factor Panel", "factor", "Factor Panel"),
+        ("ML Signals", "ml", "ML Signals"),
+        ("Smart Money", "smart_money", "Smart Money"),
+    ]:
+        row = _availability_row(availability, domain)
+        modules.append({"module": label, "module_key": key, **row})
+    modules.append(
+        {
+            "module": "Valuation",
+            "module_key": "valuation",
+            "status": "OK" if valuation_available else "MISSING",
+            "rows": int(len(company_rows) + len(ml_signals[["ticker"]]) if not ml_signals.empty and "ticker" in ml_signals.columns else len(company_rows)),
+            "detail": "valuation/screener evidence available" if valuation_available else "no ticker-level valuation artifact found",
+            "path": _first_value([company_rows], ["source_path"]),
+        }
+    )
+    modules.append(
+        {
+            "module": "Portfolio",
+            "module_key": "portfolio",
+            "status": "OK" if not portfolio_rows.empty else "MISSING",
+            "rows": len(portfolio_rows),
+            "detail": "ticker present in allocation/selection artifacts" if not portfolio_rows.empty else "ticker not present in portfolio artifacts",
+            "path": _first_value([portfolio_rows], ["source_path"]),
+        }
+    )
+    module_frame = pd.DataFrame(modules)
+    if not module_frame.empty:
+        module_frame["status"] = module_frame["status"].fillna("MISSING").astype(str).str.upper()
+
+    return {
+        "ticker": ticker,
+        "basic_info": {
+            "name": name,
+            "sector": sector,
+            "industry": industry,
+            "country": country,
+            "universes": ", ".join(universes),
+            "coverage": coverage,
+            "last_price_date": last_price_date,
+        },
+        "modules": module_frame,
+        "availability": availability,
+        "company_rows": company_rows,
+        "portfolio_rows": portfolio_rows,
+        "snapshot": snapshot,
     }
 
 
