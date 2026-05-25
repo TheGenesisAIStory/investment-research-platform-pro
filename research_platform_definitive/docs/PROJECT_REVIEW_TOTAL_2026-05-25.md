@@ -103,6 +103,21 @@ decisore di trade:
 
 Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
 
+## Multi-Asset, Smart Money e Baseline Fattoriali
+
+- Macro DB e' stato esteso a 92 proxy: FX, commodities, crypto, ETF equity,
+  ETF fixed income, ETF commodity, ETF crypto, fixed-income proxies e indici.
+- `MultiAssetUniverseManifest.csv` rende visibile per ogni dominio lo stato
+  `OK/PARTIAL/PLANNED`, numero strumenti e ultimo aggiornamento; Data Platform
+  e Macro View lo consumano senza scansioni Drive pesanti.
+- `SmartMoneySourceManifest.csv` esplicita CFTC COT, ETF flows, options
+  positioning e issuer-event evidence come fonti `OK`, `READY_OPTIONAL`,
+  `PARTIAL` o `PLANNED`; nessun pannello Smart Money resta vuoto senza stato.
+- `research_platform_core.factor_benchmarks` aggiunge benchmark pure-factor per
+  value, quality, momentum, risk, size, growth e composite factor.
+- ML Stock Lab ha una tab `Factor Baselines` per confrontare i modelli ML con
+  top-bucket e top-minus-bottom factor portfolios.
+
 ## Problemi Residui
 
 - Il factor panel corrente e' ampio e coerente, ma il run ML validato resta
@@ -112,9 +127,10 @@ Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
   performance economica definitiva.
 - Time Series Lab v1 non include ancora ARIMA/ETS, intervalli di previsione o
   modelli multivariati macro; e' una base feature-based pronta per estensione.
-- `macro_fx`, `factor_libraries`, `smart_money`, `banking` restano `PLANNED`
-  nel coverage validator come domini di completion 2000-2026, anche se Macro
-  View e Smart Money hanno artifact applicativi separati gia' leggibili in app.
+- `factor_libraries` e `banking` restano domini da completare a livello di
+  storico full 2000-2026. Macro/Multi-Asset e Smart Money hanno ora manifest
+  applicativi espliciti, ma alcune fonti restano `PLANNED` finche' non vengono
+  abilitate o licenziate.
 - La sync Drive va mantenuta come pubblicazione/archivio, non come target per
   scritture batch lunghe.
 

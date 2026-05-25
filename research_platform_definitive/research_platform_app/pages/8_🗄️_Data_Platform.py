@@ -26,7 +26,9 @@ from research_platform_core.data_platform import (
 )
 from research_platform_core.data_health import get_data_health_summary, list_ohlcv_failures, list_ohlcv_provider_failures, load_run_events
 from research_platform_core.data_explorer import get_single_ticker_snapshot, list_available_tickers, load_data_explorer_preview
+from research_platform_core.multi_asset_universe import load_multi_asset_universe_manifest, summarize_multi_asset_universe
 from research_platform_core.run_lock import is_stage_locked, read_stage_lock, stage_lock_path
+from research_platform_core.smart_money import load_smart_money_source_manifest, summarize_smart_money_sources
 
 configure_page("Data Platform")
 
@@ -277,6 +279,10 @@ contract = shared_database_contract(platform_roots.financial_db, roots["workspac
 run_logs = recent_run_logs(roots["workspace"], limit=12)
 ohlcv_manifest = load_ohlcv_coverage_manifest(roots)
 ohlcv_counts = ohlcv_coverage_counts(ohlcv_manifest)
+multi_asset_manifest = load_multi_asset_universe_manifest(platform_roots.financial_db, roots["workspace"])
+multi_asset_summary = summarize_multi_asset_universe(multi_asset_manifest)
+smart_money_source_manifest = load_smart_money_source_manifest(platform_roots.financial_db, roots["workspace"])
+smart_money_source_summary = summarize_smart_money_sources(smart_money_source_manifest)
 try:
     data_health = get_data_health_summary(platform_roots.financial_db, roots["workspace"])
     ohlcv_failures = list_ohlcv_failures(platform_roots.financial_db, roots["workspace"])
@@ -501,7 +507,7 @@ with tabs[0]:
             st.dataframe(preview, width="stretch", hide_index=True)
             st.download_button("Download preview CSV", preview.to_csv(index=False), "data_platform_preview.csv", "text/csv")
 
-with tabs[3]:
+with tabs[1]:
     st.subheader("Domain Status")
     st.caption("Every data domain should say whether it is active, planned, missing data, or waiting for a job. No silent empty boxes.")
     health_by_stage = {str(row.get("stage")): row for row in data_health.to_dict("records")} if not data_health.empty else {}
@@ -560,8 +566,41 @@ with tabs[3]:
                 _render_status_notice(status, spec["missing"])
                 st.markdown(f"**What it covers:** {spec['what']}")
                 st.markdown(f"**Jobs / hooks:** {spec['jobs']}")
+    st.markdown("### Multi-Asset Universe & Coverage")
+    st.caption("FX, commodities, crypto, ETF and fixed-income coverage derived from the Macro DB catalog/manifest.")
+    if multi_asset_summary.empty:
+        st.info("No multi-asset manifest available yet. Compile Macro View or refresh the manifest.")
+    else:
+        st.dataframe(multi_asset_summary, width="stretch", hide_index=True)
+        if {"domain", "instrument_count", "ok_count"}.issubset(multi_asset_summary.columns):
+            chart_frame = multi_asset_summary.melt(
+                id_vars=["domain"],
+                value_vars=[col for col in ["ok_count", "planned_count", "partial_count"] if col in multi_asset_summary.columns],
+                var_name="coverage_state",
+                value_name="count",
+            )
+            st.plotly_chart(px.bar(chart_frame, x="domain", y="count", color="coverage_state", title="Multi-asset coverage by domain", template="plotly_white"), width="stretch")
+        with st.expander("Multi-asset manifest detail", expanded=False):
+            st.dataframe(multi_asset_manifest, width="stretch", hide_index=True)
+    st.markdown("### Smart Money Source Coverage")
+    st.caption("Explicit source readiness for COT, ETF flows, options positioning and issuer-event evidence.")
+    if smart_money_source_summary.empty:
+        st.info("No Smart Money source manifest available yet.")
+    else:
+        st.dataframe(smart_money_source_summary, width="stretch", hide_index=True)
+        smart_chart_cols = [col for col in ["ok_count", "ready_optional_count", "planned_count", "partial_count"] if col in smart_money_source_summary.columns]
+        if smart_chart_cols and "domain" in smart_money_source_summary.columns:
+            smart_chart = smart_money_source_summary.melt(
+                id_vars=["domain"],
+                value_vars=smart_chart_cols,
+                var_name="coverage_state",
+                value_name="count",
+            )
+            st.plotly_chart(px.bar(smart_chart, x="domain", y="count", color="coverage_state", title="Smart Money sources by readiness", template="plotly_white"), width="stretch")
+        with st.expander("Smart Money source manifest detail", expanded=False):
+            st.dataframe(smart_money_source_manifest, width="stretch", hide_index=True)
 
-with tabs[4]:
+with tabs[2]:
     st.subheader("Backfill Controls / Restart")
     st.caption("Friendly controls for restarting data jobs without opening notebooks or calling CLI commands directly.")
     latest_run = st.session_state.get("last_data_restart_run")
@@ -739,7 +778,7 @@ with tabs[4]:
             st.dataframe(provider_view.head(5000), width="stretch", hide_index=True)
             st.download_button("Download OHLCV provider failures CSV", provider_view.to_csv(index=False), "OHLCV_provider_failures_filtered.csv", "text/csv")
 
-with tabs[1]:
+with tabs[3]:
     st.subheader("Shared Database Contract")
     st.caption("One Database Finanziario root feeds core, Streamlit pages, ML Stock Lab, Notebook Runner and scripts.")
     st.dataframe(contract, width="stretch", hide_index=True)
@@ -755,7 +794,7 @@ with tabs[1]:
             """
         )
 
-with tabs[2]:
+with tabs[4]:
     st.subheader("OHLCV Coverage")
     if ohlcv_manifest.empty:
         st.info("No OHLCV daily manifest found yet. Run the OHLCV or historical data bootstrap job first.")

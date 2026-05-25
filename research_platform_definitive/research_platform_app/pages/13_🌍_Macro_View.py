@@ -16,7 +16,7 @@ import streamlit as st
 
 from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 
-from research_platform_core import load_time_series_forecast_artifacts
+from research_platform_core import load_multi_asset_universe_manifest, load_time_series_forecast_artifacts, summarize_multi_asset_universe
 from research_platform_core.macro_market import compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
 from research_platform_core.sentiment_analysis import collect_ticker_sentiment
 
@@ -54,6 +54,8 @@ history = artifacts["history_sample"]
 ts_artifacts = load_time_series_forecast_artifacts(roots["workspace"])
 ts_latest = ts_artifacts.get("latest", pd.DataFrame())
 forecast_symbols = set(ts_latest["symbol"].dropna().astype(str).str.upper().tolist()) if not ts_latest.empty and "symbol" in ts_latest.columns else set()
+multi_asset_manifest = load_multi_asset_universe_manifest(roots["financial_db"], roots["workspace"])
+multi_asset_summary = summarize_multi_asset_universe(multi_asset_manifest)
 
 render_page_header(
     "Macro View",
@@ -119,9 +121,16 @@ with filters:
             st.session_state["ts_lab_symbol"] = ts_symbol
             st.switch_page("pages/14_⏱️_Time_Series_Lab.py")
 
-view = latest.copy()
-if view.empty:
-    view = catalog.copy()
+if not latest.empty and not catalog.empty and "symbol" in latest.columns and "symbol" in catalog.columns:
+    latest_symbols = set(latest["symbol"].dropna().astype(str).str.upper())
+    planned_assets = catalog[~catalog["symbol"].astype(str).str.upper().isin(latest_symbols)].copy()
+    if not planned_assets.empty:
+        planned_assets["status"] = planned_assets.get("status", "PLANNED")
+    view = pd.concat([latest, planned_assets], ignore_index=True, sort=False)
+else:
+    view = latest.copy()
+    if view.empty:
+        view = catalog.copy()
 if not view.empty and "symbol" in view.columns:
     view["ts_forecast"] = view["symbol"].astype(str).str.upper().map(lambda symbol: "Forecast available" if symbol in forecast_symbols else "No forecast")
     if forecast_symbols and not ts_latest.empty and "horizon_days" in ts_latest.columns:
@@ -153,7 +162,7 @@ with tabs[0]:
                 st.metric("Last", f"{getattr(row, 'last_close', 'n/a')}", pct(getattr(row, "return_1m", None)))
                 if str(getattr(row, "symbol", "")).upper() in forecast_symbols:
                     st.caption(f"Forecast available ({getattr(row, 'ts_horizons', '')}d)")
-                st.markdown(status_badge("OK"), unsafe_allow_html=True)
+                st.markdown(status_badge(getattr(row, "status", "PLANNED")), unsafe_allow_html=True)
         chart_cols = [col for col in ["return_1m", "return_3m", "return_1y"] if col in view.columns]
         if chart_cols:
             melted = view[["symbol", "asset_class", *chart_cols]].melt(id_vars=["symbol", "asset_class"], var_name="horizon", value_name="return")
@@ -232,8 +241,12 @@ with tabs[6]:
 with tabs[7]:
     st.markdown("### Macro metadata & database")
     st.caption("This is the asset map used to populate FX, commodities, ETFs, fixed income, crypto and country/regional macro proxies.")
+    if not multi_asset_summary.empty:
+        st.markdown("**Multi-asset universe coverage**")
+        st.dataframe(multi_asset_summary, width="stretch", hide_index=True)
     dataframe_with_download("Macro asset catalog", catalog, "MacroAssetCatalog.csv")
     dataframe_with_download("Macro asset manifest", manifest, "MacroAssetManifest.csv")
+    dataframe_with_download("Multi-asset universe manifest", multi_asset_manifest, "MultiAssetUniverseManifest.csv")
     if not history.empty:
         st.plotly_chart(px.line(history, x="date", y="close", color="symbol", title="History sample", template="plotly_white"), width="stretch")
         dataframe_with_download("Macro history sample", history, "MacroHistorySample.csv")

@@ -74,6 +74,58 @@ MACRO_ASSETS: tuple[MacroAsset, ...] = (
     MacroAsset("XRP", "XRP-USD", "XRP", "crypto", "crypto", "Global", "crypto_alt", "XRP price", "USD"),
     MacroAsset("COIN", "COIN", "Coinbase", "crypto_equity", "usa", "US", "crypto_equity", "Listed crypto exchange proxy", "USD"),
     MacroAsset("BITO", "BITO", "ProShares Bitcoin Strategy ETF", "crypto_etf", "usa", "US", "crypto_etf", "US bitcoin-linked ETF proxy", "USD"),
+    MacroAsset("AUDUSD", "AUDUSD=X", "AUD / USD", "fx", "global", "Australia / US", "major_fx", "AUDUSD exchange rate", "USD"),
+    MacroAsset("NZDUSD", "NZDUSD=X", "NZD / USD", "fx", "global", "New Zealand / US", "major_fx", "NZDUSD exchange rate", "USD"),
+    MacroAsset("USDCAD", "CAD=X", "USD / CAD", "fx", "global", "Canada / US", "major_fx", "USDCAD exchange rate", "CAD"),
+    MacroAsset("EURGBP", "EURGBP=X", "EUR / GBP", "fx", "eu", "Euro Area / UK", "cross_fx", "EURGBP exchange rate", "GBP"),
+    MacroAsset("EURJPY", "EURJPY=X", "EUR / JPY", "fx", "global", "Euro Area / Japan", "cross_fx", "EURJPY exchange rate", "JPY"),
+    MacroAsset("EURCHF", "EURCHF=X", "EUR / CHF", "fx", "eu", "Euro Area / Switzerland", "cross_fx", "EURCHF exchange rate", "CHF"),
+    MacroAsset("EURSEK", "EURSEK=X", "EUR / SEK", "fx", "eu", "Euro Area / Sweden", "cross_fx", "EURSEK exchange rate", "SEK"),
+    MacroAsset("EURPLN", "EURPLN=X", "EUR / PLN", "fx", "eu", "Euro Area / Poland", "cross_fx", "EURPLN exchange rate", "PLN"),
+    MacroAsset("XLF", "XLF", "Financial Select Sector SPDR", "sector_etf", "usa", "US", "financials", "US financials sector", "USD"),
+    MacroAsset("XLK", "XLK", "Technology Select Sector SPDR", "sector_etf", "usa", "US", "technology", "US technology sector", "USD"),
+    MacroAsset("XLE", "XLE", "Energy Select Sector SPDR", "sector_etf", "usa", "US", "energy", "US energy sector", "USD"),
+    MacroAsset("XLY", "XLY", "Consumer Discretionary Select Sector SPDR", "sector_etf", "usa", "US", "consumer_discretionary", "US discretionary sector", "USD"),
+    MacroAsset("XLP", "XLP", "Consumer Staples Select Sector SPDR", "sector_etf", "usa", "US", "consumer_staples", "US staples sector", "USD"),
+    MacroAsset("XLV", "XLV", "Health Care Select Sector SPDR", "sector_etf", "usa", "US", "healthcare", "US healthcare sector", "USD"),
+    MacroAsset("XLI", "XLI", "Industrial Select Sector SPDR", "sector_etf", "usa", "US", "industrials", "US industrials sector", "USD"),
+    MacroAsset("XLU", "XLU", "Utilities Select Sector SPDR", "sector_etf", "usa", "US", "utilities", "US utilities sector", "USD"),
+    MacroAsset("XLB", "XLB", "Materials Select Sector SPDR", "sector_etf", "usa", "US", "materials", "US materials sector", "USD"),
+    MacroAsset("XLRE", "XLRE", "Real Estate Select Sector SPDR", "sector_etf", "usa", "US", "real_estate", "US real estate sector", "USD"),
+    MacroAsset("XLC", "XLC", "Communication Services Select Sector SPDR", "sector_etf", "usa", "US", "communication_services", "US communication services sector", "USD"),
+    MacroAsset("IEUR", "IEUR", "iShares Core MSCI Europe ETF", "equity_index_etf", "eu", "Europe", "broad_market", "European equity ETF proxy", "USD"),
+    MacroAsset("HEZU", "HEZU", "iShares Currency Hedged MSCI Eurozone ETF", "equity_index_etf", "eu", "Euro Area", "currency_hedged", "Hedged Eurozone equity proxy", "USD"),
+    MacroAsset("EWG", "EWG", "iShares MSCI Germany ETF", "equity_index_etf", "eu", "Germany", "country_equity", "Germany equity proxy", "USD"),
+    MacroAsset("EWQ", "EWQ", "iShares MSCI France ETF", "equity_index_etf", "eu", "France", "country_equity", "France equity proxy", "USD"),
+    MacroAsset("EWP", "EWP", "iShares MSCI Spain ETF", "equity_index_etf", "eu", "Spain", "country_equity", "Spain equity proxy", "USD"),
+    MacroAsset("EWU", "EWU", "iShares MSCI United Kingdom ETF", "equity_index_etf", "eu", "UK", "country_equity", "UK equity proxy", "USD"),
+    MacroAsset("EWJ", "EWJ", "iShares MSCI Japan ETF", "equity_index_etf", "global", "Japan", "country_equity", "Japan equity proxy", "USD"),
+    MacroAsset("MCHI", "MCHI", "iShares MSCI China ETF", "equity_index_etf", "global", "China", "country_equity", "China equity proxy", "USD"),
+    MacroAsset("INDA", "INDA", "iShares MSCI India ETF", "equity_index_etf", "global", "India", "country_equity", "India equity proxy", "USD"),
+    MacroAsset("BND", "BND", "Vanguard Total Bond Market ETF", "fixed_income_etf", "usa", "US", "aggregate_bonds", "US broad fixed income", "USD"),
+    MacroAsset("GOVT", "GOVT", "iShares U.S. Treasury Bond ETF", "fixed_income_etf", "usa", "US", "treasuries", "US Treasury curve proxy", "USD"),
+    MacroAsset("SHV", "SHV", "iShares Short Treasury Bond ETF", "fixed_income_etf", "usa", "US", "cash_like", "US T-bill proxy", "USD"),
+    MacroAsset("VCIT", "VCIT", "Vanguard Intermediate-Term Corporate Bond ETF", "fixed_income_etf", "usa", "US", "credit", "US intermediate credit", "USD"),
+    MacroAsset("VCSH", "VCSH", "Vanguard Short-Term Corporate Bond ETF", "fixed_income_etf", "usa", "US", "short_credit", "US short corporate credit", "USD"),
+    MacroAsset("MUB", "MUB", "iShares National Muni Bond ETF", "fixed_income_etf", "usa", "US", "municipal", "US municipal bond proxy", "USD"),
+    MacroAsset("EMB", "EMB", "iShares J.P. Morgan USD Emerging Markets Bond ETF", "fixed_income_etf", "global", "Emerging Markets", "em_debt", "EM sovereign debt proxy", "USD"),
+    MacroAsset("BNDX", "BNDX", "Vanguard Total International Bond ETF", "fixed_income_etf", "global", "World", "global_bonds_ex_us", "Global ex-US bonds", "USD"),
+    MacroAsset("USO", "USO", "United States Oil Fund", "commodity_etf", "global", "World", "energy", "WTI oil ETF proxy", "USD"),
+    MacroAsset("UNG", "UNG", "United States Natural Gas Fund", "commodity_etf", "global", "World", "energy", "Natural gas ETF proxy", "USD"),
+    MacroAsset("DBB", "DBB", "Invesco DB Base Metals Fund", "commodity_etf", "global", "World", "industrial_metals", "Base metals ETF proxy", "USD"),
+    MacroAsset("DBA", "DBA", "Invesco DB Agriculture Fund", "commodity_etf", "global", "World", "agriculture", "Agriculture ETF proxy", "USD"),
+    MacroAsset("GSG", "GSG", "iShares S&P GSCI Commodity-Indexed Trust", "commodity_etf", "global", "World", "broad_commodities", "GSCI commodity basket", "USD"),
+    MacroAsset("NATGAS", "NG=F", "Natural gas future", "commodity_future", "global", "World", "energy", "Natural gas futures proxy", "USD"),
+    MacroAsset("PLATINUM", "PL=F", "Platinum future", "commodity_future", "global", "World", "precious_metals", "Platinum futures proxy", "USD"),
+    MacroAsset("PALLADIUM", "PA=F", "Palladium future", "commodity_future", "global", "World", "precious_metals", "Palladium futures proxy", "USD"),
+    MacroAsset("CORN", "ZC=F", "Corn future", "commodity_future", "global", "World", "agriculture", "Corn futures proxy", "USD"),
+    MacroAsset("WHEAT", "ZW=F", "Wheat future", "commodity_future", "global", "World", "agriculture", "Wheat futures proxy", "USD"),
+    MacroAsset("SOYBEANS", "ZS=F", "Soybean future", "commodity_future", "global", "World", "agriculture", "Soybean futures proxy", "USD"),
+    MacroAsset("ADA", "ADA-USD", "Cardano", "crypto", "crypto", "Global", "crypto_alt", "Cardano price", "USD"),
+    MacroAsset("DOGE", "DOGE-USD", "Dogecoin", "crypto", "crypto", "Global", "crypto_alt", "Dogecoin price", "USD"),
+    MacroAsset("LINK", "LINK-USD", "Chainlink", "crypto", "crypto", "Global", "crypto_alt", "Chainlink price", "USD"),
+    MacroAsset("AVAX", "AVAX-USD", "Avalanche", "crypto", "crypto", "Global", "crypto_alt", "Avalanche price", "USD"),
+    MacroAsset("DOT", "DOT-USD", "Polkadot", "crypto", "crypto", "Global", "crypto_alt", "Polkadot price", "USD"),
 )
 
 
@@ -147,6 +199,8 @@ def compile_macro_asset_database(
     asset_classes: Iterable[str] | None = None,
     period: str = "5y",
     interval: str = "1d",
+    start: str | None = None,
+    end: str | None = None,
     refresh: bool = False,
     max_assets: int | None = None,
 ) -> dict[str, Any]:
@@ -177,7 +231,15 @@ def compile_macro_asset_database(
                 history = pd.DataFrame()
         else:
             try:
-                raw = yf.Ticker(str(asset["provider_symbol"])).history(period=period, interval=interval, auto_adjust=False)
+                history_kwargs: dict[str, Any] = {"interval": interval, "auto_adjust": False}
+                if start or end:
+                    if start:
+                        history_kwargs["start"] = start
+                    if end:
+                        history_kwargs["end"] = end
+                else:
+                    history_kwargs["period"] = period
+                raw = yf.Ticker(str(asset["provider_symbol"])).history(**history_kwargs)
                 history = _normalize_history(raw, asset)
                 if not history.empty:
                     history.to_parquet(target, index=False)

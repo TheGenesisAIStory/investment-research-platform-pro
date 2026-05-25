@@ -220,6 +220,34 @@ from research_platform_core import (
 - `list_ohlcv_failures(...)` legge `output/tables/OHLCV_write_failures.csv` e restituisce una tabella retry-ready con ticker, exchange, target path, errore sintetico e timestamp.
 - `restart_equity_prices({"failed_only": True, ...})` rilancia programmaticamente lo stage prezzi solo sugli asset falliti; con `dry_run=True` valida la selezione senza chiamare provider.
 
+### Multi-asset DB e Smart Money coverage
+
+Il dominio non-equity e' trattato come parte del Database Finanziario condiviso,
+ma con manifest separati per evitare scansioni Drive pesanti:
+
+```python
+from research_platform_core import (
+    compile_macro_asset_database,
+    compile_multi_asset_universe_manifest,
+    compile_smart_money_source_manifest,
+)
+```
+
+- `compile_macro_asset_database(..., start="2000-01-01", end="2026-12-31")`
+  popola proxy yfinance per FX, commodities, crypto, ETF equity/fixed
+  income/commodity e fixed-income proxies sotto
+  `Database Finanziario/MarketData/Macro`.
+- `compile_multi_asset_universe_manifest(...)` scrive
+  `output/macro_market/tables/MultiAssetUniverseManifest.csv`, con dominio,
+  regione, stato dati, righe e ultimo aggiornamento.
+- `compile_smart_money_source_manifest(...)` scrive
+  `output/smart_money/tables/SmartMoneySourceManifest.csv`, distinguendo fonti
+  `OK`, `READY_OPTIONAL`, `PARTIAL` e `PLANNED` per CFTC COT, ETF flows,
+  options positioning e issuer events.
+
+Macro View e Data Platform leggono questi manifest: un dominio non ancora
+popolato deve risultare `PLANNED` o `PARTIAL`, mai una sezione vuota e muta.
+
 ## Frequenza
 
 - OHLCV: giornaliero incrementale.

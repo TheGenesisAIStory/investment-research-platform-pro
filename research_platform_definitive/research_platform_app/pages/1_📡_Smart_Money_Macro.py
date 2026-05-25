@@ -28,6 +28,7 @@ from smart_money_engine.visualization import (
     sector_heatmap,
     tic_flow_chart,
 )
+from research_platform_core.smart_money import load_smart_money_source_manifest, summarize_smart_money_sources
 
 
 configure_page("Smart Money Intelligence")
@@ -60,6 +61,8 @@ def metric_from_history(frame: pd.DataFrame, decimals: int = 2, suffix: str = ""
 roots = sidebar_roots()
 smart_root = roots["workspace"] / "smart_money"
 data = load_smart_money_artifacts(roots["workspace"])
+source_manifest = load_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
+source_summary = summarize_smart_money_sources(source_manifest)
 
 render_page_header(
     "Smart Money Intelligence",
@@ -118,6 +121,18 @@ cols[0].metric("Ranked Issuers", len(scores))
 cols[1].metric("Event Feed Rows", len(events))
 cols[2].metric("Sources OK", int(coverage.get("status", []).astype(str).eq("OK").sum()) if not coverage.empty and "status" in coverage.columns else 0)
 cols[3].metric("Lens", region)
+
+with st.container(border=True):
+    st.markdown("**Source readiness: COT / ETF flows / options / issuer events**")
+    if source_summary.empty:
+        st.info("Smart Money source manifest is not available yet.")
+    else:
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Source domains", source_summary["domain"].nunique())
+        c2.metric("Sources", int(source_summary["source_count"].sum()))
+        c3.metric("Ready / OK", int(source_summary.get("ok_count", pd.Series(dtype=int)).sum()) + int(source_summary.get("ready_optional_count", pd.Series(dtype=int)).sum()))
+        c4.metric("Planned sources", int(source_summary["planned_count"].sum()))
+        st.dataframe(source_summary, width="stretch", hide_index=True)
 
 st.markdown(
     """
@@ -212,6 +227,10 @@ with tabs[5]:
         st.plotly_chart(chart, width="stretch")
 
 with tabs[6]:
+    if not source_manifest.empty:
+        with st.expander("Smart Money source coverage", expanded=True):
+            st.caption("COT is the first official-source positioning family; ETF flows and options positioning are schema-ready but require provider/user data.")
+            st.dataframe(source_manifest, width="stretch", hide_index=True)
     c1 = cot_percentile_chart(data["macro_positioning"])
     c2 = tic_flow_chart(data["capital_flows"])
     if c1 is not None:
@@ -244,6 +263,7 @@ with tabs[8]:
     dataframe_with_download("30-day MVP plan", data["mvp_30_day_plan"], "smart_money_mvp_30_day_plan.csv")
     dataframe_with_download("Dataset priority ranking", data["dataset_priority_ranking"], "smart_money_dataset_priority.csv")
     dataframe_with_download("Analyst quick wins", data["analyst_quick_wins"], "smart_money_quick_wins.csv")
+    dataframe_with_download("Smart Money source manifest", source_manifest, "smart_money_source_manifest.csv")
 
 with st.expander("Event Feed", expanded=False):
     dataframe_with_download("Event feed", events, "smart_money_event_feed.csv")

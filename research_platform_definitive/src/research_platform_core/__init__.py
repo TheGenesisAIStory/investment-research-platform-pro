@@ -142,6 +142,25 @@ from .llm_client import LlmResponse, OllamaClient
 from .llm_prompts import PROMPT_REGISTRY
 from .llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance, explain_stock_picks, suggest_screener_config
 from .macro_market import MACRO_ASSETS, MacroAsset, compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
+from .multi_asset_universe import (
+    compile_multi_asset_universe_manifest,
+    load_multi_asset_universe_manifest,
+    summarize_multi_asset_universe,
+)
+from .factor_benchmarks import (
+    DEFAULT_FACTORS,
+    compute_factor_benchmark_summary,
+    discover_factor_panel_path,
+    load_factor_benchmark_summary,
+    write_factor_benchmark_artifacts,
+)
+from .smart_money import (
+    compile_smart_money_source_manifest,
+    load_smart_money_source_manifest,
+    refresh_cftc_cot_snapshot,
+    smart_money_source_catalog,
+    summarize_smart_money_sources,
+)
 from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions, fetch_stocktwits_messages, fetch_x_recent_mentions, score_sentiment_frame, score_text
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
 from .feature_metadata import FEATURE_METADATA, FeatureMetadata, category_for_feature, metadata_for_feature, metadata_frame, metadata_help
@@ -323,6 +342,19 @@ __all__ = [
     "compile_macro_asset_database",
     "load_macro_market_artifacts",
     "macro_asset_catalog",
+    "compile_multi_asset_universe_manifest",
+    "load_multi_asset_universe_manifest",
+    "summarize_multi_asset_universe",
+    "DEFAULT_FACTORS",
+    "compute_factor_benchmark_summary",
+    "discover_factor_panel_path",
+    "load_factor_benchmark_summary",
+    "write_factor_benchmark_artifacts",
+    "compile_smart_money_source_manifest",
+    "load_smart_money_source_manifest",
+    "refresh_cftc_cot_snapshot",
+    "smart_money_source_catalog",
+    "summarize_smart_money_sources",
     "collect_ticker_sentiment",
     "fetch_reddit_mentions",
     "fetch_stocktwits_messages",

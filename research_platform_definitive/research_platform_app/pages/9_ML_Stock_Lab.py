@@ -21,6 +21,7 @@ from support import configure_page, dataframe_with_download, load_ml_stock_lab_a
 from ui_ops import render_missing_data_cta
 
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
+from research_platform_core.factor_benchmarks import compute_factor_benchmark_summary, load_factor_benchmark_summary
 from research_platform_core.llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance
 from ml_stock_lab.factor_registry import FACTOR_BLOCKS
 from ml_stock_lab import run_ml_stock_lab_experiment
@@ -58,6 +59,7 @@ model_ids = model_registry_df["id"].astype(str).tolist() if not model_registry_d
 active_model_ids = [model_id for model_id in model_settings.get("active_models", ["ols"]) if model_id in model_ids] or model_ids[:1]
 composite_weights = {str(k): float(v) for k, v in model_settings.get("composite_weights", {}).items()}
 data = load_ml_stock_lab_artifacts(roots["workspace"])
+factor_benchmarks = load_factor_benchmark_summary(roots["workspace"])
 
 render_page_header(
     "ML Stock Lab",
@@ -219,7 +221,9 @@ with st.expander("Explain selected ML signal", expanded=bool(selected_signal_tic
             st.dataframe(drivers, width="stretch", hide_index=True)
             st.plotly_chart(px.bar(drivers, x="driver", y="value", color="family", template="plotly_white", title="ML driver proxy"), width="stretch")
 
-tab_overview, tab_signals, tab_quintiles, tab_models, tab_docs = st.tabs(["Overview", "Signals", "Quintile Backtest", "Models & Settings", "Methodology"])
+tab_overview, tab_signals, tab_quintiles, tab_baselines, tab_models, tab_docs = st.tabs(
+    ["Overview", "Signals", "Quintile Backtest", "Factor Baselines", "Models & Settings", "Methodology"]
+)
 
 with tab_overview:
     dataframe_with_download("ML Stock Lab metrics", metrics, "MLStockLab_metrics.csv")
@@ -264,6 +268,59 @@ with tab_quintiles:
     render_metric_metadata_expander(["rank_ic", "ic", "sharpe_long_short", "hit_ratio", "turnover", "max_drawdown"], "Backtest metric glossary")
     if not quintiles.empty and {"quantile", "return"}.issubset(quintiles.columns):
         st.plotly_chart(px.bar(quintiles, x="quantile", y="return", color="date" if "date" in quintiles.columns else None, title="Quintile / Long-Short Returns", template="plotly_white"), width="stretch")
+
+with tab_baselines:
+    st.subheader("Baselines & Factor Benchmarks")
+    st.caption(
+        "Transparent factor portfolios are the control group for the ML stack: "
+        "top-bucket long-only and top-minus-bottom spreads for value, quality, momentum, risk, size, growth and composite factors."
+    )
+    action_cols = st.columns([0.35, 0.25, 0.4])
+    baseline_target = action_cols[0].selectbox("Benchmark target", ["forward_return_21d", "forward_return_63d", "forward_return_252d", "forward_return"], index=0)
+    baseline_rows = action_cols[1].number_input(
+        "Rows sampled",
+        min_value=50_000,
+        max_value=2_000_000,
+        value=250_000,
+        step=50_000,
+        help="Interactive computation is capped for responsiveness. Scheduled jobs can compute the full panel with max_rows=None.",
+    )
+    if action_cols[2].button("Compute / refresh factor baselines", width="stretch"):
+        with st.spinner("Computing transparent factor benchmark portfolios..."):
+            factor_benchmarks = compute_factor_benchmark_summary(
+                roots["workspace"],
+                target_col=baseline_target,
+                max_rows=int(baseline_rows),
+                write=True,
+            )
+        st.success("Factor benchmark summary updated.")
+    if factor_benchmarks.empty:
+        st.info("No factor benchmark summary found yet. Use the refresh action above after the FactorUniversePanel is available.")
+    else:
+        ok_frame = factor_benchmarks[factor_benchmarks.get("status", "").astype(str).str.upper().eq("OK")] if "status" in factor_benchmarks.columns else factor_benchmarks
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Benchmarks", len(factor_benchmarks))
+        c2.metric("OK factors", len(ok_frame))
+        c3.metric("Avg RankIC", f"{pd.to_numeric(ok_frame.get('rank_ic_mean', pd.Series(dtype=float)), errors='coerce').mean():.3f}" if not ok_frame.empty and "rank_ic_mean" in ok_frame.columns else "n/a")
+        c4.metric("Avg LS spread", f"{pd.to_numeric(ok_frame.get('long_short_mean_return', pd.Series(dtype=float)), errors='coerce').mean():.2%}" if not ok_frame.empty and "long_short_mean_return" in ok_frame.columns else "n/a")
+        dataframe_with_download("Factor benchmark summary", factor_benchmarks, "FactorBenchmarkSummary.csv")
+        render_metric_metadata_expander(["rank_ic", "top_mean_return", "long_short_mean_return", "long_short_sharpe", "top_long_sharpe"], "Factor benchmark metric glossary")
+        plot_cols = [col for col in ["long_short_mean_return", "top_mean_return", "rank_ic_mean", "long_short_sharpe"] if col in factor_benchmarks.columns]
+        if plot_cols and "factor" in factor_benchmarks.columns:
+            melted = factor_benchmarks.melt(id_vars=["factor"], value_vars=plot_cols, var_name="metric", value_name="value")
+            melted["value"] = pd.to_numeric(melted["value"], errors="coerce")
+            st.plotly_chart(
+                px.bar(
+                    melted.dropna(subset=["value"]),
+                    x="factor",
+                    y="value",
+                    color="metric",
+                    barmode="group",
+                    template="plotly_white",
+                    title="ML control group: pure factor baseline metrics",
+                ),
+                width="stretch",
+            )
 
 with tab_models:
     st.subheader("Model Settings")

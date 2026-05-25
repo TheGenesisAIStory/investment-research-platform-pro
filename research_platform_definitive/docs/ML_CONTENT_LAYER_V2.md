@@ -94,6 +94,35 @@ Il training scrive:
 - `MLStockLab_trained_model_signals.csv`: segnali wide consumabili dallo
   Screener.
 
+## Factor baseline portfolios
+
+Per evitare di confrontare i modelli ML contro il vuoto, il core include ora
+`research_platform_core.factor_benchmarks`. Il modulo legge il
+`FactorUniversePanel` e produce benchmark trasparenti per:
+
+- `value_score`
+- `quality_score`
+- `momentum_score`
+- `risk_score`
+- `size_score`
+- `growth_score`
+- `factor_composite_score`
+
+Per ciascun fattore calcola un bucket top, un bucket bottom e lo spread
+top-minus-bottom rispetto a `forward_return_21d`/`63d`/`252d`. Le metriche
+principali sono `top_mean_return`, `long_short_mean_return`,
+`long_short_sharpe`, `top_long_sharpe` e `rank_ic_mean`.
+
+Gli artifact sono:
+
+- `output/ml_training_lab/tables/FactorBenchmarkSummary.csv`
+- `output/ml_training_lab/FactorBenchmarkManifest.json`
+
+In UI, ML Stock Lab espone la tab `Factor Baselines`: il ricercatore puo'
+calcolare una versione interattiva campionata e confrontare immediatamente ML vs
+fattori tradizionali. Per run full-panel/scheduled, il limite `max_rows` puo'
+essere disattivato lato job.
+
 ## Metrics metadata
 
 Le definizioni delle metriche vivono in
@@ -117,6 +146,8 @@ Metriche coperte:
   `forecast_error_std`.
 - Basic market statistics: `annualized_volatility`, `annualized_variance`,
   `beta_to_benchmark`, `correlation_to_benchmark`, `avg_pairwise_corr`.
+- Factor benchmark: `top_mean_return`, `bottom_mean_return`,
+  `long_short_mean_return`, `top_long_sharpe`, `long_short_sharpe`.
 
 I test `test_feature_metric_metadata.py` verificano che:
 
@@ -190,3 +221,19 @@ La pagina LABS `Time Series Lab` permette di:
 La metodologia e' documentata in `docs/TIME_SERIES_FORECASTING_LAYER.md`.
 Questo modulo e' pensato come contesto di scenario per Macro View e Portfolio,
 non come sostituto dei ranking cross-sectionali dello Stock Lab.
+
+## Multi-asset and Smart Money coverage
+
+La parte non-equity e' ora resa esplicita da due manifest leggeri:
+
+- `research_platform_core.multi_asset_universe` compila
+  `MultiAssetUniverseManifest.csv` da Macro DB, distinguendo FX, commodities,
+  crypto, ETF equity, ETF fixed income, ETF commodity, ETF crypto e fixed-income
+  proxies.
+- `research_platform_core.smart_money` compila `SmartMoneySourceManifest.csv`
+  per CFTC COT, ETF flows, options positioning e issuer-event evidence.
+
+Data Platform mostra questi manifest in `Domain Status`; Macro View usa lo
+stesso catalogo per far vedere asset scaricati e asset pianificati. Le fonti
+Smart Money non ancora disponibili non sono mostrate come pannelli vuoti:
+restano `PLANNED` o `READY_OPTIONAL` finche' un job/fonte reale non le popola.
