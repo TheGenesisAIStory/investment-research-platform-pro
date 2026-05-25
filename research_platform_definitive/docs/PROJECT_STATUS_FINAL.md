@@ -39,6 +39,9 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 - Modelli training presenti: OLS, RF, GBRT, ensemble.
 - Target standard: `forward_return` a 21 trading days; supporto 21/63/252 giorni
   nel training pipeline.
+- Forecasting time-series: nuovo `Time Series Lab` con forecast single-series
+  su Macro DB/OHLCV equity, orizzonti 5/21/63/126 giorni, baseline `naive` e
+  modelli feature-based `ols`/`gbrt`.
 - Factor vocabulary: value, quality, momentum, risk, size, growth,
   model-based.
 - Leakage policy attiva tramite `feature_columns_for_blocks()`.
@@ -53,7 +56,7 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 - Branding globale: `Gen.is.IA Investment Research Workstation`.
 - Macro menu:
   - RESEARCH: Home, Screener, Valuation, Portfolio, Macro View, Smart Money.
-  - LABS: ML Stock Lab, Banking Data Lab, Research Library.
+  - LABS: ML Stock Lab, Time Series Lab, Banking Data Lab, Research Library.
   - PLATFORM OPS: Data Platform, Notebook Runner, Export Center, Hi-Freq Engine,
     Data/API Control Center.
 - Ogni pagina principale usa context bar e header Gen.is.IA.
@@ -74,10 +77,10 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 
 Risultato corrente:
 
-- locale: 69 test passati;
-- worktree GitHub separato: 73 test passati;
+- locale: 73 test passati;
+- worktree GitHub separato: 77 test passati;
 - validator: OK;
-- AppTest principali: `exceptions 0`.
+- AppTest Home + Time Series Lab: `exceptions 0`.
 
 ## Limiti dichiarati
 
@@ -99,4 +102,3 @@ Prossimo tag consigliato dopo eventuale review manuale UI:
 git tag v1.0.0
 git push origin v1.0.0
 ```
-

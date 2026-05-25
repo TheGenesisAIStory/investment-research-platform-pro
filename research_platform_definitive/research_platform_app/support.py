@@ -114,6 +114,7 @@ def render_platform_sidebar() -> None:
 
     st.sidebar.markdown("### LABS")
     _safe_page_link("pages/9_ML_Stock_Lab.py", "ML Stock Lab & Models")
+    _safe_page_link("pages/14_⏱️_Time_Series_Lab.py", "Time Series Lab")
     _safe_page_link("pages/12_Banking_Data_Lab.py", "Banking Data Lab")
     _safe_page_link("pages/10_Laboratorio_Research_Library.py", "Research Library")
     st.sidebar.markdown("---")

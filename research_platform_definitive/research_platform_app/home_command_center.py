@@ -334,6 +334,17 @@ def _render_workflows(company: dict[str, pd.DataFrame], portfolio: dict[str, pd.
             "pages/1_📡_Smart_Money_Macro.py",
             "pages/8_🗄️_Data_Platform.py",
         )
+    row3 = st.columns([0.34, 0.33, 0.33])
+    with row3[0]:
+        _workflow_card(
+            "⏱",
+            "Time Series Lab",
+            "WIP",
+            "Forecast one index, macro proxy, FX, commodity, crypto or equity series with lag/rolling features for scenario context.",
+            "pages/14_⏱️_Time_Series_Lab.py",
+            "pages/13_🌍_Macro_View.py",
+            "Open Macro View",
+        )
 
 
 def _render_advanced_ops(roots: dict[str, Path], artifacts: pd.DataFrame, freshness: pd.DataFrame, runs: pd.DataFrame) -> None:

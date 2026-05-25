@@ -60,6 +60,13 @@ coverage conteneva chiavi miste stringa/float e veniva serializzato con
   - copertura completa delle colonne dichiarate in `RAW_FACTOR_COLUMNS`;
   - copertura delle colonne reali principali viste in ML/Screener/Portfolio;
   - copertura delle metriche modello/portfolio/data-quality principali.
+- Aggiunto `research_platform_core.time_series_forecasting` per coprire il
+  gap di forecasting single-series:
+  - input da Macro DB o OHLCV equity;
+  - feature lag/rolling senza leakage;
+  - modelli `naive`, `ols`, `gbrt`;
+  - metriche `mae`, `rmse`, `mape`, `directional_accuracy`;
+  - artifact in `output/time_series_lab/tables`.
 
 ## App / UI Gen.is.IA
 
@@ -73,6 +80,8 @@ coverage conteneva chiavi miste stringa/float e veniva serializzato con
   Data Health & Restart, Failures Panel e Run Monitor.
 - Macro View separata da Smart Money, con 40 asset/proxy tra global, USA, EU,
   Italy, crypto, FX, commodity, ETF e fixed income.
+- Time Series Lab aggiunto sotto LABS come modulo di scenario per indici,
+  macro proxy, FX, commodity, crypto e singole equity.
 - Screener, ML Lab, Valuation e Portfolio condividono `selected_ticker` e
   mostrano context panel e glossari inline.
 
@@ -96,6 +105,8 @@ Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
   su tutto l'universo disponibile.
 - Le metriche ML correnti servono come smoke/validation quantitativa, non come
   performance economica definitiva.
+- Time Series Lab v1 non include ancora ARIMA/ETS, intervalli di previsione o
+  modelli multivariati macro; e' una base feature-based pronta per estensione.
 - `macro_fx`, `factor_libraries`, `smart_money`, `banking` restano `PLANNED`
   nel coverage validator come domini di completion 2000-2026, anche se Macro
   View e Smart Money hanno artifact applicativi separati gia' leggibili in app.
@@ -105,11 +116,12 @@ Tutti i prompt sono versionati in `research_platform_core.llm_prompts`.
 ## Quality Gate Eseguiti
 
 - Compileall su `src`, app e scripts.
-- Test suite completa: 69 test passati nel repo locale; 73 test passati nel
-  worktree GitHub separato dopo sync.
+- Test suite completa: 73 test passati nel repo locale; 77 test passati nel
+  worktree GitHub separato.
 - Validator: definitive bundle, artifacts, research data coverage e notebooks OK.
-- AppTest: Home, Screener, Data Platform, ML Stock Lab, Valuation e Portfolio
-  con `exceptions 0`.
+- AppTest: Home e Time Series Lab con `exceptions 0` dopo il nuovo modulo;
+  nel ciclo precedente anche Screener, Data Platform, ML Stock Lab, Valuation e
+  Portfolio erano verdi.
 - `factor_universe_panel` bounded: completato.
 - `train_ml_models_2000_2026.py` bounded: completato, `status=OK`.
 

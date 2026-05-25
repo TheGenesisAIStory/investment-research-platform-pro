@@ -146,6 +146,19 @@ from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions,
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
 from .feature_metadata import FEATURE_METADATA, FeatureMetadata, category_for_feature, metadata_for_feature, metadata_frame, metadata_help
 from .metrics_metadata import METRICS_METADATA, MetricMetadata, metadata_for_metric, metric_help, metrics_metadata_frame
+from .time_series_forecasting import (
+    TimeSeriesForecastConfig,
+    TimeSeriesForecastResult,
+    available_time_series_assets,
+    fit_time_series_forecasts,
+    load_equity_series,
+    load_macro_series,
+    load_time_series_forecast_artifacts,
+    make_time_series_features,
+    prepare_time_series_frame,
+    run_time_series_forecast,
+    write_time_series_forecast_artifacts,
+)
 
 __all__ = [
     "as_df",
@@ -326,4 +339,15 @@ __all__ = [
     "metadata_for_metric",
     "metric_help",
     "metrics_metadata_frame",
+    "TimeSeriesForecastConfig",
+    "TimeSeriesForecastResult",
+    "available_time_series_assets",
+    "fit_time_series_forecasts",
+    "load_equity_series",
+    "load_macro_series",
+    "load_time_series_forecast_artifacts",
+    "make_time_series_features",
+    "prepare_time_series_frame",
+    "run_time_series_forecast",
+    "write_time_series_forecast_artifacts",
 ]

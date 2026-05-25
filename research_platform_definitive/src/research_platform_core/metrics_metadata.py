@@ -274,6 +274,54 @@ METRICS_METADATA.update(
             "mean(periodic_return)",
             "Higher values are better only if robust after volatility, drawdown and turnover.",
         ),
+        "mae": MetricMetadata(
+            "mae",
+            "Mean absolute error",
+            "time_series_forecast",
+            "Average absolute forecast error on the out-of-sample window.",
+            "mean(abs(predicted_return - realized_return))",
+            "Lower is better; compare it across models on the same series and horizon.",
+        ),
+        "rmse": MetricMetadata(
+            "rmse",
+            "Root mean squared error",
+            "time_series_forecast",
+            "Square-root of the average squared forecast error.",
+            "sqrt(mean((predicted_return - realized_return)^2))",
+            "Lower is better and large misses are penalized more than in MAE.",
+        ),
+        "mape": MetricMetadata(
+            "mape",
+            "Mean absolute percentage error",
+            "time_series_forecast",
+            "Average absolute error scaled by the realized target magnitude.",
+            "mean(abs(error) / max(abs(realized_return), epsilon))",
+            "Useful as a scale-free diagnostic, but unstable when realized returns are near zero.",
+        ),
+        "directional_accuracy": MetricMetadata(
+            "directional_accuracy",
+            "Directional accuracy",
+            "time_series_forecast",
+            "Share of out-of-sample observations where forecast and realized return have the same sign.",
+            "mean(sign(predicted_return) == sign(realized_return))",
+            "Values above 50% can indicate useful directional signal, subject to costs and regimes.",
+        ),
+        "forecast_return": MetricMetadata(
+            "forecast_return",
+            "Forecast return",
+            "time_series_forecast",
+            "Predicted forward return for the selected horizon.",
+            "E[price_t+h / price_t - 1 | lagged features]",
+            "Treat as scenario context, not as a standalone trading instruction.",
+        ),
+        "forecast_level": MetricMetadata(
+            "forecast_level",
+            "Forecast level",
+            "time_series_forecast",
+            "Implied future price level from the latest close and forecast return.",
+            "last_close * (1 + forecast_return)",
+            "Useful for visual scenario framing; uncertainty bands should be added before production use.",
+        ),
     }
 )
 
@@ -289,6 +337,11 @@ ALIASES = {
     "r2_oos": "r2_os",
     "sharpe_ratio": "sharpe",
     "long_short_sharpe": "sharpe_long_short",
+    "mean_absolute_error": "mae",
+    "root_mean_squared_error": "rmse",
+    "dir_acc": "directional_accuracy",
+    "forecasted_return": "forecast_return",
+    "forecasted_level": "forecast_level",
 }
 
 

@@ -112,6 +112,8 @@ Metriche coperte:
   `beta`, `tracking_error`, `information_ratio`.
 - Data/model governance: `rows`, `panel_rows`, `ticker_count`,
   `date_count`, `feature_count`, `avg_names`, `avg_names_long_short`.
+- Time-series forecasting: `mae`, `rmse`, `mape`,
+  `directional_accuracy`, `forecast_return`, `forecast_level`.
 
 I test `test_feature_metric_metadata.py` verificano che:
 
@@ -166,3 +168,22 @@ In UI:
 
 Policy: ogni output LLM e' research-only, deve dichiarare incertezza e non deve
 essere usato come raccomandazione operativa.
+
+## Time Series Forecasting Layer
+
+Il layer cross-sectionale rimane il cuore dello stock picking: ordina molti
+titoli usando target come `forward_return_21d`, `forward_return_63d` e
+`forward_return_252d`. Per coprire anche il forecasting classico di una singola
+serie, e' stato aggiunto `research_platform_core.time_series_forecasting`.
+
+La pagina LABS `Time Series Lab` permette di:
+
+- scegliere una serie da Macro DB o OHLCV equity;
+- stimare forecast su 5/21/63/126 giorni;
+- confrontare baseline `naive`, `ols` e `gbrt`;
+- salvare metriche, predizioni, forecast latest e feature schema sotto
+  `output/time_series_lab/tables`.
+
+La metodologia e' documentata in `docs/TIME_SERIES_FORECASTING_LAYER.md`.
+Questo modulo e' pensato come contesto di scenario per Macro View e Portfolio,
+non come sostituto dei ranking cross-sectionali dello Stock Lab.
