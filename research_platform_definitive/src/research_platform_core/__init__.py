@@ -157,7 +157,14 @@ from .time_series_forecasting import (
     make_time_series_features,
     prepare_time_series_frame,
     run_time_series_forecast,
+    summarize_time_series_forecast_context,
     write_time_series_forecast_artifacts,
+)
+from .market_statistics import (
+    compute_correlation_matrix,
+    compute_ticker_market_statistics,
+    load_price_return_matrix,
+    summarize_correlation_matrix,
 )
 
 __all__ = [
@@ -349,5 +356,10 @@ __all__ = [
     "make_time_series_features",
     "prepare_time_series_frame",
     "run_time_series_forecast",
+    "summarize_time_series_forecast_context",
     "write_time_series_forecast_artifacts",
+    "compute_correlation_matrix",
+    "compute_ticker_market_statistics",
+    "load_price_return_matrix",
+    "summarize_correlation_matrix",
 ]

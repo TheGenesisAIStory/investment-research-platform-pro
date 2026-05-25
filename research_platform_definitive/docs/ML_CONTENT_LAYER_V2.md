@@ -113,7 +113,10 @@ Metriche coperte:
 - Data/model governance: `rows`, `panel_rows`, `ticker_count`,
   `date_count`, `feature_count`, `avg_names`, `avg_names_long_short`.
 - Time-series forecasting: `mae`, `rmse`, `mape`,
-  `directional_accuracy`, `forecast_return`, `forecast_level`.
+  `directional_accuracy`, `forecast_return`, `forecast_level`,
+  `forecast_error_std`.
+- Basic market statistics: `annualized_volatility`, `annualized_variance`,
+  `beta_to_benchmark`, `correlation_to_benchmark`, `avg_pairwise_corr`.
 
 I test `test_feature_metric_metadata.py` verificano che:
 

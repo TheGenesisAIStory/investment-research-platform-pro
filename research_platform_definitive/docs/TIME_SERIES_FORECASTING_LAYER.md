@@ -83,6 +83,7 @@ Le metriche prodotte sono:
 - **MAPE**: errore assoluto scalato per la dimensione del ritorno realizzato;
 - **Directional accuracy**: quota di osservazioni in cui forecast e rendimento realizzato hanno lo stesso segno;
 - **Hit ratio**: quota di previsioni con segno e payoff coerenti.
+- **Forecast error standard deviation**: deviazione standard dei residui out-of-sample, usata nella UI come intervallo semplice attorno al forecast latest.
 
 ## 4. UI e workflow
 
@@ -96,6 +97,7 @@ La UI contiene:
 - opzioni avanzate per train/test split e massimo numero di righe;
 - grafico storico interattivo;
 - tabella dei forecast piu recenti;
+- fan chart con forecast level e banda residua;
 - grafico forecast vs realized;
 - tabella metriche;
 - schema delle feature usate.
@@ -131,3 +133,22 @@ Prossimi passi consigliati:
 4. Salvare model cards per ogni forecast run.
 5. Collegare Macro View e Portfolio a `TimeSeriesForecast_latest.csv`.
 6. Valutare LSTM/transformer solo come laboratorio sperimentale, non come default.
+
+## 7. Collegamenti applicativi
+
+La Macro View legge gli artifact del Time Series Lab e mostra un badge
+`Forecast available` per gli asset che hanno forecast recenti. Il pulsante
+`Open forecast in Time Series Lab` imposta `st.session_state.ts_lab_source` e
+`st.session_state.ts_lab_symbol`, cosi' il Lab si apre gia' sulla serie scelta.
+
+Il Portfolio espone una tab `Macro & TS Context` che usa gli stessi artifact per
+mostrare forecast di benchmark e proxy macro come scenario. La logica di
+costruzione portafogli non viene modificata: il forecast e' solo contesto.
+
+In Portfolio e Screener sono inoltre disponibili statistiche base e correlazioni:
+
+- volatilita' annualizzata;
+- varianza annualizzata;
+- beta verso benchmark;
+- correlazione verso benchmark;
+- matrice di correlazione su subset di nomi.

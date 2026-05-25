@@ -52,6 +52,8 @@ def test_fit_time_series_forecasts_returns_metrics_predictions_and_latest() -> N
     assert set(result.metrics["model"]) == {"naive", "ols"}
     assert set(result.metrics["horizon_days"]) == {5, 21}
     assert {"mae", "rmse", "mape", "directional_accuracy"}.issubset(result.metrics.columns)
+    assert {"forecast_error_std"}.issubset(result.metrics.columns)
+    assert {"forecast_return_low", "forecast_return_high", "forecast_level_low", "forecast_level_high"}.issubset(result.latest_forecasts.columns)
     assert not result.predictions.empty
     assert not result.latest_forecasts.empty
 

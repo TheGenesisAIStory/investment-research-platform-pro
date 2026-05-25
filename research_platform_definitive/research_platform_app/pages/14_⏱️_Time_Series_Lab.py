@@ -12,6 +12,7 @@ for candidate in [PROJECT_ROOT, APP_DIR, SRC_ROOT]:
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 from support import (
@@ -82,22 +83,37 @@ with st.container(border=True):
     st.markdown("**Forecast setup**")
     st.caption("This Lab is for time-series scenario context. Stock selection remains in the cross-sectional ML Stock Lab.")
     source_col, symbol_col, model_col = st.columns([0.22, 0.38, 0.4])
-    source = source_col.radio("Series source", ["macro", "equity"], horizontal=True, help="Macro uses the Macro DB; equity uses local OHLCV parquet files.")
+    source_default = str(st.session_state.get("ts_lab_source", "macro") or "macro").lower()
+    source_options = ["macro", "equity"]
+    source = source_col.radio(
+        "Series source",
+        source_options,
+        index=source_options.index(source_default) if source_default in source_options else 0,
+        horizontal=True,
+        help="Macro uses the Macro DB; equity uses local OHLCV parquet files.",
+    )
 
     if source == "macro":
         macro_assets = assets[assets["source_type"].astype(str).eq("macro")].copy() if not assets.empty else pd.DataFrame()
         labels = macro_assets["display_label"].tolist() if not macro_assets.empty else ["SPY · SPDR S&P 500 ETF"]
+        requested_symbol = str(st.session_state.get("ts_lab_symbol", "") or "").strip().upper()
         default_idx = 0
+        if requested_symbol and not macro_assets.empty and "symbol" in macro_assets.columns:
+            matches = macro_assets.index[macro_assets["symbol"].astype(str).str.upper().eq(requested_symbol)].tolist()
+            if matches:
+                default_idx = int(macro_assets.index.get_loc(matches[0])) if hasattr(macro_assets.index, "get_loc") else 0
         selected_label = symbol_col.selectbox("Macro / market series", labels, index=default_idx, help="Global, USA, EU, Italy, FX, commodity, fixed-income and crypto proxies.")
         if not macro_assets.empty:
             symbol = str(macro_assets.loc[macro_assets["display_label"].eq(selected_label), "symbol"].iloc[0])
         else:
             symbol = "SPY"
     else:
-        default_ticker = str(st.session_state.get("selected_ticker", "") or "SPY").upper()
+        default_ticker = str(st.session_state.get("ts_lab_symbol", "") or st.session_state.get("selected_ticker", "") or "SPY").upper()
         symbol = symbol_col.text_input("Equity ticker", value=default_ticker, help="Uses the same selected_ticker context as Screener, Valuation and Portfolio.").strip().upper()
         if symbol:
             st.session_state["selected_ticker"] = symbol
+    st.session_state["ts_lab_source"] = source
+    st.session_state["ts_lab_symbol"] = symbol
 
     horizons = model_col.multiselect("Forecast horizons", [5, 21, 63, 126], default=[5, 21, 63], help="Forward return horizons in trading days.")
     model_options = ["naive", "ols", "gbrt"]
@@ -193,6 +209,32 @@ with tabs[0]:
                 ),
                 width="stretch",
             )
+        if not history.empty and {"horizon_days", "forecast_level"}.issubset(latest_view.columns):
+            fan = latest_view.copy()
+            if "model" in fan.columns and fan["model"].astype(str).str.lower().eq("gbrt").any():
+                fan = fan[fan["model"].astype(str).str.lower().eq("gbrt")]
+            fan = fan.sort_values("horizon_days")
+            last_hist = history.dropna(subset=["date", "close"]).tail(252).copy()
+            last_date = pd.to_datetime(last_hist["date"]).max()
+            fan["forecast_date"] = [last_date + pd.tseries.offsets.BDay(int(h)) for h in fan["horizon_days"]]
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=last_hist["date"], y=last_hist["close"], mode="lines", name="History"))
+            fig.add_trace(go.Scatter(x=fan["forecast_date"], y=fan["forecast_level"], mode="lines+markers", name="Forecast"))
+            if {"forecast_level_low", "forecast_level_high"}.issubset(fan.columns):
+                fig.add_trace(go.Scatter(x=fan["forecast_date"], y=fan["forecast_level_high"], mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip"))
+                fig.add_trace(
+                    go.Scatter(
+                        x=fan["forecast_date"],
+                        y=fan["forecast_level_low"],
+                        mode="lines",
+                        line=dict(width=0),
+                        fill="tonexty",
+                        fillcolor="rgba(0,109,119,0.16)",
+                        name="Residual interval",
+                    )
+                )
+            fig.update_layout(title="History + forecast fan chart", template="plotly_white", hovermode="x unified")
+            st.plotly_chart(fig, width="stretch")
         dataframe_with_download("Latest forecasts", latest_view, "TimeSeriesForecast_latest.csv")
 
 with tabs[1]:

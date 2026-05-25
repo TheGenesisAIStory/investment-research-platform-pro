@@ -16,6 +16,7 @@ import streamlit as st
 
 from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_header, render_page_intro, safe_page_link, sidebar_roots
 
+from research_platform_core import load_time_series_forecast_artifacts
 from research_platform_core.macro_market import compile_macro_asset_database, load_macro_market_artifacts, macro_asset_catalog
 from research_platform_core.sentiment_analysis import collect_ticker_sentiment
 
@@ -50,6 +51,9 @@ catalog = artifacts["catalog"]
 manifest = artifacts["manifest"]
 latest = artifacts["latest"]
 history = artifacts["history_sample"]
+ts_artifacts = load_time_series_forecast_artifacts(roots["workspace"])
+ts_latest = ts_artifacts.get("latest", pd.DataFrame())
+forecast_symbols = set(ts_latest["symbol"].dropna().astype(str).str.upper().tolist()) if not ts_latest.empty and "symbol" in ts_latest.columns else set()
 
 render_page_header(
     "Macro View",
@@ -106,10 +110,28 @@ with filters:
     view_region = f1.selectbox("Region lens", ["All", *regions], index=0)
     view_class = f2.selectbox("Asset class", ["All", *classes], index=0)
     sort_metric = f3.selectbox("Sort metric", ["return_1m", "return_3m", "return_1y", "last_close"], index=1)
+    if forecast_symbols:
+        shortcut_symbols = sorted(forecast_symbols)
+        c1, c2 = st.columns([0.35, 0.65])
+        ts_symbol = c1.selectbox("Forecast shortcut", shortcut_symbols, help="Open Time Series Lab with this macro series pre-selected.")
+        if c2.button("Open forecast in Time Series Lab", width="stretch"):
+            st.session_state["ts_lab_source"] = "macro"
+            st.session_state["ts_lab_symbol"] = ts_symbol
+            st.switch_page("pages/14_⏱️_Time_Series_Lab.py")
 
 view = latest.copy()
 if view.empty:
     view = catalog.copy()
+if not view.empty and "symbol" in view.columns:
+    view["ts_forecast"] = view["symbol"].astype(str).str.upper().map(lambda symbol: "Forecast available" if symbol in forecast_symbols else "No forecast")
+    if forecast_symbols and not ts_latest.empty and "horizon_days" in ts_latest.columns:
+        horizon_map = (
+            ts_latest.assign(symbol=ts_latest["symbol"].astype(str).str.upper())
+            .groupby("symbol")["horizon_days"]
+            .apply(lambda values: "/".join(str(int(v)) for v in sorted(pd.Series(values).dropna().astype(int).unique())))
+            .to_dict()
+        )
+        view["ts_horizons"] = view["symbol"].astype(str).str.upper().map(horizon_map).fillna("")
 if view_region != "All" and "region" in view.columns:
     view = view[view["region"].astype(str).eq(view_region)].copy()
 if view_class != "All" and "asset_class" in view.columns:
@@ -129,6 +151,8 @@ with tabs[0]:
                 st.markdown(f"**{getattr(row, 'symbol', '')}**")
                 st.caption(getattr(row, "name", ""))
                 st.metric("Last", f"{getattr(row, 'last_close', 'n/a')}", pct(getattr(row, "return_1m", None)))
+                if str(getattr(row, "symbol", "")).upper() in forecast_symbols:
+                    st.caption(f"Forecast available ({getattr(row, 'ts_horizons', '')}d)")
                 st.markdown(status_badge("OK"), unsafe_allow_html=True)
         chart_cols = [col for col in ["return_1m", "return_3m", "return_1y"] if col in view.columns]
         if chart_cols:
@@ -140,6 +164,8 @@ for tab, region_name in zip(tabs[1:6], ["global", "usa", "eu", "italy", "crypto"
     with tab:
         region_latest = latest[latest["region"].astype(str).eq(region_name)].copy() if not latest.empty and "region" in latest.columns else pd.DataFrame()
         region_catalog = catalog[catalog["region"].astype(str).eq(region_name)].copy() if not catalog.empty and "region" in catalog.columns else pd.DataFrame()
+        if not region_latest.empty and "symbol" in region_latest.columns:
+            region_latest["ts_forecast"] = region_latest["symbol"].astype(str).str.upper().map(lambda symbol: "Forecast available" if symbol in forecast_symbols else "No forecast")
         st.markdown(f"### {region_name.upper()} macro board")
         if region_latest.empty:
             st.warning("This region has metadata, but no downloaded market history yet. Use Compile macro database.")

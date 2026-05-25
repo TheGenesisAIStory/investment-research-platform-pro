@@ -40,6 +40,7 @@ from support import (
     render_context_bar,
     render_feature_metadata_expander,
     render_footer,
+    render_metric_metadata_expander,
     render_page_header,
     render_page_intro,
     render_selected_ticker_context,
@@ -50,6 +51,7 @@ from ui_ops import render_missing_data_cta
 
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
 from research_platform_core.llm_advisors import explain_stock_picks, suggest_screener_config
+from research_platform_core import compute_correlation_matrix, summarize_correlation_matrix
 
 
 configure_page("Screener Builder")
@@ -558,7 +560,7 @@ with right_panel:
 
     render_selected_ticker_context(roots, selected_ticker, expanded=False)
 
-    tabs = st.tabs(["Results Diagnostics", "ML reasoning", "Smart Money", "Valuation summary", "Saved configs"])
+    tabs = st.tabs(["Results Diagnostics", "Risk & Correlation", "ML reasoning", "Smart Money", "Valuation summary", "Saved configs"])
 
     with tabs[0]:
         if not filtered.empty:
@@ -582,6 +584,38 @@ with right_panel:
                         st.warning(f"Ollama unavailable: {advice.get('error') or 'no response'}")
 
     with tabs[1]:
+        if filtered.empty or "ticker" not in filtered.columns:
+            st.info("Run a screener with at least two names to inspect quick correlations.")
+        else:
+            st.markdown("**Quick correlations**")
+            st.caption("Computed from local OHLCV for a bounded subset of names. This is a fast risk lens, not a full optimizer.")
+            default_limit = min(15, max(2, len(filtered)))
+            c1, c2, c3 = st.columns(3)
+            max_names = c1.slider("Names in matrix", 2, min(30, max(2, len(filtered))), default_limit)
+            window = c2.slider("Return window", 63, 504, 252, step=21)
+            benchmark = c3.text_input("Benchmark", value=str(st.session_state.get("benchmark_ticker", "SPY") or "SPY")).strip().upper()
+            tickers_for_corr = filtered["ticker"].dropna().astype(str).str.upper().head(int(max_names)).tolist()
+            with st.spinner("Computing quick correlation matrix from OHLCV..."):
+                corr = compute_correlation_matrix(
+                    tickers_for_corr,
+                    financial_db_root=roots["financial_db"],
+                    output_root=roots["workspace"],
+                    window=int(window),
+                    max_symbols=int(max_names),
+                )
+            summary = summarize_correlation_matrix(corr, benchmark=benchmark)
+            s1, s2, s3 = st.columns(3)
+            s1.metric("Assets", summary.get("asset_count", 0))
+            s2.metric("Avg inter-name corr", f"{float(summary.get('avg_pairwise_corr')):.2f}" if pd.notna(summary.get("avg_pairwise_corr")) else "n/a")
+            s3.metric(f"Avg corr vs {benchmark}", f"{float(summary.get('avg_corr_to_benchmark')):.2f}" if pd.notna(summary.get("avg_corr_to_benchmark")) else "n/a")
+            if corr.empty:
+                st.warning("No correlation matrix available for this subset. Check OHLCV coverage or reduce the universe.")
+            else:
+                st.plotly_chart(px.imshow(corr, text_auto=".2f", aspect="auto", color_continuous_scale="RdBu_r", zmin=-1, zmax=1, title="Screener subset correlation heatmap"), width="stretch")
+                st.dataframe(corr, width="stretch")
+            render_metric_metadata_expander(["avg_pairwise_corr", "correlation_to_benchmark", "annualized_volatility", "annualized_variance", "beta_to_benchmark"], "Risk statistic glossary")
+
+    with tabs[2]:
         if selected_ticker:
             drivers, explanation = explain_ml_signal(filtered, selected_ticker)
             st.markdown(f"**{selected_ticker} · ML signal explanation**")
@@ -592,7 +626,7 @@ with right_panel:
                 st.dataframe(drivers, width="stretch", hide_index=True)
                 st.plotly_chart(px.bar(drivers, x="driver", y="value", color="family", template="plotly_white", title="SHAP-like driver proxy"), width="stretch")
 
-    with tabs[2]:
+    with tabs[3]:
         if selected_ticker:
             events, explanation = explain_smart_money(smart_money, selected_ticker, filtered)
             st.markdown(f"**{selected_ticker} · Smart Money / Gov Data**")
@@ -602,7 +636,7 @@ with right_panel:
             else:
                 st.dataframe(events, width="stretch", hide_index=True)
 
-    with tabs[3]:
+    with tabs[4]:
         if selected_ticker:
             valuation, explanation = explain_valuation(filtered, selected_ticker)
             st.markdown(f"**{selected_ticker} · Valuation pre-read**")
@@ -613,7 +647,7 @@ with right_panel:
                 st.dataframe(valuation, width="stretch", hide_index=True)
                 st.plotly_chart(px.bar(valuation, x="driver", y="value", template="plotly_white", title="Available valuation drivers"), width="stretch")
 
-    with tabs[4]:
+    with tabs[5]:
         if saved_screeners.empty:
             st.info("Saved configs will appear here after the first save.")
         else:

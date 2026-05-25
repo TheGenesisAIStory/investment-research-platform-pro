@@ -41,7 +41,10 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
   nel training pipeline.
 - Forecasting time-series: nuovo `Time Series Lab` con forecast single-series
   su Macro DB/OHLCV equity, orizzonti 5/21/63/126 giorni, baseline `naive` e
-  modelli feature-based `ols`/`gbrt`.
+  modelli feature-based `ols`/`gbrt`, con intervalli derivati dai residui
+  out-of-sample.
+- Statistica base condivisa: volatilita', varianza, beta benchmark,
+  correlazioni benchmark e matrici di correlazione per Screener/Portfolio.
 - Factor vocabulary: value, quality, momentum, risk, size, growth,
   model-based.
 - Leakage policy attiva tramite `feature_columns_for_blocks()`.
@@ -63,6 +66,8 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 - Screener, ML Lab, Valuation e Portfolio condividono
   `st.session_state.selected_ticker`.
 - Data Platform e Home sono entrypoint data-centric, non solo job-centric.
+- Macro View e Portfolio leggono gli artifact Time Series Lab come scenario
+  context, senza alterare ranking o pesi di portafoglio.
 
 ## Quality gate eseguiti
 

@@ -410,17 +410,22 @@ def fit_time_series_forecasts(
                 continue
 
             y_true = pd.to_numeric(test.get(target_col), errors="coerce")
+            residuals = pd.DataFrame({"y_true": y_true, "y_pred": test_pred}).dropna()
+            forecast_error_std = float((residuals["y_pred"] - residuals["y_true"]).std()) if len(residuals) >= 3 else np.nan
             metrics_rows.append(
-                _metric_row(
-                    symbol=config.symbol,
-                    model=model,
-                    horizon=horizon,
-                    y_true=y_true,
-                    y_pred=test_pred,
-                    train_rows=len(train),
-                    test_rows=len(test),
-                    feature_count=len(features),
-                )
+                {
+                    **_metric_row(
+                        symbol=config.symbol,
+                        model=model,
+                        horizon=horizon,
+                        y_true=y_true,
+                        y_pred=test_pred,
+                        train_rows=len(train),
+                        test_rows=len(test),
+                        feature_count=len(features),
+                    ),
+                    "forecast_error_std": forecast_error_std,
+                }
             )
             predictions = test[["date", "symbol", "close", target_col]].copy()
             predictions = predictions.rename(columns={target_col: "realized_forward_return"})
@@ -430,6 +435,8 @@ def fit_time_series_forecasts(
             prediction_frames.append(predictions)
 
             forecast_return = float(latest_pred) if latest_pred is not None and pd.notna(latest_pred) else np.nan
+            interval_low = forecast_return - forecast_error_std if pd.notna(forecast_return) and pd.notna(forecast_error_std) else np.nan
+            interval_high = forecast_return + forecast_error_std if pd.notna(forecast_return) and pd.notna(forecast_error_std) else np.nan
             latest_rows.append(
                 {
                     "symbol": config.symbol,
@@ -439,7 +446,12 @@ def fit_time_series_forecasts(
                     "model": model,
                     "horizon_days": horizon,
                     "forecast_return": forecast_return,
+                    "forecast_error_std": forecast_error_std,
+                    "forecast_return_low": interval_low,
+                    "forecast_return_high": interval_high,
                     "forecast_level": last_close * (1.0 + forecast_return) if pd.notna(forecast_return) else np.nan,
+                    "forecast_level_low": last_close * (1.0 + interval_low) if pd.notna(interval_low) else np.nan,
+                    "forecast_level_high": last_close * (1.0 + interval_high) if pd.notna(interval_high) else np.nan,
                     "train_rows": len(train),
                     "test_rows": len(test),
                     "feature_count": len(features),
@@ -538,3 +550,46 @@ def load_time_series_forecast_artifacts(output_root: str | Path | None = None) -
         "manifest": manifest,
         "table_root": table_root,
     }
+
+
+def summarize_time_series_forecast_context(
+    symbols: Iterable[str],
+    output_root: str | Path | None = None,
+    *,
+    preferred_model: str = "gbrt",
+) -> pd.DataFrame:
+    """Return compact latest forecast rows for Macro/Portfolio context panels."""
+    wanted = {str(symbol or "").strip().upper() for symbol in symbols if str(symbol or "").strip()}
+    artifacts = load_time_series_forecast_artifacts(output_root)
+    latest = artifacts.get("latest", pd.DataFrame())
+    if latest.empty or not wanted or "symbol" not in latest.columns:
+        return pd.DataFrame()
+    view = latest.copy()
+    view["symbol"] = view["symbol"].astype(str).str.upper()
+    view = view[view["symbol"].isin(wanted)]
+    if view.empty:
+        return pd.DataFrame()
+    view["_model_rank"] = view["model"].astype(str).str.lower().ne(str(preferred_model).lower()).astype(int) if "model" in view.columns else 0
+    sort_cols = ["symbol", "horizon_days", "_model_rank"]
+    view = view.sort_values([col for col in sort_cols if col in view.columns])
+    dedupe = [col for col in ["symbol", "horizon_days"] if col in view.columns]
+    if dedupe:
+        view = view.drop_duplicates(dedupe, keep="first")
+    keep = [
+        "symbol",
+        "source",
+        "last_date",
+        "last_close",
+        "model",
+        "horizon_days",
+        "forecast_return",
+        "forecast_error_std",
+        "forecast_return_low",
+        "forecast_return_high",
+        "forecast_level",
+        "forecast_level_low",
+        "forecast_level_high",
+        "test_rows",
+        "feature_count",
+    ]
+    return view[[col for col in keep if col in view.columns]].reset_index(drop=True)

@@ -82,6 +82,11 @@ coverage conteneva chiavi miste stringa/float e veniva serializzato con
   Italy, crypto, FX, commodity, ETF e fixed income.
 - Time Series Lab aggiunto sotto LABS come modulo di scenario per indici,
   macro proxy, FX, commodity, crypto e singole equity.
+- Macro View mostra la disponibilita' dei forecast Time Series Lab e apre il
+  Lab con la serie preselezionata.
+- Portfolio include `Macro & TS Context` con forecast di scenario e matrice di
+  correlazione holdings.
+- Screener include `Risk & Correlation` per correlazioni rapide sulla selezione.
 - Screener, ML Lab, Valuation e Portfolio condividono `selected_ticker` e
   mostrano context panel e glossari inline.
 

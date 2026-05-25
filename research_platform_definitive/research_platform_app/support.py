@@ -289,6 +289,36 @@ def render_selected_ticker_context(
                 show_cols = [col for col in ["module", "status", "rows", "detail", "path"] if col in modules.columns]
                 st.dataframe(modules[show_cols], width="stretch", hide_index=True)
 
+        try:
+            from research_platform_core import compute_ticker_market_statistics
+
+            benchmark = str(st.session_state.get("benchmark_ticker", "SPY") or "SPY").strip().upper()
+            market_stats = compute_ticker_market_statistics(
+                selected,
+                benchmark=benchmark,
+                financial_db_root=roots.get("financial_db"),
+                output_root=roots.get("workspace"),
+            )
+        except Exception:
+            market_stats = pd.DataFrame()
+        if not market_stats.empty:
+            latest_window = market_stats.sort_values("window_days").tail(1).iloc[0]
+
+            def fmt_pct(value: Any) -> str:
+                try:
+                    return f"{float(value):.1%}"
+                except Exception:
+                    return "n/a"
+
+            stat_cols = st.columns(4)
+            stat_cols[0].metric("Volatility 252d", fmt_pct(latest_window.get("annualized_volatility")))
+            stat_cols[1].metric("Variance 252d", fmt_pct(latest_window.get("annualized_variance")))
+            stat_cols[2].metric(f"Beta vs {benchmark}", f"{float(latest_window.get('beta_to_benchmark')):.2f}" if pd.notna(latest_window.get("beta_to_benchmark")) else "n/a")
+            stat_cols[3].metric(f"Corr vs {benchmark}", f"{float(latest_window.get('correlation_to_benchmark')):.2f}" if pd.notna(latest_window.get("correlation_to_benchmark")) else "n/a")
+            with st.expander("Basic market statistics", expanded=False):
+                st.caption("Computed from local OHLCV and the shared benchmark context; annualized volatility uses daily returns scaled by sqrt(252).")
+                st.dataframe(market_stats, width="stretch", hide_index=True)
+
         action_cols = st.columns(4)
         if action_cols[0].button("Open Screener", key=f"{selected}_ctx_screener", width="stretch"):
             st.session_state["selected_ticker"] = selected

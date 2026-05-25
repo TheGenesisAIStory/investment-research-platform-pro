@@ -92,6 +92,12 @@ def test_real_artifact_columns_have_metadata() -> None:
         "directional_accuracy",
         "forecast_return",
         "forecast_level",
+        "forecast_error_std",
+        "annualized_volatility",
+        "annualized_variance",
+        "beta_to_benchmark",
+        "correlation_to_benchmark",
+        "avg_pairwise_corr",
     ]
     missing_metrics = [column for column in metric_columns if metadata_for_metric(column) is None]
     assert missing_metrics == []

@@ -15,6 +15,7 @@ from data_bootstrap import render_bootstrap_banner
 from screener_workbench import normalize_ticker
 from support import configure_page, dataframe_with_download, load_company_artifacts, load_portfolio_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, safe_page_link, show_empty, sidebar_roots
 from ui_ops import render_missing_data_cta
+from research_platform_core import compute_correlation_matrix, summarize_correlation_matrix, summarize_time_series_forecast_context
 
 
 configure_page("Portfolio Research")
@@ -111,7 +112,7 @@ if context_ticker:
         else:
             st.dataframe(portfolio_row, width="stretch", hide_index=True)
 
-tab_overview, tab_selection, tab_smart_money, tab_ml_lab, tab_uncertainty, tab_diagnostics = st.tabs(["Overview", "Selection Lab", "Smart Money Overlay", "ML Lab", "Valuation Uncertainty", "Diagnostics"])
+tab_overview, tab_macro_ts, tab_selection, tab_smart_money, tab_ml_lab, tab_uncertainty, tab_diagnostics = st.tabs(["Overview", "Macro & TS Context", "Selection Lab", "Smart Money Overlay", "ML Lab", "Valuation Uncertainty", "Diagnostics"])
 
 with tab_overview:
     left, right = st.columns([2, 1])
@@ -125,6 +126,74 @@ with tab_overview:
             st.plotly_chart(px.pie(allocation.head(25), names="ticker", values=weight_col, title="Top Holdings", template="plotly_white"), width="stretch")
     dataframe_with_download("Performance summary", performance, "portfolio_performance.csv")
     render_metric_metadata_expander(["sharpe", "turnover", "volatility", "max_drawdown", "tracking_error", "information_ratio"], "Portfolio metric glossary")
+
+with tab_macro_ts:
+    st.markdown("### Macro & Time Series context")
+    st.caption("Forecasts from Time Series Lab are shown as scenario context only. They do not alter portfolio construction or ranking weights.")
+    benchmark = str(st.session_state.get("benchmark_ticker", "SPY") or "SPY").strip().upper()
+    context_symbols = [benchmark, "SPY", "ACWI", "FEZ", "EWI", "DXY", "TLT", "GLD", "BTC"]
+    ts_context = summarize_time_series_forecast_context(context_symbols, roots["workspace"])
+    if ts_context.empty:
+        st.info("No Time Series Lab forecast context found for the current benchmark set. Run Time Series Lab for SPY or the relevant benchmark.")
+        if st.button("Open Time Series Lab for benchmark", width="stretch"):
+            st.session_state["ts_lab_source"] = "macro"
+            st.session_state["ts_lab_symbol"] = benchmark
+            st.switch_page("pages/14_⏱️_Time_Series_Lab.py")
+    else:
+        b1, b2, b3 = st.columns(3)
+        b1.metric("Benchmark context", benchmark)
+        b2.metric("Forecast rows", len(ts_context))
+        b3.metric("Symbols covered", ts_context["symbol"].nunique() if "symbol" in ts_context.columns else 0)
+        st.dataframe(ts_context, width="stretch", hide_index=True)
+        if {"symbol", "horizon_days", "forecast_return"}.issubset(ts_context.columns):
+            st.plotly_chart(
+                px.bar(
+                    ts_context,
+                    x="horizon_days",
+                    y="forecast_return",
+                    color="symbol",
+                    barmode="group",
+                    error_y="forecast_error_std" if "forecast_error_std" in ts_context.columns else None,
+                    title="Time Series Lab scenario forecasts",
+                    template="plotly_white",
+                ),
+                width="stretch",
+            )
+        if st.button("Refresh forecast in Time Series Lab", width="stretch"):
+            st.session_state["ts_lab_source"] = "macro"
+            st.session_state["ts_lab_symbol"] = benchmark
+            st.switch_page("pages/14_⏱️_Time_Series_Lab.py")
+
+    portfolio_tickers = []
+    source_for_corr = allocation if not allocation.empty else selection
+    if not source_for_corr.empty and "ticker" in source_for_corr.columns:
+        if weight_col and weight_col in source_for_corr.columns:
+            portfolio_tickers = source_for_corr.sort_values(weight_col, ascending=False)["ticker"].astype(str).str.upper().head(20).tolist()
+        else:
+            portfolio_tickers = source_for_corr["ticker"].astype(str).str.upper().head(20).tolist()
+    with st.expander("Portfolio correlation matrix", expanded=bool(portfolio_tickers)):
+        if len(portfolio_tickers) < 2:
+            st.info("At least two tickers are required for a correlation matrix.")
+        else:
+            window = st.slider("Correlation window (trading days)", 63, 504, 252, step=21)
+            corr = compute_correlation_matrix(
+                portfolio_tickers,
+                financial_db_root=roots["financial_db"],
+                output_root=roots["workspace"],
+                window=int(window),
+                max_symbols=20,
+            )
+            summary = summarize_correlation_matrix(corr, benchmark=benchmark)
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Assets in matrix", summary.get("asset_count", 0))
+            c2.metric("Avg pairwise corr", f"{float(summary.get('avg_pairwise_corr')):.2f}" if pd.notna(summary.get("avg_pairwise_corr")) else "n/a")
+            c3.metric(f"Avg corr vs {benchmark}", f"{float(summary.get('avg_corr_to_benchmark')):.2f}" if pd.notna(summary.get("avg_corr_to_benchmark")) else "n/a")
+            if corr.empty:
+                st.warning("Correlation matrix unavailable for current tickers. Check OHLCV coverage.")
+            else:
+                st.plotly_chart(px.imshow(corr, text_auto=".2f", aspect="auto", color_continuous_scale="RdBu_r", zmin=-1, zmax=1, title="Holdings correlation heatmap"), width="stretch")
+                st.dataframe(corr, width="stretch")
+            render_metric_metadata_expander(["annualized_volatility", "annualized_variance", "beta_to_benchmark", "correlation_to_benchmark", "avg_pairwise_corr"], "Basic risk and correlation glossary")
 
 with tab_selection:
     dataframe_with_download("Portfolio selection summary", data["selection_summary"], "portfolio_selection_summary.csv")

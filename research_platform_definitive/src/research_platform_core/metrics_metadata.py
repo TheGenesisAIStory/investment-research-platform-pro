@@ -322,6 +322,54 @@ METRICS_METADATA.update(
             "last_close * (1 + forecast_return)",
             "Useful for visual scenario framing; uncertainty bands should be added before production use.",
         ),
+        "forecast_error_std": MetricMetadata(
+            "forecast_error_std",
+            "Forecast error standard deviation",
+            "time_series_forecast",
+            "Standard deviation of out-of-sample forecast residuals for a model and horizon.",
+            "std(predicted_return - realized_return)",
+            "Used as a simple uncertainty band around the latest forecast.",
+        ),
+        "annualized_volatility": MetricMetadata(
+            "annualized_volatility",
+            "Annualized volatility",
+            "risk",
+            "Standard deviation of daily returns scaled to a trading-year basis.",
+            "std(daily_return) * sqrt(252)",
+            "Higher values indicate larger historical price variability.",
+        ),
+        "annualized_variance": MetricMetadata(
+            "annualized_variance",
+            "Annualized variance",
+            "risk",
+            "Variance corresponding to annualized volatility.",
+            "annualized_volatility ^ 2",
+            "Useful as a basic risk input; higher values mean wider return dispersion.",
+        ),
+        "beta_to_benchmark": MetricMetadata(
+            "beta_to_benchmark",
+            "Beta to benchmark",
+            "risk",
+            "Sensitivity of the asset return to benchmark return over the selected window.",
+            "cov(asset_return, benchmark_return) / var(benchmark_return)",
+            "Values above 1 indicate more benchmark sensitivity than the benchmark itself.",
+        ),
+        "correlation_to_benchmark": MetricMetadata(
+            "correlation_to_benchmark",
+            "Correlation to benchmark",
+            "risk",
+            "Linear correlation between asset and benchmark daily returns.",
+            "corr(asset_return, benchmark_return)",
+            "Higher positive values indicate stronger co-movement with the benchmark.",
+        ),
+        "avg_pairwise_corr": MetricMetadata(
+            "avg_pairwise_corr",
+            "Average pairwise correlation",
+            "portfolio",
+            "Average off-diagonal correlation among selected assets.",
+            "mean(corr_i,j for i != j)",
+            "Higher values indicate less diversification in the selected basket.",
+        ),
     }
 )
 
@@ -342,6 +390,10 @@ ALIASES = {
     "dir_acc": "directional_accuracy",
     "forecasted_return": "forecast_return",
     "forecasted_level": "forecast_level",
+    "std": "annualized_volatility",
+    "variance": "annualized_variance",
+    "beta_vs_benchmark": "beta_to_benchmark",
+    "corr_to_benchmark": "correlation_to_benchmark",
 }
 
 
