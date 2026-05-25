@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+import numpy as np
 import pandas as pd
 
 from .data_platform import resolve_data_platform_roots, utc_now
@@ -110,6 +111,18 @@ COT_MARKET_MAP: tuple[tuple[str, str, str], ...] = (
     ("COPPER", "commodities", "COPPER"),
 )
 
+DEFAULT_FLOW_ETFS: tuple[tuple[str, str, str], ...] = (
+    ("SPY", "US large-cap equity", "equity"),
+    ("QQQ", "US growth / Nasdaq equity", "equity"),
+    ("IWM", "US small-cap equity", "equity"),
+    ("GLD", "Gold ETF", "commodity"),
+    ("TLT", "Long-duration Treasuries", "fixed_income"),
+    ("HYG", "US high yield credit", "fixed_income"),
+    ("EEM", "Emerging markets equity", "equity"),
+    ("IEUR", "European equity", "equity"),
+)
+DEFAULT_PCR_SYMBOLS: tuple[str, ...] = ("SPY", "QQQ", "GLD")
+
 
 def _read_csv(path: Path, **kwargs: Any) -> pd.DataFrame:
     if not path.exists() or path.stat().st_size <= 1:
@@ -186,9 +199,42 @@ def normalize_cot_data(raw: pd.DataFrame) -> pd.DataFrame:
     out = out.sort_values(["instrument", "report_date"]).reset_index(drop=True)
     out["weekly_change_net"] = out.groupby("instrument")["net_noncommercial"].diff()
     out["net_position_percentile_3y"] = out.groupby("instrument")["net_noncommercial"].transform(
-        lambda series: series.rolling(156, min_periods=20).rank(pct=True).iloc[:, 0] if False else series.rolling(156, min_periods=20).apply(lambda x: pd.Series(x).rank(pct=True).iloc[-1], raw=False)
+        lambda series: series.rolling(156, min_periods=20).apply(
+            lambda window: pd.Series(window).rank(pct=True).iloc[-1],
+            raw=False,
+        )
     )
     return out
+
+
+def _safe_id(value: object) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in str(value).upper()).strip("_") or "UNKNOWN"
+
+
+def _write_cot_contract_artifacts(history: pd.DataFrame, snapshot: pd.DataFrame, output_root: Path) -> None:
+    cot_root = output_root / "smart_money" / "cot"
+    cot_root.mkdir(parents=True, exist_ok=True)
+    for instrument, group in history.groupby("instrument", dropna=True):
+        group.to_parquet(cot_root / f"{_safe_id(instrument)}_cot_history.parquet", index=False)
+    snapshot.to_csv(cot_root / "smart_money_cot_snapshot.csv", index=False)
+
+
+def _history_from_frame(frame: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    if frame is None or frame.empty:
+        return pd.DataFrame()
+    out = frame.reset_index().rename(columns={"Date": "date", "Datetime": "date", "index": "date", "Close": "close", "Adj Close": "adjclose"})
+    close_col = "close" if "close" in out.columns else "adjclose" if "adjclose" in out.columns else ""
+    if not close_col:
+        return pd.DataFrame()
+    out["date"] = pd.to_datetime(out["date"], errors="coerce")
+    out["close"] = pd.to_numeric(out[close_col], errors="coerce")
+    out["symbol"] = symbol
+    return out.dropna(subset=["date", "close"]).sort_values("date")[["date", "symbol", "close"]]
+
+
+def _etf_descriptor(symbol: str) -> tuple[str, str]:
+    lookup = {item[0]: (item[1], item[2]) for item in DEFAULT_FLOW_ETFS}
+    return lookup.get(str(symbol).upper(), ("ETF flow proxy", "other"))
 
 
 def refresh_cftc_cot_snapshot(
@@ -255,7 +301,224 @@ def fetch_cot_data(
     snapshot.to_csv(snapshot_path, index=False)
     sample = history.groupby("instrument", group_keys=False).tail(260).reset_index(drop=True)
     sample.to_csv(sample_path, index=False)
+    _write_cot_contract_artifacts(history, snapshot, roots.repo_output)
     return {"history": history, "snapshot": snapshot, "sample": sample}
+
+
+def fetch_etf_flows_proxy(
+    output_root: str | Path | None = None,
+    *,
+    symbols: Iterable[str] | None = None,
+    period: str = "1y",
+    fetch: bool = False,
+    history_frames: dict[str, pd.DataFrame] | None = None,
+    ticker_info: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, pd.DataFrame]:
+    """Build a public ETF-flow proxy from ETF price/AUM metadata.
+
+    Public price data does not contain true creations/redemptions, so the output
+    is labelled explicitly as a proxy. Provider-supplied flow files can replace
+    this artifact later while keeping the same UI schema.
+    """
+    roots = resolve_data_platform_roots(repo_output_root=output_root)
+    table_root = roots.repo_output / SMART_MONEY_TABLE_ROOT
+    flow_root = roots.repo_output / "smart_money" / "etf_flows"
+    table_root.mkdir(parents=True, exist_ok=True)
+    flow_root.mkdir(parents=True, exist_ok=True)
+    history_path = flow_root / "etf_flows_history.parquet"
+    snapshot_path = flow_root / "etf_flows_snapshot.csv"
+    table_snapshot_path = table_root / "SmartMoney_ETF_flows_snapshot.csv"
+    if not fetch and history_frames is None:
+        return {"history": pd.read_parquet(history_path) if history_path.exists() else pd.DataFrame(), "snapshot": _read_csv(snapshot_path)}
+
+    if history_frames is None:
+        import yfinance as yf
+
+        history_frames = {}
+        ticker_info = ticker_info or {}
+        for symbol in symbols or [item[0] for item in DEFAULT_FLOW_ETFS]:
+            try:
+                ticker = yf.Ticker(str(symbol))
+                history_frames[str(symbol).upper()] = ticker.history(period=period, interval="1d", auto_adjust=True)
+                ticker_info[str(symbol).upper()] = getattr(ticker, "info", {}) or {}
+            except Exception:
+                history_frames[str(symbol).upper()] = pd.DataFrame()
+                ticker_info[str(symbol).upper()] = {"status": "FAILED"}
+    else:
+        ticker_info = ticker_info or {}
+
+    history_rows: list[pd.DataFrame] = []
+    snapshot_rows: list[dict[str, Any]] = []
+    for raw_symbol, frame in history_frames.items():
+        symbol = str(raw_symbol).upper()
+        history = _history_from_frame(frame, symbol)
+        description, asset_class = _etf_descriptor(symbol)
+        info = ticker_info.get(symbol, {})
+        if history.empty:
+            snapshot_rows.append(
+                {
+                    "symbol": symbol,
+                    "description": description,
+                    "asset_class": asset_class,
+                    "data_status": "PARTIAL",
+                    "error": info.get("status", "NO_DATA"),
+                    "updated_at": utc_now(),
+                }
+            )
+            continue
+        total_assets = pd.to_numeric(pd.Series([info.get("totalAssets")]), errors="coerce").iloc[0]
+        shares_outstanding = pd.to_numeric(pd.Series([info.get("sharesOutstanding") or info.get("sharesOutstandingImplied")]), errors="coerce").iloc[0]
+        latest_close = float(history["close"].dropna().iloc[-1]) if history["close"].notna().any() else np.nan
+        if pd.isna(shares_outstanding) and pd.notna(total_assets) and latest_close:
+            shares_outstanding = float(total_assets) / latest_close
+        history = history.copy()
+        history["description"] = description
+        history["asset_class"] = asset_class
+        history["total_assets"] = total_assets if pd.notna(total_assets) else np.nan
+        history["shares_estimate"] = shares_outstanding if pd.notna(shares_outstanding) else np.nan
+        history["asset_value_proxy"] = history["close"] * history["shares_estimate"]
+        for days, col in [(5, "flow_1w_proxy"), (21, "flow_1m_proxy"), (63, "flow_3m_proxy")]:
+            if history["asset_value_proxy"].notna().sum() >= days + 1:
+                history[col] = history["asset_value_proxy"].diff(days)
+            else:
+                history[col] = history["close"].pct_change(days)
+        history["source"] = "yfinance_public_proxy"
+        history["updated_at"] = utc_now()
+        history_rows.append(history)
+        latest = history.tail(1).iloc[0].to_dict()
+        snapshot_rows.append(
+            {
+                "symbol": symbol,
+                "description": description,
+                "asset_class": asset_class,
+                "date": pd.to_datetime(latest.get("date"), errors="coerce").date().isoformat(),
+                "close": latest.get("close"),
+                "total_assets": total_assets if pd.notna(total_assets) else np.nan,
+                "flow_1w_proxy": latest.get("flow_1w_proxy"),
+                "flow_1m_proxy": latest.get("flow_1m_proxy"),
+                "flow_3m_proxy": latest.get("flow_3m_proxy"),
+                "data_status": "OK",
+                "source": "yfinance_public_proxy",
+                "updated_at": utc_now(),
+            }
+        )
+    out_history = pd.concat(history_rows, ignore_index=True) if history_rows else pd.DataFrame()
+    snapshot = pd.DataFrame(snapshot_rows)
+    if not out_history.empty:
+        out_history.to_parquet(history_path, index=False)
+    snapshot.to_csv(snapshot_path, index=False)
+    snapshot.to_csv(table_snapshot_path, index=False)
+    return {"history": out_history, "snapshot": snapshot}
+
+
+def fetch_options_put_call_ratio(
+    output_root: str | Path | None = None,
+    *,
+    symbols: Iterable[str] = DEFAULT_PCR_SYMBOLS,
+    fetch: bool = False,
+    option_frames: dict[str, dict[str, pd.DataFrame]] | None = None,
+) -> pd.DataFrame:
+    """Compute a simple put/call ratio snapshot from option-chain open interest."""
+    roots = resolve_data_platform_roots(repo_output_root=output_root)
+    options_root = roots.repo_output / "smart_money" / "options"
+    table_root = roots.repo_output / SMART_MONEY_TABLE_ROOT
+    options_root.mkdir(parents=True, exist_ok=True)
+    table_root.mkdir(parents=True, exist_ok=True)
+    path = options_root / "pcr_snapshot.csv"
+    if not fetch and option_frames is None:
+        return _read_csv(path)
+    if option_frames is None:
+        import yfinance as yf
+
+        option_frames = {}
+        for symbol in symbols:
+            try:
+                ticker = yf.Ticker(str(symbol))
+                expiry = ticker.options[0] if ticker.options else ""
+                chain = ticker.option_chain(expiry) if expiry else None
+                option_frames[str(symbol).upper()] = {
+                    "calls": chain.calls if chain is not None else pd.DataFrame(),
+                    "puts": chain.puts if chain is not None else pd.DataFrame(),
+                }
+            except Exception:
+                option_frames[str(symbol).upper()] = {"calls": pd.DataFrame(), "puts": pd.DataFrame()}
+    rows: list[dict[str, Any]] = []
+    for raw_symbol, frames in option_frames.items():
+        symbol = str(raw_symbol).upper()
+        calls = frames.get("calls", pd.DataFrame())
+        puts = frames.get("puts", pd.DataFrame())
+        call_oi = pd.to_numeric(calls.get("openInterest", pd.Series(dtype=float)), errors="coerce").fillna(0).sum()
+        put_oi = pd.to_numeric(puts.get("openInterest", pd.Series(dtype=float)), errors="coerce").fillna(0).sum()
+        rows.append(
+            {
+                "symbol": symbol,
+                "put_open_interest": float(put_oi),
+                "call_open_interest": float(call_oi),
+                "put_call_ratio_oi": float(put_oi / call_oi) if call_oi else np.nan,
+                "data_status": "OK" if call_oi or put_oi else "PARTIAL",
+                "source": "yfinance_option_chain",
+                "updated_at": utc_now(),
+            }
+        )
+    out = pd.DataFrame(rows)
+    out.to_csv(path, index=False)
+    out.to_csv(table_root / "SmartMoney_options_pcr_snapshot.csv", index=False)
+    return out
+
+
+def compile_smart_money_asset_catalog(
+    output_root: str | Path | None = None,
+) -> pd.DataFrame:
+    """Write a human-readable catalog of Smart Money v1 instruments."""
+    roots = resolve_data_platform_roots(repo_output_root=output_root)
+    table_root = roots.repo_output / SMART_MONEY_TABLE_ROOT
+    table_root.mkdir(parents=True, exist_ok=True)
+    cot_snapshot = _read_csv(table_root / "SmartMoney_COT_snapshot.csv")
+    etf_snapshot = _read_csv(roots.repo_output / "smart_money" / "etf_flows" / "etf_flows_snapshot.csv")
+    pcr_snapshot = _read_csv(roots.repo_output / "smart_money" / "options" / "pcr_snapshot.csv")
+    rows: list[dict[str, Any]] = []
+    if not cot_snapshot.empty:
+        for _, row in cot_snapshot.iterrows():
+            rows.append(
+                {
+                    "symbol": row.get("instrument", ""),
+                    "description": row.get("market_name", ""),
+                    "source": "CFTC COT",
+                    "data_type": "cot",
+                    "asset_class": row.get("asset_class", ""),
+                    "status": "OK",
+                    "last_updated": row.get("report_date", ""),
+                }
+            )
+    if not etf_snapshot.empty:
+        for _, row in etf_snapshot.iterrows():
+            rows.append(
+                {
+                    "symbol": row.get("symbol", ""),
+                    "description": row.get("description", ""),
+                    "source": "yfinance_public_proxy",
+                    "data_type": "etf_flow",
+                    "asset_class": row.get("asset_class", ""),
+                    "status": row.get("data_status", "PARTIAL"),
+                    "last_updated": row.get("date", ""),
+                }
+            )
+    if not pcr_snapshot.empty:
+        for _, row in pcr_snapshot.iterrows():
+            rows.append(
+                {
+                    "symbol": row.get("symbol", ""),
+                    "description": "Options put/call ratio proxy",
+                    "source": "yfinance_option_chain",
+                    "data_type": "pcr",
+                    "asset_class": "options",
+                    "status": row.get("data_status", "PARTIAL"),
+                    "last_updated": row.get("updated_at", ""),
+                }
+            )
+    catalog = pd.DataFrame(rows)
+    catalog.to_csv(table_root / "SmartMoneyAssetCatalog.csv", index=False)
+    return catalog
 
 
 def compile_smart_money_source_manifest(
@@ -271,6 +534,8 @@ def compile_smart_money_source_manifest(
     catalog = smart_money_source_catalog()
     cot_bundle = fetch_cot_data(roots.repo_output, fetch=fetch_cot)
     cot = cot_bundle.get("snapshot", pd.DataFrame())
+    etf_snapshot = _read_csv(roots.repo_output / "smart_money" / "etf_flows" / "etf_flows_snapshot.csv")
+    pcr_snapshot = _read_csv(roots.repo_output / "smart_money" / "options" / "pcr_snapshot.csv")
     existing_coverage = _read_csv(table_root / "SmartMoney_coverage.csv")
     rows: list[dict[str, Any]] = []
     for source in SMART_MONEY_SOURCES:
@@ -283,6 +548,20 @@ def compile_smart_money_source_manifest(
             date_cols = [col for col in cot.columns if "date" in col.lower()]
             if date_cols:
                 dates = pd.to_datetime(cot[date_cols[0]], errors="coerce")
+                if dates.notna().any():
+                    last_date = dates.max().date().isoformat()
+        elif source.source_id == "etf_flows_public_proxy" and not etf_snapshot.empty:
+            rows_count = len(etf_snapshot)
+            status = "OK" if etf_snapshot["data_status"].astype(str).str.upper().eq("OK").any() else "PARTIAL"
+            if "date" in etf_snapshot.columns:
+                dates = pd.to_datetime(etf_snapshot["date"], errors="coerce")
+                if dates.notna().any():
+                    last_date = dates.max().date().isoformat()
+        elif source.source_id == "options_positioning_proxy" and not pcr_snapshot.empty:
+            rows_count = len(pcr_snapshot)
+            status = "OK" if pcr_snapshot["data_status"].astype(str).str.upper().eq("OK").any() else "PARTIAL"
+            if "updated_at" in pcr_snapshot.columns:
+                dates = pd.to_datetime(pcr_snapshot["updated_at"], errors="coerce")
                 if dates.notna().any():
                     last_date = dates.max().date().isoformat()
         elif source.source_id == "issuer_insider_fund_flows" and not existing_coverage.empty:
@@ -300,6 +579,7 @@ def compile_smart_money_source_manifest(
     manifest = pd.DataFrame(rows)
     catalog.to_csv(table_root / "SmartMoneySourceCatalog.csv", index=False)
     manifest.to_csv(table_root / "SmartMoneySourceManifest.csv", index=False)
+    compile_smart_money_asset_catalog(roots.repo_output)
     return manifest
 
 

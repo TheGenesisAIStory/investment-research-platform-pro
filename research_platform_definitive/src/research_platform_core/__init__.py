@@ -145,7 +145,9 @@ from .macro_market import MACRO_ASSETS, MacroAsset, compile_macro_asset_database
 from .macro_context import add_macro_context_features, build_macro_context_panel, load_macro_close_panel, load_macro_context_panel
 from .multi_asset_universe import (
     compile_multi_asset_universe_manifest,
+    ingest_multi_asset_universe,
     load_multi_asset_universe_manifest,
+    multi_asset_universe_catalog,
     summarize_multi_asset_universe,
 )
 from .factor_benchmarks import (
@@ -155,9 +157,18 @@ from .factor_benchmarks import (
     load_factor_benchmark_summary,
     write_factor_benchmark_artifacts,
 )
+from .factor_portfolio_baselines import (
+    compute_factor_portfolio_baselines,
+    load_factor_portfolio_baselines,
+    write_factor_portfolio_baselines,
+)
+from .model_monitoring import build_model_monitoring_artifacts, discover_prediction_path, load_model_monitoring_artifacts
 from .smart_money import (
+    compile_smart_money_asset_catalog,
     compile_smart_money_source_manifest,
     fetch_cot_data,
+    fetch_etf_flows_proxy,
+    fetch_options_put_call_ratio,
     load_smart_money_source_manifest,
     normalize_cot_data,
     refresh_cftc_cot_snapshot,

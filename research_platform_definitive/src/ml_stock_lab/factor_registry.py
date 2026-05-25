@@ -105,6 +105,19 @@ FACTOR_BLOCKS: dict[str, FactorBlock] = {
         "Lagged cross-asset regime/context features from the Macro DB.",
         experimental=True,
     ),
+    "macro_regime": FactorBlock(
+        "macro_regime",
+        "Macro Regime",
+        (
+            "regime_spy_trend_sign",
+            "regime_vix_regime",
+            "regime_yield_curve_slope",
+            "regime_dxy_trend",
+            "regime_gold_trend",
+        ),
+        "Compact, lagged regime-state features derived from cross-asset macro proxies.",
+        experimental=True,
+    ),
 }
 
 

@@ -26,7 +26,7 @@ from research_platform_core.data_platform import (
 )
 from research_platform_core.data_health import get_data_health_summary, list_ohlcv_failures, list_ohlcv_provider_failures, load_run_events
 from research_platform_core.data_explorer import get_single_ticker_snapshot, list_available_tickers, load_data_explorer_preview
-from research_platform_core.multi_asset_universe import load_multi_asset_universe_manifest, summarize_multi_asset_universe
+from research_platform_core.multi_asset_universe import ingest_multi_asset_universe, load_multi_asset_universe_manifest, summarize_multi_asset_universe
 from research_platform_core.run_lock import is_stage_locked, read_stage_lock, stage_lock_path
 from research_platform_core.smart_money import load_smart_money_source_manifest, summarize_smart_money_sources
 
@@ -567,7 +567,19 @@ with tabs[1]:
                 st.markdown(f"**What it covers:** {spec['what']}")
                 st.markdown(f"**Jobs / hooks:** {spec['jobs']}")
     st.markdown("### Multi-Asset Universe & Coverage")
-    st.caption("FX, commodities, crypto, ETF and fixed-income coverage derived from the Macro DB catalog/manifest.")
+    st.caption("FX, commodities, crypto, ETF and fixed-income coverage derived from the Macro DB catalog/manifest plus optional dedicated multi-asset parquet ingestion.")
+    ingest_cols = st.columns([0.25, 0.25, 0.5])
+    ingest_start = ingest_cols[0].text_input("Start date", value="2000-01-01", help="Used only for the dedicated multi-asset parquet refresh.")
+    ingest_max = ingest_cols[1].number_input("Max assets", min_value=0, max_value=150, value=0, help="0 ingests the full catalog.")
+    if ingest_cols[2].button("Refresh multi-asset parquet catalog", width="stretch"):
+        with st.spinner("Refreshing multi-asset FX/commodity/ETF/crypto/fixed-income parquet files..."):
+            symbols = None
+            if int(ingest_max):
+                candidate_symbols = multi_asset_manifest["symbol"].dropna().astype(str).head(int(ingest_max)).tolist() if not multi_asset_manifest.empty and "symbol" in multi_asset_manifest.columns else None
+                symbols = candidate_symbols
+            bundle = ingest_multi_asset_universe(symbols, start_date=ingest_start, output_dir=roots["workspace"], refresh=True)
+        st.success(f"Multi-asset refresh complete: {len(bundle.get('manifest', pd.DataFrame())):,} instruments indexed.")
+        st.rerun()
     if multi_asset_summary.empty:
         st.info("No multi-asset manifest available yet. Compile Macro View or refresh the manifest.")
     else:

@@ -28,7 +28,15 @@ from smart_money_engine.visualization import (
     sector_heatmap,
     tic_flow_chart,
 )
-from research_platform_core.smart_money import fetch_cot_data, load_smart_money_source_manifest, summarize_smart_money_sources
+from research_platform_core.smart_money import (
+    compile_smart_money_asset_catalog,
+    compile_smart_money_source_manifest,
+    fetch_cot_data,
+    fetch_etf_flows_proxy,
+    fetch_options_put_call_ratio,
+    load_smart_money_source_manifest,
+    summarize_smart_money_sources,
+)
 
 
 configure_page("Smart Money Intelligence")
@@ -229,14 +237,35 @@ with tabs[5]:
 with tabs[6]:
     if not source_manifest.empty:
         with st.expander("Smart Money source coverage", expanded=True):
-            st.caption("COT is the first official-source positioning family; ETF flows and options positioning are schema-ready but require provider/user data.")
+            st.caption("COT is the official-source positioning family; ETF flows and options positioning are public-data proxies until a licensed feed is attached.")
             st.dataframe(source_manifest, width="stretch", hide_index=True)
-    cot_refresh_cols = st.columns([0.3, 0.7])
+    asset_catalog = data.get("smart_money_asset_catalog", pd.DataFrame())
+    if not asset_catalog.empty:
+        dataframe_with_download("Smart Money asset catalog", asset_catalog, "SmartMoneyAssetCatalog.csv")
+
+    cot_refresh_cols = st.columns([0.3, 0.35, 0.35])
     cot_max_rows = cot_refresh_cols[0].number_input("COT rows cap", min_value=1000, max_value=200000, value=50000, step=5000)
     if cot_refresh_cols[1].button("Fetch / refresh CFTC COT positioning", width="stretch"):
         with st.spinner("Fetching public CFTC COT data and normalizing positioning..."):
             cot_bundle = fetch_cot_data(roots["workspace"], max_rows=int(cot_max_rows), fetch=True)
+            compile_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
         st.success(f"COT rows normalized: {len(cot_bundle.get('history', pd.DataFrame())):,}")
+        data = load_smart_money_artifacts(roots["workspace"])
+        source_manifest = load_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
+    if cot_refresh_cols[2].button("Refresh ETF flows proxy", width="stretch"):
+        with st.spinner("Refreshing public ETF flow proxies from yfinance..."):
+            bundle = fetch_etf_flows_proxy(roots["workspace"], fetch=True)
+            compile_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
+            compile_smart_money_asset_catalog(roots["workspace"])
+        st.success(f"ETF flow proxies refreshed: {len(bundle.get('snapshot', pd.DataFrame())):,} instruments.")
+        data = load_smart_money_artifacts(roots["workspace"])
+        source_manifest = load_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
+    if st.button("Refresh options put/call proxy", width="stretch"):
+        with st.spinner("Refreshing option-chain put/call ratio proxy..."):
+            pcr = fetch_options_put_call_ratio(roots["workspace"], fetch=True)
+            compile_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
+            compile_smart_money_asset_catalog(roots["workspace"])
+        st.success(f"Options PCR proxy refreshed: {len(pcr):,} symbols.")
         data = load_smart_money_artifacts(roots["workspace"])
         source_manifest = load_smart_money_source_manifest(roots["financial_db"], roots["workspace"])
     cot_snapshot = data.get("cot_snapshot", pd.DataFrame())
@@ -280,6 +309,47 @@ with tabs[6]:
         st.plotly_chart(c1, width="stretch")
     if c2 is not None:
         st.plotly_chart(c2, width="stretch")
+    etf_flows = data.get("etf_flows_snapshot", pd.DataFrame())
+    if not etf_flows.empty:
+        st.markdown("#### ETF flows proxy")
+        dataframe_with_download("ETF flows proxy snapshot", etf_flows, "SmartMoney_ETF_flows_snapshot.csv")
+        flow_cols = [col for col in ["flow_1w_proxy", "flow_1m_proxy", "flow_3m_proxy"] if col in etf_flows.columns]
+        if flow_cols and "symbol" in etf_flows.columns:
+            flow_plot = etf_flows.melt(
+                id_vars=[col for col in ["symbol", "asset_class"] if col in etf_flows.columns],
+                value_vars=flow_cols,
+                var_name="window",
+                value_name="flow_proxy",
+            )
+            flow_plot["flow_proxy"] = pd.to_numeric(flow_plot["flow_proxy"], errors="coerce")
+            st.plotly_chart(
+                px.bar(
+                    flow_plot.dropna(subset=["flow_proxy"]),
+                    x="symbol",
+                    y="flow_proxy",
+                    color="window",
+                    barmode="group",
+                    title="ETF public flow proxy by window",
+                    template="plotly_white",
+                ),
+                width="stretch",
+            )
+    pcr_snapshot = data.get("options_pcr_snapshot", pd.DataFrame())
+    if not pcr_snapshot.empty:
+        st.markdown("#### Options put/call ratio proxy")
+        dataframe_with_download("Options PCR proxy", pcr_snapshot, "SmartMoney_options_pcr_snapshot.csv")
+        if {"symbol", "put_call_ratio_oi"}.issubset(pcr_snapshot.columns):
+            st.plotly_chart(
+                px.bar(
+                    pcr_snapshot,
+                    x="symbol",
+                    y="put_call_ratio_oi",
+                    color="data_status" if "data_status" in pcr_snapshot.columns else None,
+                    title="Put/call ratio by open interest",
+                    template="plotly_white",
+                ),
+                width="stretch",
+            )
     dataframe_with_download("CFTC COT positioning", data["macro_positioning"], "smart_money_cot.csv")
     dataframe_with_download("Treasury TIC flows", data["capital_flows"], "smart_money_tic.csv")
 

@@ -171,6 +171,36 @@ with tabs[0]:
         if chart_cols:
             melted = view[["symbol", "asset_class", *chart_cols]].melt(id_vars=["symbol", "asset_class"], var_name="horizon", value_name="return")
             st.plotly_chart(px.bar(melted.dropna(), x="symbol", y="return", color="horizon", facet_row="asset_class", title="Cross-asset return map", template="plotly_white"), width="stretch")
+        asset_tabs = st.tabs(["Equity Indices", "FX", "Commodities", "ETF", "Fixed Income", "Crypto"])
+        asset_filters = [
+            ("Equity Indices", ["equity_index", "equity_index_etf", "sector_etf"]),
+            ("FX", ["fx"]),
+            ("Commodities", ["commodity_future", "commodity_etf"]),
+            ("ETF", ["equity_index_etf", "sector_etf", "fixed_income_etf", "commodity_etf", "crypto_etf"]),
+            ("Fixed Income", ["fixed_income_etf", "rate_index"]),
+            ("Crypto", ["crypto", "crypto_etf", "crypto_equity"]),
+        ]
+        for asset_tab, (label, allowed_classes) in zip(asset_tabs, asset_filters):
+            with asset_tab:
+                asset_view = view[view["asset_class"].astype(str).isin(allowed_classes)].copy() if "asset_class" in view.columns else pd.DataFrame()
+                if asset_view.empty:
+                    st.info(f"No {label.lower()} rows in the current filter.")
+                else:
+                    st.dataframe(asset_view, width="stretch", hide_index=True)
+                    if {"symbol", "return_1m", "return_3m"}.issubset(asset_view.columns):
+                        st.plotly_chart(
+                            px.scatter(
+                                asset_view,
+                                x="return_1m",
+                                y="return_3m",
+                                color="region" if "region" in asset_view.columns else None,
+                                hover_name="name" if "name" in asset_view.columns else "symbol",
+                                text="symbol",
+                                title=f"{label}: 1M vs 3M map",
+                                template="plotly_white",
+                            ),
+                            width="stretch",
+                        )
     dataframe_with_download("Macro current view", view, "macro_current_view.csv")
 
 for tab, region_name in zip(tabs[1:6], ["global", "usa", "eu", "italy", "crypto"]):

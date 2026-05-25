@@ -131,6 +131,20 @@ def build_macro_context_panel(
         out["macro_risk_on_score"] = condition_frame.mean(axis=1, skipna=True) * 100.0
         out["macro_context_score"] = out["macro_risk_on_score"]
 
+    if "macro_spy_ret63d" in out.columns:
+        out["regime_spy_trend_sign"] = np.sign(pd.to_numeric(out["macro_spy_ret63d"], errors="coerce"))
+    if "macro_vix_level" in out.columns:
+        vix = pd.to_numeric(out["macro_vix_level"], errors="coerce")
+        out["regime_vix_regime"] = np.select([vix > 25.0, vix < 15.0], [1, -1], default=0)
+    if "macro_curve_tnx_irx" in out.columns:
+        out["regime_yield_curve_slope"] = pd.to_numeric(out["macro_curve_tnx_irx"], errors="coerce")
+    elif "macro_curve_tlt_shy_ret63d" in out.columns:
+        out["regime_yield_curve_slope"] = pd.to_numeric(out["macro_curve_tlt_shy_ret63d"], errors="coerce")
+    if "macro_dxy_ret21d" in out.columns:
+        out["regime_dxy_trend"] = pd.to_numeric(out["macro_dxy_ret21d"], errors="coerce")
+    if "macro_gld_ret21d" in out.columns:
+        out["regime_gold_trend"] = pd.to_numeric(out["macro_gld_ret21d"], errors="coerce")
+
     out = out.shift(1)
     out["date"] = out.index
     out["macro_feature_asof_date"] = pd.to_datetime(out["date"], errors="coerce").dt.strftime("%Y-%m-%d")
@@ -171,7 +185,7 @@ def add_macro_context_features(
     macro = load_macro_context_panel(financial_db_root, output_root)
     if macro.empty or "date" not in macro.columns:
         return panel.copy()
-    feature_cols = [col for col in macro.columns if col.startswith("macro_")]
+    feature_cols = [col for col in macro.columns if col.startswith("macro_") or col.startswith("regime_")]
     if not feature_cols:
         return panel.copy()
     left = panel.copy()

@@ -22,7 +22,9 @@ from ui_ops import render_missing_data_cta
 
 from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
 from research_platform_core.factor_benchmarks import compute_factor_benchmark_summary, load_factor_benchmark_summary
+from research_platform_core.factor_portfolio_baselines import compute_factor_portfolio_baselines, load_factor_portfolio_baselines
 from research_platform_core.llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance
+from research_platform_core.model_monitoring import build_model_monitoring_artifacts, load_model_monitoring_artifacts
 from ml_stock_lab.factor_registry import FACTOR_BLOCKS
 from ml_stock_lab import run_ml_stock_lab_experiment
 
@@ -60,6 +62,8 @@ active_model_ids = [model_id for model_id in model_settings.get("active_models",
 composite_weights = {str(k): float(v) for k, v in model_settings.get("composite_weights", {}).items()}
 data = load_ml_stock_lab_artifacts(roots["workspace"])
 factor_benchmarks = load_factor_benchmark_summary(roots["workspace"])
+factor_portfolio_baselines = load_factor_portfolio_baselines(roots["workspace"])
+model_monitoring = load_model_monitoring_artifacts(roots["workspace"])
 
 render_page_header(
     "ML Stock Lab",
@@ -93,6 +97,13 @@ with st.sidebar:
             default=["value", "quality", "momentum", "risk", "size", "growth", "model_based"],
             help="Canonical factor blocks used by model refreshes and model cards.",
         )
+        include_macro_regime = st.checkbox(
+            "Include macro regime features",
+            value=False,
+            help="Adds the experimental lagged macro_regime feature block to model refreshes.",
+        )
+        if include_macro_regime and "macro_regime" not in selected_feature_blocks:
+            selected_feature_blocks = [*selected_feature_blocks, "macro_regime"]
         ollama_model = st.text_input("Ollama model", value="llama3.1", help="Used only when an LLM advisor button is clicked.")
 
 status_signals = data["signals"]
@@ -322,6 +333,69 @@ with tab_baselines:
                 width="stretch",
             )
 
+    st.markdown("#### Monthly factor portfolios")
+    st.caption(
+        "Governance baseline portfolios use monthly rebalancing: long-only top decile and dollar-neutral top-minus-bottom factor baskets."
+    )
+    portfolio_cols = st.columns([0.3, 0.3, 0.4])
+    portfolio_rows = portfolio_cols[0].number_input(
+        "Panel rows for portfolio baselines",
+        min_value=50_000,
+        max_value=2_000_000,
+        value=500_000,
+        step=50_000,
+        help="Use the scheduled job with no cap for the full 2000-2026 panel.",
+    )
+    portfolio_horizons = portfolio_cols[1].multiselect("Horizons", [21, 63, 252], default=[21, 63, 252])
+    if portfolio_cols[2].button("Compute monthly factor portfolios", width="stretch"):
+        with st.spinner("Computing monthly factor portfolio controls..."):
+            factor_portfolio_baselines = compute_factor_portfolio_baselines(
+                roots["workspace"],
+                horizons=portfolio_horizons,
+                max_rows=int(portfolio_rows),
+                write=True,
+            )
+        st.success("Monthly factor portfolio baselines updated.")
+    portfolio_metrics = factor_portfolio_baselines.get("metrics", pd.DataFrame()) if isinstance(factor_portfolio_baselines, dict) else pd.DataFrame()
+    portfolio_returns = factor_portfolio_baselines.get("returns", pd.DataFrame()) if isinstance(factor_portfolio_baselines, dict) else pd.DataFrame()
+    if portfolio_metrics.empty:
+        st.info("Monthly factor portfolio metrics are not available yet.")
+    else:
+        dataframe_with_download("Monthly factor baseline metrics", portfolio_metrics, "baseline_portfolio_metrics.csv")
+        if {"factor", "strategy", "horizon", "sharpe"}.issubset(portfolio_metrics.columns):
+            plot = portfolio_metrics.copy()
+            plot["sharpe"] = pd.to_numeric(plot["sharpe"], errors="coerce")
+            st.plotly_chart(
+                px.bar(
+                    plot.dropna(subset=["sharpe"]),
+                    x="factor",
+                    y="sharpe",
+                    color="strategy",
+                    facet_col="horizon",
+                    barmode="group",
+                    template="plotly_white",
+                    title="Factor baseline Sharpe by horizon",
+                ),
+                width="stretch",
+            )
+    if not portfolio_returns.empty and {"month", "factor", "strategy", "return"}.issubset(portfolio_returns.columns):
+        chart_returns = portfolio_returns.copy()
+        chart_returns["return"] = pd.to_numeric(chart_returns["return"], errors="coerce")
+        chart_returns["equity_curve"] = chart_returns.groupby(["factor", "strategy", "horizon"])["return"].transform(lambda s: (1 + s.fillna(0)).cumprod())
+        st.plotly_chart(
+            px.line(
+                chart_returns,
+                x="month",
+                y="equity_curve",
+                color="factor",
+                line_dash="strategy",
+                facet_col="horizon",
+                template="plotly_white",
+                title="Monthly factor baseline equity curves",
+            ),
+            width="stretch",
+        )
+
 with tab_models:
     st.subheader("Model Settings")
     st.caption("This is the app-level model routing used by Screener_Builder. Training artifacts remain versioned by ML Stock Lab jobs.")
@@ -363,6 +437,31 @@ with tab_models:
     dataframe_with_download("Model comparison", data["model_comparison"], "MLStockLab_model_comparison.csv")
     dataframe_with_download("Prediction metrics", data["prediction_metrics"], "MLStockLab_prediction_metrics.csv")
     render_metric_metadata_expander(["r2_os", "rank_ic", "ic", "hit_ratio", "sharpe"], "Model validation metric glossary")
+    st.markdown("#### Model Performance Over Time")
+    monitor_cols = st.columns([0.35, 0.65])
+    rolling_window = monitor_cols[0].number_input("Rolling IC window", min_value=20, max_value=504, value=252, step=21)
+    if monitor_cols[1].button("Build / refresh rolling IC monitoring", width="stretch"):
+        with st.spinner("Computing rolling IC from prediction artifacts..."):
+            model_monitoring = build_model_monitoring_artifacts(roots["workspace"], window=int(rolling_window), write=True)
+        st.success("Rolling IC monitoring updated.")
+    monitor_summary = model_monitoring.get("summary", pd.DataFrame()) if isinstance(model_monitoring, dict) else pd.DataFrame()
+    monitor_rolling = model_monitoring.get("rolling", pd.DataFrame()) if isinstance(model_monitoring, dict) else pd.DataFrame()
+    if monitor_summary.empty:
+        st.info("No rolling IC monitoring artifact found yet.")
+    else:
+        dataframe_with_download("Model monitoring summary", monitor_summary, "model_monitoring_summary.csv")
+    if not monitor_rolling.empty and {"date", "model", "rank_ic_rolling_12m"}.issubset(monitor_rolling.columns):
+        st.plotly_chart(
+            px.line(
+                monitor_rolling,
+                x="date",
+                y="rank_ic_rolling_12m",
+                color="model",
+                template="plotly_white",
+                title="Rolling 12M RankIC by model",
+            ),
+            width="stretch",
+        )
     with st.expander("LLM Model Advisor", expanded=False):
         st.caption("Ollama reviews configurations and governance; quantitative rankings remain produced by the ML/factor models.")
         use_case = st.text_input("Use case", value="medium-term stock picking for a buy-side research workflow")

@@ -248,13 +248,29 @@ non come sostituto dei ranking cross-sectionali dello Stock Lab.
 La parte non-equity e' ora resa esplicita da due manifest leggeri:
 
 - `research_platform_core.multi_asset_universe` compila
-  `MultiAssetUniverseManifest.csv` da Macro DB, distinguendo FX, commodities,
-  crypto, ETF equity, ETF fixed income, ETF commodity, ETF crypto e fixed-income
-  proxies.
+  `MultiAssetUniverseManifest.csv` da Macro DB e puo' anche fare ingestion
+  dedicata in `output/multi_asset_universe/ohlcv`, distinguendo FX,
+  commodities, crypto, ETF equity, ETF fixed income, ETF commodity e
+  fixed-income proxies.
 - `research_platform_core.smart_money` compila `SmartMoneySourceManifest.csv`
-  per CFTC COT, ETF flows, options positioning e issuer-event evidence.
+  e `SmartMoneyAssetCatalog.csv` per CFTC COT, ETF flows proxy, options PCR e
+  issuer-event evidence.
 
 Data Platform mostra questi manifest in `Domain Status`; Macro View usa lo
 stesso catalogo per far vedere asset scaricati e asset pianificati. Le fonti
 Smart Money non ancora disponibili non sono mostrate come pannelli vuoti:
 restano `PLANNED` o `READY_OPTIONAL` finche' un job/fonte reale non le popola.
+
+## Factor baselines and monitoring
+
+Il ML Stock Lab ha due layer di governance quantitativa:
+
+- `research_platform_core.factor_portfolio_baselines` calcola portafogli
+  baseline mensili long-only top decile e long-short top/bottom per value,
+  quality e momentum, salvando metriche in
+  `output/factor_baselines/baseline_portfolio_metrics.csv`.
+- `research_platform_core.model_monitoring` calcola IC/RankIC rolling per
+  modello da `MLTraining_predictions.csv`, salvando gli artifact in
+  `output/ml_lab/model_monitoring`.
+
+Dettaglio operativo: `docs/MULTI_ASSET_SMART_MONEY_ML_V2.md`.
