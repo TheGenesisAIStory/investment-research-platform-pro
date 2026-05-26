@@ -7,7 +7,7 @@ for tooltips, compact explainers and analyst-facing glossary tables.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Iterable
 
 import pandas as pd
@@ -771,6 +771,341 @@ FEATURE_METADATA.update(
         "premium_discount_to_sector": FeatureMetadata("premium_discount_to_sector", "Premium / discount to sector", "valuation", "Market price relative to comparable-company implied value.", "current_price / implied_price - 1", "Negative values indicate discount to sector-implied price.", "comps"),
     }
 )
+
+VALID_FACTOR_ZOO_CATEGORIES: set[str] = {
+    "value",
+    "momentum",
+    "profitability",
+    "investment",
+    "intangibles",
+    "trading_frictions",
+    "macro",
+    "risk",
+    "quality",
+    "smart_money",
+    "ml_derived",
+    "target",
+    "composite",
+    "technical",
+    "size",
+    "factor_alpha",
+}
+
+
+_PAPER_DOI = {
+    "Gen.is.IA internal": "https://genisia.local/methodology/internal",
+    "Jensen 1968": "10.2307/2325404",
+    "Fama-French 1993": "10.1016/0304-405X(93)90023-5",
+    "Fama-French 2015": "10.1016/j.jfineco.2014.10.010",
+    "Carhart 1997": "10.1111/j.1540-6261.1997.tb03808.x",
+    "Hou-Xue-Zhang 2015": "10.1093/rfs/hhu068",
+    "Ang-Hodrick-Xing-Zhang 2006": "10.1111/j.1540-6261.2006.00836.x",
+    "Cooper-Gulen-Schill 2008": "10.1111/j.1540-6261.2008.01378.x",
+    "Titman-Wei-Xie 2004": "10.2307/3694915",
+    "Xing 2008": "10.1093/rfs/hhm028",
+    "Pontiff-Woodgate 2008": "10.1111/j.1540-6261.2008.01319.x",
+    "Spiess-Affleck-Graves 1999": "10.1016/S0304-405X(99)00029-4",
+    "Novy-Marx 2013": "10.1016/j.jfineco.2013.01.003",
+    "Desai-Rajgopal-Venkatachalam 2004": "10.2307/3666231",
+    "Asness-Frazzini-Pedersen 2019": "10.2139/ssrn.2312432",
+    "Stambaugh-Yu-Yuan 2015": "10.1111/jofi.12270",
+    "Jegadeesh-Titman 1993": "10.1111/j.1540-6261.1993.tb04702.x",
+    "George-Hwang 2004": "10.1111/j.1540-6261.2004.00710.x",
+    "Bali-Cakici-Whitelaw 2011": "10.1017/S0022109011000421",
+    "Gutierrez-Pirinsky 2007": "10.1111/j.1540-6261.2007.01247.x",
+    "Pastor-Stambaugh 2003": "10.1086/374184",
+    "Roll 1984": "10.1111/j.1540-6261.1984.tb03646.x",
+    "Lesmond-Ogden-Trzcinka 1999": "10.1093/rfs/12.5.1113",
+    "Amihud 2002": "10.1016/S0304-405X(01)00024-6",
+    "Piotroski 2000": "10.1111/1475-679X.00033",
+    "Altman 1995": "https://pages.stern.nyu.edu/~ealtman/Zscores.pdf",
+    "Sloan 1996": "10.2307/2491046",
+    "Kakushadze 2015": "https://arxiv.org/abs/1601.00991",
+}
+
+
+_CATEGORY_TO_ZOO = {
+    "value": "value",
+    "valuation": "value",
+    "momentum": "momentum",
+    "quality": "quality",
+    "growth": "investment",
+    "size": "size",
+    "risk": "risk",
+    "volatility": "risk",
+    "price": "technical",
+    "technical": "technical",
+    "liquidity": "trading_frictions",
+    "macro": "macro",
+    "macro_context": "macro",
+    "macro_regime": "macro",
+    "smart_money": "smart_money",
+    "sentiment": "smart_money",
+    "ml": "ml_derived",
+    "model": "ml_derived",
+    "target": "target",
+    "composite": "composite",
+    "factor_alpha": "factor_alpha",
+    "factor_investment": "investment",
+    "factor_profitability": "profitability",
+    "factor_zoo_academic": "intangibles",
+    "alpha101": "technical",
+}
+
+
+_CATEGORY_DEFAULT_PAPER = {
+    "value": "Fama-French 1993",
+    "valuation": "Fama-French 1993",
+    "momentum": "Jegadeesh-Titman 1993",
+    "quality": "Fama-French 2015",
+    "growth": "Fama-French 2015",
+    "size": "Fama-French 1993",
+    "risk": "Ang-Hodrick-Xing-Zhang 2006",
+    "volatility": "Ang-Hodrick-Xing-Zhang 2006",
+    "price": "Jegadeesh-Titman 1993",
+    "technical": "Gen.is.IA internal",
+    "liquidity": "Amihud 2002",
+    "macro": "Gen.is.IA internal",
+    "macro_context": "Gen.is.IA internal",
+    "macro_regime": "Gen.is.IA internal",
+    "smart_money": "Gen.is.IA internal",
+    "sentiment": "Gen.is.IA internal",
+    "ml": "Gen.is.IA internal",
+    "model": "Gen.is.IA internal",
+    "target": "Gen.is.IA internal",
+    "composite": "Gen.is.IA internal",
+    "factor_alpha": "Jensen 1968",
+    "factor_investment": "Fama-French 2015",
+    "factor_profitability": "Fama-French 2015",
+    "factor_zoo_academic": "Hou-Xue-Zhang 2015",
+    "alpha101": "Kakushadze 2015",
+}
+
+
+_ZOO_RATIONALE = {
+    "value": "Cheap securities may earn premia when prices overreact to weak fundamentals or when distress risk is overcompensated.",
+    "momentum": "Return continuation captures underreaction, slow information diffusion and investor herding before eventual reversal.",
+    "profitability": "More profitable firms generate higher cash flows per unit of capital and can sustain stronger future returns.",
+    "investment": "Conservative investment policies avoid overexpansion and historically command higher expected returns than aggressive investment.",
+    "intangibles": "Intangible investment can create durable assets that are imperfectly captured by accounting book values.",
+    "trading_frictions": "Illiquidity and trading constraints require compensation and can reveal limits-to-arbitrage effects.",
+    "macro": "Macro and regime variables condition factor payoffs by capturing risk appetite, rates, funding and growth states.",
+    "risk": "Risk measures quantify systematic, idiosyncratic and tail exposure that investors may require compensation to bear.",
+    "quality": "High-quality balance sheets and cash-backed earnings reduce distress and earnings-manipulation risk.",
+    "smart_money": "Positioning, ownership and flow indicators summarize informed or constrained investor demand.",
+    "ml_derived": "Model-derived scores compress many weak signals into a calibrated cross-sectional ranking.",
+    "target": "Targets define realized future outcomes used only for training/evaluation, never as live predictors.",
+    "composite": "Composite signals diversify single-factor noise by blending economically related predictors.",
+    "technical": "Technical variables capture short-horizon trend, reversal and trading-state information from prices and volume.",
+    "size": "Firm size proxies investability, liquidity and the historical small-firm return premium.",
+    "factor_alpha": "Residual alpha measures performance unexplained by standard risk factors and highlights abnormal return persistence.",
+}
+
+
+def _academic_feature(
+    feature_id: str,
+    name: str,
+    category: str,
+    sub_category: str,
+    description: str,
+    formula: str,
+    formula_latex: str,
+    interpretation: str,
+    source_paper: str,
+    factor_zoo_category: str,
+    *,
+    direction: str = "neutral",
+    data_requirement: tuple[str, ...] = (),
+    lag_required: str = "none",
+    computation_window: str = "",
+    implementation_module: str = "equity_feature_engineering.py",
+    asset_class: str = "equity",
+    typical_range: str = "",
+) -> FeatureMetadata:
+    return FeatureMetadata(
+        id=feature_id,
+        name=name,
+        category=category,
+        sub_category=sub_category,
+        description=description,
+        formula=formula,
+        formula_latex=formula_latex,
+        interpretation=interpretation,
+        source_paper=source_paper,
+        source_doi=_PAPER_DOI.get(source_paper, "https://genisia.local/methodology/internal"),
+        factor_zoo_category=factor_zoo_category,
+        economic_rationale=_ZOO_RATIONALE.get(factor_zoo_category, _ZOO_RATIONALE["composite"]),
+        direction=direction,
+        data_requirement=data_requirement,
+        lag_required=lag_required,
+        computation_window=computation_window,
+        implementation_module=implementation_module,
+        asset_class=asset_class,
+        typical_range=typical_range,
+        point_in_time_safe=True,
+        leakage_risk=False,
+    )
+
+
+FEATURE_METADATA.update(
+    {
+        item.id: item
+        for item in (
+            _academic_feature("alpha_1y", "Alpha 1Y vs benchmark", "factor_alpha", "capm_alpha", "Jensen alpha from rolling 252-day CAPM regression versus selected benchmark.", "mean(excess_return) - beta * mean(market_excess_return)", r"\hat{\alpha}=\bar{r}_i-\hat{\beta}_i\bar{r}_m", "Positive values indicate return above market-risk-adjusted expectation.", "Jensen 1968", "factor_alpha", direction="positive", data_requirement=("price", "benchmark_return"), computation_window="252d rolling"),
+            _academic_feature("alpha_3y", "Alpha 3Y vs benchmark", "factor_alpha", "capm_alpha", "Jensen alpha from rolling 756-day CAPM regression versus selected benchmark.", "mean(excess_return) - beta * mean(market_excess_return)", r"\hat{\alpha}_{3y}=\bar{r}_i-\hat{\beta}_i\bar{r}_m", "Positive values indicate persistent benchmark-adjusted abnormal return.", "Jensen 1968", "factor_alpha", direction="positive", data_requirement=("price", "benchmark_return"), computation_window="756d rolling"),
+            _academic_feature("alpha_3factor", "FF3 alpha", "factor_alpha", "multi_factor_alpha", "Residual alpha from the Fama-French three-factor model.", "r_i - (r_f + b_mkt*MKT + b_smb*SMB + b_hml*HML)", r"\hat{\alpha}^{FF3}=r_i-(r_f+\hat{b}_1MKT+\hat{b}_2SMB+\hat{b}_3HML)", "Positive values indicate return unexplained by market, size and value exposure.", "Fama-French 1993", "factor_alpha", direction="positive", data_requirement=("returns", "ff3_factors")),
+            _academic_feature("alpha_5factor", "FF5 alpha", "factor_alpha", "multi_factor_alpha", "Residual alpha from the Fama-French five-factor model.", "r_i - (r_f + b1*MKT + b2*SMB + b3*HML + b4*RMW + b5*CMA)", r"\hat{\alpha}^{FF5}=r_i-(r_f+\hat{b}_1MKT+\hat{b}_2SMB+\hat{b}_3HML+\hat{b}_4RMW+\hat{b}_5CMA)", "Positive values indicate return unexplained by market, size, value, profitability and investment exposure.", "Fama-French 2015", "factor_alpha", direction="positive", data_requirement=("returns", "ff5_factors")),
+            _academic_feature("alpha_carhart4", "Carhart 4F alpha", "factor_alpha", "multi_factor_alpha", "Residual alpha from the Carhart four-factor model including momentum.", "r_i - (r_f + b1*MKT + b2*SMB + b3*HML + b4*WML)", r"\hat{\alpha}^{4F}=r_i-(r_f+\hat{b}_1MKT+\hat{b}_2SMB+\hat{b}_3HML+\hat{b}_4WML)", "Positive values indicate return not explained by standard factor and momentum exposures.", "Carhart 1997", "factor_alpha", direction="positive", data_requirement=("returns", "carhart_factors")),
+            _academic_feature("alpha_q5", "q5 alpha", "factor_alpha", "multi_factor_alpha", "Residual alpha from the Hou-Xue-Zhang q-factor model.", "r_i - (r_f + b_mkt*MKT + b_me*ME + b_ia*IA + b_roe*ROE + b_eg*EG)", r"\hat{\alpha}^{q5}=r_i-(r_f+\hat{b}_1MKT+\hat{b}_2ME+\hat{b}_3IA+\hat{b}_4ROE+\hat{b}_5EG)", "Positive values indicate return unexplained by q-model investment and profitability risks.", "Hou-Xue-Zhang 2015", "factor_alpha", direction="positive", data_requirement=("returns", "q_factors")),
+            _academic_feature("idiosyncratic_return_1y", "Idiosyncratic return 1Y", "factor_alpha", "residual_return", "Annualized residual return from a factor model.", "sum(residual_return, 252d)", r"\sum_{d=t-251}^{t}\hat{\epsilon}_{i,d}", "Positive values indicate stock-specific return after factor adjustment.", "Ang-Hodrick-Xing-Zhang 2006", "factor_alpha", direction="positive", data_requirement=("returns", "factor_residuals"), computation_window="252d rolling"),
+            _academic_feature("tracking_error_1y", "Tracking error 1Y", "factor_alpha", "active_risk", "Annualized volatility of active returns versus benchmark.", "std(r_i - r_b, 252d) * sqrt(252)", r"\sigma(r_i-r_b)\sqrt{252}", "Higher values indicate more benchmark-relative active risk.", "Gen.is.IA internal", "factor_alpha", data_requirement=("returns", "benchmark_return"), computation_window="252d rolling"),
+            _academic_feature("information_ratio_1y", "Information ratio 1Y", "factor_alpha", "active_efficiency", "Active return per unit of tracking error.", "mean(active_return) / tracking_error", r"\frac{\bar{r}_i-\bar{r}_b}{\sigma(r_i-r_b)}", "Higher values indicate more efficient benchmark-relative alpha.", "Gen.is.IA internal", "factor_alpha", direction="positive", data_requirement=("returns", "benchmark_return"), computation_window="252d rolling"),
+            _academic_feature("treynor_ratio_1y", "Treynor ratio 1Y", "factor_alpha", "systematic_efficiency", "Excess return per unit of market beta.", "(return - risk_free) / beta", r"\frac{R_i-R_f}{\beta_i}", "Higher values indicate better compensation for systematic risk.", "Jensen 1968", "factor_alpha", direction="positive", data_requirement=("returns", "benchmark_return"), computation_window="252d rolling"),
+            _academic_feature("m2_measure_1y", "M-squared 1Y", "factor_alpha", "risk_adjusted_return", "Sharpe transformed into benchmark-volatility return units.", "sharpe_i * vol_benchmark + risk_free", r"M^2=SR_i\sigma_m+r_f", "Higher values indicate better risk-adjusted return in comparable return units.", "Gen.is.IA internal", "factor_alpha", direction="positive"),
+            _academic_feature("upside_capture_ratio", "Upside capture ratio", "factor_alpha", "capture", "Portfolio or stock participation in benchmark up periods.", "mean(r_i | r_b>0) / mean(r_b | r_b>0)", r"\frac{E[r_i|r_b>0]}{E[r_b|r_b>0]}", "Values above 1 indicate stronger participation when the benchmark rises.", "Gen.is.IA internal", "factor_alpha", direction="positive"),
+            _academic_feature("downside_capture_ratio", "Downside capture ratio", "factor_alpha", "capture", "Portfolio or stock participation in benchmark down periods.", "mean(r_i | r_b<0) / mean(r_b | r_b<0)", r"\frac{E[r_i|r_b<0]}{E[r_b|r_b<0]}", "Lower values indicate less participation in benchmark losses.", "Gen.is.IA internal", "factor_alpha", direction="negative"),
+            _academic_feature("batting_average_1y", "Batting average 1Y", "factor_alpha", "active_hit_rate", "Share of months outperforming benchmark.", "count(active_return>0) / count(months)", r"\frac{1}{T}\sum 1_{\{r_i-r_b>0\}}", "Higher values indicate more frequent benchmark outperformance.", "Gen.is.IA internal", "factor_alpha", direction="positive", computation_window="12 monthly observations"),
+            _academic_feature("omega_ratio_1y", "Omega ratio 1Y", "factor_alpha", "partial_moments", "Upside payoff divided by downside payoff around a threshold.", "sum(max(r-threshold,0)) / abs(sum(min(r-threshold,0)))", r"\frac{\int_{\tau}^{\infty}(1-F(r))dr}{\int_{-\infty}^{\tau}F(r)dr}", "Values above 1 indicate more upside than downside payoff.", "Gen.is.IA internal", "factor_alpha", direction="positive"),
+            _academic_feature("asset_growth", "Asset growth", "factor_investment", "aqr_investment", "Year-over-year change in total assets, the primary investment factor signal.", "(total_assets_t - total_assets_t-1) / total_assets_t-1", r"\frac{TA_t-TA_{t-1}}{TA_{t-1}}", "Lower values indicate conservative investment policy, historically associated with higher returns.", "Cooper-Gulen-Schill 2008", "investment", direction="negative", lag_required="fiscal_quarter_lag", data_requirement=("balance_sheet",), computation_window="YoY"),
+            _academic_feature("capex_to_assets", "Capex to assets", "factor_investment", "capital_investment", "Capital expenditure scaled by total assets.", "capex / total_assets", r"\frac{CAPEX_t}{TA_t}", "Lower values indicate more conservative capital investment intensity.", "Titman-Wei-Xie 2004", "investment", direction="negative", lag_required="fiscal_quarter_lag", data_requirement=("cash_flow", "balance_sheet")),
+            _academic_feature("capex_growth", "Capex growth", "factor_investment", "capital_investment", "Growth rate of capital expenditure.", "(capex_t - capex_t-1) / abs(capex_t-1)", r"\frac{CAPEX_t-CAPEX_{t-1}}{|CAPEX_{t-1}|}", "Very high values can signal aggressive investment and lower future returns.", "Xing 2008", "investment", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("net_stock_issues", "Net stock issues", "factor_investment", "external_financing", "Change in split-adjusted shares outstanding.", "ln(shares_t / shares_t-1)", r"\ln(SHR_t/SHR_{t-1})", "Lower values indicate less equity issuance and dilution.", "Pontiff-Woodgate 2008", "investment", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("net_debt_issues", "Net debt issues", "factor_investment", "external_financing", "Change in total debt scaled by assets.", "(debt_t - debt_t-1) / total_assets_t-1", r"\frac{D_t-D_{t-1}}{TA_{t-1}}", "Higher debt issuance can flag external financing pressure.", "Spiess-Affleck-Graves 1999", "investment", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("investment_to_assets", "Investment to assets", "factor_investment", "cma_proxy", "CMA-style investment intensity proxy.", "change(total_assets) / lag(total_assets)", r"\frac{\Delta TA_t}{TA_{t-1}}", "Lower values map to conservative investment exposure.", "Fama-French 2015", "investment", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("roe_growth", "ROE growth", "factor_investment", "q5_eg", "Growth in return on equity, proxy for q-factor expected growth.", "roe_t - roe_t-1", r"ROE_t-ROE_{t-1}", "Higher values indicate improving profitability growth.", "Hou-Xue-Zhang 2015", "investment", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("earnings_announcement_return", "Earnings announcement return", "factor_investment", "earnings_event", "Abnormal return around earnings announcement window.", "return[-1,+1] - benchmark_return[-1,+1]", r"CAR_{[-1,+1]}", "Positive values indicate favorable earnings-event surprise.", "Gen.is.IA internal", "momentum", direction="positive", lag_required="event_lag"),
+            _academic_feature("sue_score", "Standardized unexpected earnings", "factor_investment", "earnings_momentum", "Standardized unexpected earnings surprise.", "(EPS_t - EPS_t-4) / std(EPS surprise, 8q)", r"\frac{EPS_t-EPS_{t-4}}{\sigma(\Delta EPS)}", "Higher values indicate positive earnings surprise momentum.", "Gen.is.IA internal", "momentum", direction="positive", lag_required="earnings_release_lag"),
+            _academic_feature("analyst_revision_score", "Analyst revision score", "factor_investment", "analyst_revisions", "Consensus estimate revision momentum.", "net_upward_revisions / analyst_count", r"\frac{UpRevisions-DownRevisions}{N_{analysts}}", "Higher values indicate improving analyst expectations.", "Gen.is.IA internal", "smart_money", direction="positive", lag_required="provider_timestamp"),
+            _academic_feature("earnings_surprise_3m", "Earnings surprise 3M", "factor_investment", "earnings_momentum", "Rolling three-month earnings surprise proxy.", "mean(SUE, 3m)", r"\overline{SUE}_{3m}", "Higher values indicate repeated positive earnings surprise.", "Gen.is.IA internal", "momentum", direction="positive", lag_required="earnings_release_lag"),
+            _academic_feature("external_financing_ratio", "External financing ratio", "factor_investment", "external_financing", "Equity plus debt issuance scaled by assets.", "(net_stock_issues + net_debt_issues) / assets", r"\frac{\Delta Equity+\Delta Debt}{TA}", "Lower values indicate less dependence on external financing.", "Gen.is.IA internal", "investment", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("rmw_proxy", "RMW proxy", "factor_profitability", "operating_profitability", "Operating profitability proxy for Fama-French RMW.", "(revenue - COGS - SGA - interest) / book_equity", r"\frac{Rev-COGS-SGA-IntExp}{BE_t}", "Higher values indicate robust operating profitability.", "Fama-French 2015", "profitability", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("cash_earnings_to_price", "Cash earnings to price", "factor_profitability", "cash_profitability", "Cash flow from operations scaled by price or market value.", "CFO / market_cap", r"\frac{CFO_t}{ME_t}", "Higher values indicate more cash earnings per dollar of equity value.", "Desai-Rajgopal-Venkatachalam 2004", "value", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("gross_profitability", "Gross profitability", "factor_profitability", "profitability", "Gross profit scaled by total assets.", "(revenue - COGS) / total_assets", r"\frac{Rev_t-COGS_t}{TA_t}", "Higher values indicate more productive assets.", "Novy-Marx 2013", "profitability", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("mispricing_score_stambaugh", "Stambaugh mispricing score", "factor_profitability", "composite_mispricing", "Composite anomaly score inspired by Stambaugh-Yu-Yuan mispricing factors.", "average anomaly rank across selected mispricing features", r"\frac{1}{K}\sum_{k=1}^{K}rank(z_{k})", "Higher values indicate greater estimated overpricing/underpricing depending construction.", "Stambaugh-Yu-Yuan 2015", "composite", direction="neutral"),
+            _academic_feature("noa_ratio", "Net operating assets", "factor_profitability", "accruals", "Net operating assets scaled by lagged total assets.", "net_operating_assets / lag(total_assets)", r"\frac{NOA_t}{TA_{t-1}}", "Lower values indicate less accrual-heavy operating balance sheet.", "Sloan 1996", "quality", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("operating_leverage", "Operating leverage", "factor_profitability", "cost_structure", "Fixed-cost intensity proxy.", "fixed_costs / total_costs", r"\frac{FixedCosts_t}{TotalCosts_t}", "Higher values can amplify earnings sensitivity to sales changes.", "Gen.is.IA internal", "profitability", direction="neutral", lag_required="fiscal_quarter_lag"),
+            _academic_feature("financial_leverage_change", "Financial leverage change", "factor_profitability", "leverage", "Change in financial leverage.", "debt_to_equity_t - debt_to_equity_t-1", r"LEV_t-LEV_{t-1}", "Lower values indicate deleveraging and safer balance-sheet trend.", "Gen.is.IA internal", "quality", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("effective_tax_rate", "Effective tax rate", "factor_profitability", "tax", "Income tax expense divided by pretax income.", "tax_expense / pretax_income", r"\frac{TaxExp_t}{PretaxIncome_t}", "Stable values support quality checks; extremes can be one-off.", "Gen.is.IA internal", "quality", direction="neutral", lag_required="fiscal_quarter_lag"),
+            _academic_feature("r_and_d_to_market", "R&D to market", "factor_profitability", "intangibles", "Research and development expense scaled by market value.", "R&D / market_cap", r"\frac{R\&D_t}{ME_t}", "Higher values can indicate intangible investment not captured on the balance sheet.", "Gen.is.IA internal", "intangibles", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("org_capital_to_assets", "Organization capital to assets", "factor_profitability", "intangibles", "Organization capital proxy scaled by total assets.", "capitalized_SGA / total_assets", r"\frac{OrgCap_t}{TA_t}", "Higher values can indicate durable intangible operating assets.", "Gen.is.IA internal", "intangibles", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("earnings_momentum_sue", "Earnings momentum SUE", "momentum", "earnings_momentum", "SUE-based post-earnings-announcement drift signal.", "(EPS_t - EPS_t-4) / std(EPS surprise, 8q)", r"\frac{EPS_t-EPS_{t-4}}{\sigma(\Delta EPS)}", "Higher values indicate positive earnings momentum.", "Jegadeesh-Titman 1993", "momentum", direction="positive", lag_required="earnings_release_lag"),
+            _academic_feature("price_momentum_6_1", "6-1M price momentum", "momentum", "price_momentum", "Six-month return excluding the most recent month.", "(P_t-21 - P_t-126) / P_t-126", r"\frac{P_{t-21}-P_{t-126}}{P_{t-126}}", "Higher values indicate medium-term trend excluding short-term reversal.", "Jegadeesh-Titman 1993", "momentum", direction="positive"),
+            _academic_feature("industry_momentum", "Industry momentum", "momentum", "industry_relative", "Industry-level momentum assigned to constituent stocks.", "industry_return_12_1", r"MOM^{industry}_{t}", "Higher values indicate a strong peer-industry trend.", "Jegadeesh-Titman 1993", "momentum", direction="positive"),
+            _academic_feature("residual_momentum_252d", "Residual momentum 252D", "momentum", "residual_momentum", "Momentum of factor-model residual returns.", "sum(residual_return, 252d)", r"\sum_{d=t-251}^{t}\hat{\epsilon}_{i,d}", "Higher values indicate stock-specific trend after factor adjustment.", "Gutierrez-Pirinsky 2007", "momentum", direction="positive"),
+            _academic_feature("momentum_acceleration_3m", "Momentum acceleration 3M", "momentum", "price_momentum", "Change in short-horizon momentum versus longer-horizon momentum.", "ret_63d - ret_126d", r"r_{63d}-r_{126d}", "Positive values indicate strengthening recent momentum.", "Gen.is.IA internal", "momentum", direction="positive"),
+            _academic_feature("volume_weighted_momentum", "Volume-weighted momentum", "momentum", "volume_momentum", "Price momentum weighted by trading volume intensity.", "momentum_12m_1m * volume_ratio", r"MOM_{12,1}\times VolumeRatio", "Higher values indicate momentum confirmed by volume.", "Gen.is.IA internal", "momentum", direction="positive"),
+            _academic_feature("52w_high_momentum", "52-week high momentum", "momentum", "price_anchor", "Closeness to the 52-week high.", "price / high_52w", r"\frac{P_t}{High_{52w}}", "Values near 1 indicate price near annual high, a documented momentum anchor.", "George-Hwang 2004", "momentum", direction="positive"),
+            _academic_feature("max_return_1m", "MAX return 1M", "momentum", "lottery", "Maximum daily return over the past month.", "max(daily_return, 21d)", r"\max_{d\in[1,21]} r_{i,d}", "Higher values can indicate lottery-like payoff and lower future returns.", "Bali-Cakici-Whitelaw 2011", "momentum", direction="negative"),
+            _academic_feature("pastor_stambaugh_liquidity", "Pastor-Stambaugh liquidity beta", "liquidity", "liquidity_beta", "Sensitivity to aggregate liquidity innovations.", "beta(asset_return, PS_liquidity_factor)", r"\beta_{PS}", "Higher exposure indicates stronger sensitivity to market liquidity conditions.", "Pastor-Stambaugh 2003", "trading_frictions", direction="neutral"),
+            _academic_feature("bid_ask_spread_proxy", "Roll spread proxy", "liquidity", "spread", "Implicit bid-ask spread from return autocovariance.", "2 * sqrt(-cov(r_t, r_t-1))", r"2\sqrt{-Cov(r_t,r_{t-1})}", "Higher values indicate wider estimated trading spreads.", "Roll 1984", "trading_frictions", direction="negative"),
+            _academic_feature("zero_trading_days_ratio", "Zero-trading-days ratio", "liquidity", "illiquidity", "Share of days with zero returns or zero volume.", "count(zero_return_or_volume) / count(days)", r"\frac{N_{zero}}{T}", "Higher values indicate stale prices and lower liquidity.", "Lesmond-Ogden-Trzcinka 1999", "trading_frictions", direction="negative"),
+            _academic_feature("price_impact_21d", "Price impact 21D", "liquidity", "amihud_variant", "Short-window Amihud price-impact proxy.", "mean(abs(return)/dollar_volume, 21d)", r"\frac{1}{21}\sum\frac{|r_d|}{DVOL_d}", "Higher values indicate stronger price impact per dollar traded.", "Amihud 2002", "trading_frictions", direction="negative"),
+            _academic_feature("float_ratio", "Float ratio", "liquidity", "ownership_float", "Free float shares as a share of total shares outstanding.", "float_shares / shares_outstanding", r"\frac{FloatShares}{SharesOut}", "Higher values indicate more tradable supply.", "Gen.is.IA internal", "trading_frictions", direction="positive"),
+            _academic_feature("regime_credit_spread", "Credit spread regime", "macro_regime", "credit", "High-yield versus investment-grade credit stress proxy.", "HYG relative return - LQD relative return", r"Trend(HYG)-Trend(LQD)", "Higher values indicate stronger credit risk appetite when constructed as HY outperformance.", "Gen.is.IA internal", "macro", asset_class="multi_asset", implementation_module="macro_features.py"),
+            _academic_feature("regime_em_stress", "EM stress regime", "macro_regime", "em_stress", "Emerging-market stress from relative equity and volatility proxies.", "vol(EEM) - vol(VEA)", r"\sigma(EEM)-\sigma(VEA)", "Higher values indicate more emerging-market stress.", "Gen.is.IA internal", "macro", direction="negative", asset_class="multi_asset", implementation_module="macro_features.py"),
+            _academic_feature("regime_eu_sovereign_stress", "EU sovereign stress", "macro_regime", "rates", "BTP-Bund sovereign spread proxy.", "Italy_10Y - Germany_10Y", r"y^{IT}_{10Y}-y^{DE}_{10Y}", "Higher values indicate more Italian/EU sovereign stress.", "Gen.is.IA internal", "macro", direction="negative", asset_class="macro", implementation_module="macro_features.py"),
+            _academic_feature("regime_breakeven_inflation", "Breakeven inflation regime", "macro_regime", "inflation", "Nominal minus real yield proxy.", "nominal_10y - real_10y", r"y^{nom}_{10Y}-y^{real}_{10Y}", "Higher values indicate higher market-implied inflation compensation.", "Gen.is.IA internal", "macro", asset_class="macro", implementation_module="macro_features.py"),
+            _academic_feature("regime_global_growth_proxy", "Global growth proxy", "macro_regime", "growth", "Global equity trend proxy.", "return(global_equity_index, 63d)", r"r^{World}_{63d}", "Higher values indicate stronger global growth/risk appetite backdrop.", "Gen.is.IA internal", "macro", direction="positive", asset_class="multi_asset", implementation_module="macro_features.py"),
+            _academic_feature("regime_commodities_trend", "Commodities trend regime", "macro_regime", "commodities", "Broad commodity trend proxy.", "return(commodity_index, 63d)", r"r^{Comm}_{63d}", "Higher values indicate stronger commodity cycle momentum.", "Gen.is.IA internal", "macro", direction="positive", asset_class="multi_asset", implementation_module="macro_features.py"),
+            _academic_feature("regime_funding_liquidity", "Funding liquidity regime", "macro_regime", "funding", "Short-rate spread proxy for funding stress.", "short_rate_stress_proxy", r"FundingSpread_t", "Higher values indicate tighter funding liquidity.", "Gen.is.IA internal", "macro", direction="negative", asset_class="macro", implementation_module="macro_features.py"),
+            _academic_feature("regime_risk_parity_signal", "Risk parity regime signal", "macro_regime", "cross_asset_vol", "Composite signal from equity, bond and commodity volatility.", "weighted zscore(vol_equity, vol_bonds, vol_commodities)", r"\sum w_a z(\sigma_a)", "Higher values indicate cross-asset volatility stress.", "Gen.is.IA internal", "macro", direction="negative", asset_class="multi_asset", implementation_module="macro_features.py"),
+            _academic_feature("short_interest_ratio", "Short interest ratio", "sentiment", "short_interest", "Short interest scaled by average daily volume.", "short_interest / avg_daily_volume", r"\frac{ShortInterest}{ADV}", "Higher values indicate more crowded short positioning.", "Gen.is.IA internal", "smart_money", direction="negative", data_requirement=("FMP short_interest",), lag_required="provider_timestamp", implementation_module="equity_feature_engineering.py:compute_sentiment_alternative_features"),
+            _academic_feature("institutional_ownership_pct", "Institutional ownership %", "sentiment", "ownership", "Percent of shares held by institutions.", "institutional_shares / shares_outstanding", r"\frac{InstShares}{SharesOut}", "Higher values indicate stronger institutional sponsorship, but can also imply crowding.", "Gen.is.IA internal", "smart_money", direction="neutral", lag_required="provider_timestamp", implementation_module="equity_feature_engineering.py:compute_sentiment_alternative_features"),
+            _academic_feature("insider_net_buying", "Insider net buying", "sentiment", "insider_trading", "Net insider buy transactions over a recent window.", "insider_buys - insider_sells", r"Buys_{insider}-Sells_{insider}", "Positive values indicate insider accumulation.", "Gen.is.IA internal", "smart_money", direction="positive", lag_required="provider_timestamp", implementation_module="equity_feature_engineering.py:compute_sentiment_alternative_features"),
+            _academic_feature("analyst_coverage_count", "Analyst coverage count", "sentiment", "analyst", "Number of sell-side analysts covering the company.", "count(analysts)", r"N_{analysts}", "Higher values indicate more analyst attention and usually lower information opacity.", "Gen.is.IA internal", "smart_money", direction="neutral", lag_required="provider_timestamp", implementation_module="equity_feature_engineering.py:compute_sentiment_alternative_features"),
+            _academic_feature("earnings_estimate_dispersion", "Earnings estimate dispersion", "sentiment", "analyst", "Dispersion of analyst EPS estimates scaled by mean estimate.", "std(EPS_estimates) / abs(mean(EPS_estimates))", r"\frac{\sigma(EPS^{est})}{|E[EPS^{est}]|}", "Higher values indicate more uncertainty/disagreement about earnings.", "Gen.is.IA internal", "smart_money", direction="negative", lag_required="provider_timestamp", implementation_module="equity_feature_engineering.py:compute_sentiment_alternative_features"),
+            _academic_feature("hiring_rate", "Hiring rate", "factor_zoo_academic", "labor", "Change in employees scaled by lagged employees.", "(employees_t - employees_t-1) / employees_t-1", r"\frac{Emp_t-Emp_{t-1}}{Emp_{t-1}}", "High hiring can proxy aggressive expansion and future operating leverage.", "Hou-Xue-Zhang 2015", "investment", direction="neutral", lag_required="fiscal_quarter_lag"),
+            _academic_feature("patent_intensity", "Patent intensity", "factor_zoo_academic", "intangibles", "Patents granted scaled by total assets.", "patents / total_assets", r"\frac{Patents_t}{TA_t}", "Higher values can indicate innovation intensity not fully captured by book assets.", "Gen.is.IA internal", "intangibles", direction="positive", lag_required="provider_timestamp"),
+            _academic_feature("advertising_to_sales", "Advertising to sales", "factor_zoo_academic", "intangibles", "Advertising expense scaled by revenue.", "advertising_expense / revenue", r"\frac{Adv_t}{Sales_t}", "Higher values can indicate brand-building intangible investment.", "Gen.is.IA internal", "intangibles", direction="positive", lag_required="fiscal_quarter_lag"),
+            _academic_feature("pp_and_e_growth", "PP&E growth", "factor_zoo_academic", "investment", "Growth in net property, plant and equipment.", "(ppe_t - ppe_t-1) / ppe_t-1", r"\frac{PPE_t-PPE_{t-1}}{PPE_{t-1}}", "High values indicate capital expansion and potential investment-factor exposure.", "Fama-French 2015", "investment", direction="negative", lag_required="fiscal_quarter_lag"),
+            _academic_feature("working_capital_change", "Working capital change", "factor_zoo_academic", "investment", "Change in working capital scaled by lagged assets.", "change(current_assets - current_liabilities) / lag(total_assets)", r"\frac{\Delta WC_t}{TA_{t-1}}", "Large increases can indicate investment in operating capacity or accrual pressure.", "Fama-French 2015", "investment", direction="neutral", lag_required="fiscal_quarter_lag"),
+        )
+    }
+)
+
+try:
+    from .alpha101 import Alpha101Suite
+
+    FEATURE_METADATA.update(
+        {
+            alpha_id: FeatureMetadata(
+                id=alpha_id,
+                name=f"WQ Alpha {alpha_id[-3:]}",
+                category="alpha101",
+                sub_category="worldquant_formulaic",
+                description=str(meta["formula_text"]),
+                formula=str(meta["formula_text"]),
+                formula_latex=rf"\text{{WorldQuant {alpha_id[-3:]} formula; see Kakushadze (2015) Appendix A}}",
+                interpretation="Cross-sectionally ranked formulaic price-volume alpha. Higher ranks indicate stronger signal according to the formula ordering.",
+                leakage_risk=False,
+                data_requirement=tuple(meta["inputs"]),
+                source_paper=str(meta["paper"]),
+                alias=(f"alpha_{alpha_id[-3:]}",),
+                asset_class="equity",
+                source_doi=f"https://arxiv.org/abs/{meta['arxiv']}",
+                economic_rationale=str(meta["economic_rationale"]),
+                factor_zoo_category=str(meta["factor_zoo_category"]),
+                point_in_time_safe=True,
+                lag_required="none",
+                direction="neutral",
+                typical_range="0-1 cross-sectional rank",
+                implementation_module="alpha101.py",
+                normalization="cross-sectional rank",
+            )
+            for alpha_id, meta in Alpha101Suite.METADATA.items()
+        }
+    )
+except Exception:
+    # Metadata must remain importable even if optional Alpha101 dependencies are
+    # unavailable in a constrained environment.
+    pass
+
+
+def _latex_from_formula(formula: str) -> str:
+    text = str(formula or "").strip()
+    if not text:
+        return r"\text{See implementation notes}"
+    safe = text.replace("_", r"\_")
+    return rf"\text{{{safe[:180]}}}"
+
+
+def _complete_feature_metadata(meta: FeatureMetadata) -> FeatureMetadata:
+    category_key = str(meta.category or "").strip().lower()
+    feature_key = str(meta.id or "").strip().lower().replace(" ", "_").replace("-", "_")
+    zoo = meta.factor_zoo_category or _CATEGORY_TO_ZOO.get(category_key, "composite")
+    if "forward_return" in feature_key or category_key == "target":
+        zoo = "target"
+    if zoo not in VALID_FACTOR_ZOO_CATEGORIES:
+        zoo = _CATEGORY_TO_ZOO.get(zoo, "composite")
+    source_paper = meta.source_paper or _CATEGORY_DEFAULT_PAPER.get(category_key, "Gen.is.IA internal")
+    source_doi = meta.source_doi or _PAPER_DOI.get(source_paper, "https://genisia.local/methodology/internal")
+    formula_latex = meta.formula_latex or _latex_from_formula(meta.formula)
+    rationale = meta.economic_rationale or _ZOO_RATIONALE.get(zoo, _ZOO_RATIONALE["composite"])
+    computation_window = meta.computation_window or ("forward horizon" if zoo == "target" else "point-in-time latest or rolling window")
+    normalization = meta.normalization or ("cross-sectional z-score" if zoo not in {"target", "macro"} else "none")
+    direction = meta.direction or ("positive" if zoo in {"value", "momentum", "profitability", "quality", "factor_alpha"} else "neutral")
+    typical_range = meta.typical_range or ("model/data dependent" if zoo != "target" else "realized return in decimal units")
+    implementation_module = meta.implementation_module or (
+        "equity_feature_engineering.py" if meta.asset_class == "equity" else "macro_features.py"
+    )
+    return replace(
+        meta,
+        formula_latex=formula_latex,
+        source_paper=source_paper,
+        source_doi=source_doi,
+        economic_rationale=rationale,
+        factor_zoo_category=zoo,
+        computation_window=computation_window,
+        normalization=normalization,
+        direction=direction,
+        typical_range=typical_range,
+        implementation_module=implementation_module,
+        leakage_risk=False if zoo == "target" else meta.leakage_risk,
+        point_in_time_safe=True if zoo == "target" or meta.point_in_time_safe else meta.point_in_time_safe,
+    )
+
+
+FEATURE_METADATA = {key: _complete_feature_metadata(meta) for key, meta in FEATURE_METADATA.items()}
 
 
 ALIASES = {

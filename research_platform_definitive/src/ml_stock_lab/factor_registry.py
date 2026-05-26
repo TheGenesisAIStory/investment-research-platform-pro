@@ -118,6 +118,13 @@ FACTOR_BLOCKS: dict[str, FactorBlock] = {
         "Compact, lagged regime-state features derived from cross-asset macro proxies.",
         experimental=True,
     ),
+    "alpha101": FactorBlock(
+        "alpha101",
+        "WorldQuant 101 Alphas",
+        tuple(f"alpha{i:03d}" for i in range(1, 102)),
+        "Kakushadze (2015) formulaic price-volume alphas, computed as optional cross-sectional rank features.",
+        experimental=True,
+    ),
     "technical_advanced": FactorBlock(
         "technical_advanced",
         "Technical Advanced",

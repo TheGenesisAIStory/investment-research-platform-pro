@@ -50,7 +50,8 @@ from .batch_download import (
 )
 from .data_bridge import DataBridge
 from .data_center_catalog import build_target_catalog, summarize_target_catalog
-from .api_orchestrator import APIOrchestrator, ProviderSpec, RateLimiter
+from .api_orchestrator import APIOrchestrator, ApiOrchestrator, ProviderSpec, RateLimiter, get_fundamentals_waterfall
+from .alpha101 import Alpha101Suite
 from .batch_downloader import BatchDownloader
 from .cache_manager import DataCache, stable_cache_key
 from .loaders.ecb_client import EcbClient, ECB_SERIES_PRESETS
@@ -77,8 +78,16 @@ from .aqr_factors import (
     download_ff_factors,
     get_all_factors_panel,
     get_aqr_factor_panel,
+    load_all_regional_factors,
     parse_aqr_excel,
+    parse_aqr_excel_robust,
     refresh_aqr_factor_library,
+)
+from .italy_local_factors import (
+    ITALY_LOCAL_UNIVERSE,
+    build_italy_factor_panel,
+    fetch_ecb_sovereign_spread,
+    fetch_eurostat_macro,
 )
 from .banking_data import (
     DEFAULT_BANK_IR_PAGES,
@@ -172,12 +181,16 @@ from .smart_money import (
     fetch_cot_data,
     fetch_etf_flows_proxy,
     fetch_options_put_call_ratio,
+    get_pcr_cboe_bulk,
+    get_pcr_fmp,
+    get_pcr_polygon,
     load_smart_money_source_manifest,
     normalize_cot_data,
     refresh_cftc_cot_snapshot,
     smart_money_source_catalog,
     summarize_smart_money_sources,
 )
+from .equity_feature_engineering import compute_alpha_factors, compute_investment_factors, compute_sentiment_alternative_features
 from .regime_detection import build_market_regime_history, detect_market_regime, load_market_regime_history
 from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions, fetch_stocktwits_messages, fetch_x_recent_mentions, score_sentiment_frame, score_text
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
@@ -279,6 +292,9 @@ __all__ = [
     "build_target_catalog",
     "summarize_target_catalog",
     "APIOrchestrator",
+    "ApiOrchestrator",
+    "Alpha101Suite",
+    "get_fundamentals_waterfall",
     "ProviderSpec",
     "RateLimiter",
     "BatchDownloader",
@@ -315,10 +331,16 @@ __all__ = [
     "discover_aqr_datasets",
     "get_all_factors_panel",
     "get_aqr_factor_panel",
+    "load_all_regional_factors",
     "parse_aqr_excel",
+    "parse_aqr_excel_robust",
     "refresh_aqr_factor_library",
     "download_ff_factors",
     "construct_it_local_factors",
+    "ITALY_LOCAL_UNIVERSE",
+    "build_italy_factor_panel",
+    "fetch_ecb_sovereign_spread",
+    "fetch_eurostat_macro",
     "DEFAULT_BANK_IR_PAGES",
     "FUNDAMENTALS_SCHEMA",
     "ITALIAN_LISTED_BANK_TICKERS",
@@ -401,6 +423,11 @@ __all__ = [
     "write_factor_benchmark_artifacts",
     "compile_smart_money_source_manifest",
     "fetch_cot_data",
+    "fetch_etf_flows_proxy",
+    "fetch_options_put_call_ratio",
+    "get_pcr_cboe_bulk",
+    "get_pcr_fmp",
+    "get_pcr_polygon",
     "load_smart_money_source_manifest",
     "normalize_cot_data",
     "refresh_cftc_cot_snapshot",
@@ -465,5 +492,8 @@ __all__ = [
     "add_advanced_equity_features",
     "compute_advanced_fundamental_features",
     "compute_advanced_technical_features",
+    "compute_alpha_factors",
+    "compute_investment_factors",
     "compute_piotroski_f_score",
+    "compute_sentiment_alternative_features",
 ]

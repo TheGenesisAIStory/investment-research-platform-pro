@@ -524,6 +524,96 @@ def parse_aqr_excel(path: str | Path, dataset_slug: str | None = None) -> pd.Dat
     return out
 
 
+def _record_aqr_parse_failure(output_root: str | Path | None, row: dict[str, Any]) -> None:
+    roots = resolve_data_platform_roots(repo_output_root=output_root)
+    failure_path = roots.repo_output / "aqr_factors" / "parse_failures.csv"
+    failure_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = pd.read_csv(failure_path) if failure_path.exists() else pd.DataFrame()
+    pd.concat([existing, pd.DataFrame([row])], ignore_index=True).to_csv(failure_path, index=False)
+
+
+def parse_aqr_excel_robust(
+    filepath: str | Path,
+    sheet_name: str | int = 0,
+    parser_config: dict[str, Any] | None = None,
+    *,
+    output_root: str | Path | None = None,
+) -> pd.DataFrame:
+    """Parse one AQR Excel sheet defensively across header/date variants."""
+    path = Path(filepath)
+    config = {
+        "expected_columns": (),
+        "date_column": "date",
+        "header_search_rows": [0, 1, 2, 3, 4, 5],
+        "min_valid_columns": 3,
+        **(parser_config or {}),
+    }
+    try:
+        best: pd.DataFrame | None = None
+        best_score = -1
+        xls = pd.ExcelFile(path)
+        sheet = sheet_name if sheet_name in xls.sheet_names or isinstance(sheet_name, int) else xls.sheet_names[0]
+        for header in config["header_search_rows"]:
+            try:
+                frame = pd.read_excel(path, sheet_name=sheet, header=header)
+            except Exception:
+                continue
+            frame = frame.dropna(axis=0, how="all").dropna(axis=1, how="all")
+            if frame.empty:
+                continue
+            frame.columns = _dedupe_columns([str(col).strip().lower().replace(" ", "_") for col in frame.columns])
+            date_col = next((col for col in frame.columns if col in {"date", "dates", "month", "year"} or "date" in col), frame.columns[0])
+            parsed_dates = _coerce_aqr_dates(frame[date_col])
+            numeric_cols = 0
+            for col in frame.columns:
+                if col == date_col:
+                    continue
+                converted = pd.to_numeric(frame[col], errors="coerce")
+                if converted.notna().sum() >= max(2, len(frame) // 10):
+                    numeric_cols += 1
+            score = int(parsed_dates.notna().sum()) + numeric_cols * 10
+            if numeric_cols >= int(config["min_valid_columns"]) - 1 and score > best_score:
+                candidate = frame.copy()
+                candidate["date"] = parsed_dates
+                candidate = candidate.dropna(subset=["date"]).drop(columns=[date_col] if date_col != "date" else [], errors="ignore")
+                for col in candidate.columns:
+                    if col != "date":
+                        candidate[col] = pd.to_numeric(candidate[col], errors="coerce")
+                candidate = candidate.dropna(axis=1, how="all").sort_values("date").reset_index(drop=True)
+                best = candidate
+                best_score = score
+        if best is None or best.empty:
+            raise ValueError("No parseable date/numeric block found")
+        return best
+    except Exception as exc:
+        _record_aqr_parse_failure(
+            output_root,
+            {
+                "file_path": str(path),
+                "sheet_name": str(sheet_name),
+                "error": f"{type(exc).__name__}: {exc}",
+                "updated_at": utc_now(),
+            },
+        )
+        return pd.DataFrame()
+
+
+def load_all_regional_factors(
+    output_root: str | Path | None = None,
+    factor_set: str = "FF5+MOM",
+    start_date: str = "2000-01-01",
+    refresh: bool = False,
+) -> dict[str, pd.DataFrame]:
+    """Load all supported regional Fama-French factor panels."""
+    out: dict[str, pd.DataFrame] = {}
+    for region in ["US", "EU", "JP", "APAC", "EM", "World"]:
+        try:
+            out[region] = download_ff_factors(region, factor_set=factor_set, start_date=start_date, output_root=output_root, refresh=refresh)
+        except Exception:
+            out[region] = pd.DataFrame()
+    return out
+
+
 class AqrFactorProvider:
     """Drive-first/cache-first provider for AQR Data Library factors."""
 
@@ -728,6 +818,8 @@ __all__ = [
     "download_ff_factors",
     "get_all_factors_panel",
     "get_aqr_factor_panel",
+    "load_all_regional_factors",
     "parse_aqr_excel",
+    "parse_aqr_excel_robust",
     "refresh_aqr_factor_library",
 ]

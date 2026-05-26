@@ -24,11 +24,41 @@ from .prediction import ExpectedReturnModel, describe_temporal_split
 
 try:
     from research_platform_core.llm_client import OllamaClient
+    from research_platform_core.alpha101 import Alpha101Suite
 except Exception:  # pragma: no cover - optional dependency during isolated package use
     OllamaClient = None
+    Alpha101Suite = None
 
 
 DEFAULT_MODELS = ("ols", "rf")
+
+
+def _add_alpha101_features_if_available(panel: pd.DataFrame, feature_blocks: tuple[str, ...]) -> pd.DataFrame:
+    if "alpha101" not in feature_blocks or Alpha101Suite is None or panel.empty:
+        return panel
+    required = {"date", "ticker", "open", "high", "low", "close", "volume"}
+    if not required.issubset(panel.columns):
+        return panel
+    frame = panel.copy()
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    pivots = {}
+    for col in ["open", "high", "low", "close", "volume"]:
+        pivots[col] = frame.pivot_table(index="date", columns="ticker", values=col, aggfunc="last").sort_index()
+    vwap = frame.pivot_table(index="date", columns="ticker", values="vwap", aggfunc="last").sort_index() if "vwap" in frame.columns else (pivots["high"] + pivots["low"] + pivots["close"]) / 3
+    returns = pivots["close"].pct_change()
+    suite = Alpha101Suite()
+    results = suite.compute_all(
+        close=pivots["close"],
+        open_=pivots["open"],
+        high=pivots["high"],
+        low=pivots["low"],
+        volume=pivots["volume"],
+        vwap=vwap,
+        returns=returns,
+    )
+    alpha_panel = suite.to_flat_panel(results).reset_index()
+    alpha_panel["date"] = pd.to_datetime(alpha_panel["date"], errors="coerce")
+    return frame.merge(alpha_panel, on=["date", "ticker"], how="left")
 
 
 def _project_root() -> Path:
@@ -263,6 +293,7 @@ def train_ml_model_suite(
     models = tuple(models)
     feature_blocks = tuple(feature_blocks or FACTOR_BLOCKS.keys())
     panel = load_training_panel(output_root, financial_db_root, start_year, end_year, max_rows=max_rows, target_horizon_days=target_horizon_days)
+    panel = _add_alpha101_features_if_available(panel, feature_blocks)
     panel_path = _write_csv(panel, tables / "MLTraining_panel.csv")
     coverage = validate_panel_coverage(panel, min_tickers=2, min_dates=2, required_columns=("market_value",))
     _write_csv(coverage, tables / "MLTraining_coverage.csv")

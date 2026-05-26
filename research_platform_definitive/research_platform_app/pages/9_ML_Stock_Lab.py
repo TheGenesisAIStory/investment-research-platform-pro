@@ -106,6 +106,14 @@ with st.sidebar:
         )
         if include_macro_regime and "macro_regime" not in selected_feature_blocks:
             selected_feature_blocks = [*selected_feature_blocks, "macro_regime"]
+        include_alpha101 = st.checkbox(
+            "Include Alpha101 features",
+            value=False,
+            key="use_alpha101",
+            help="101 formulaic alphas from Kakushadze (2015). Computationally intensive and used only when OHLCV columns are available.",
+        )
+        if include_alpha101 and "alpha101" not in selected_feature_blocks:
+            selected_feature_blocks = [*selected_feature_blocks, "alpha101"]
         ollama_model = st.text_input("Ollama model", value="llama3.1", help="Used only when an LLM advisor button is clicked.")
 
 status_signals = data["signals"]

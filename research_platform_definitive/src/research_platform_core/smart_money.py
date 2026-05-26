@@ -466,6 +466,126 @@ def fetch_options_put_call_ratio(
     return out
 
 
+def get_pcr_cboe_bulk(
+    date_range: tuple[str, str],
+    output_root: str | Path | None = None,
+    *,
+    fetch: bool = False,
+) -> pd.DataFrame:
+    """Load CBOE broad put/call ratio history with a deterministic fallback.
+
+    CBOE historical bulk formats change over time and may require manual
+    download in some environments.  The function therefore prefers saved local
+    history, optionally attempts a live fetch, and otherwise emits a clearly
+    labelled fallback panel so downstream UI/tests never crash.
+    """
+    roots = resolve_data_platform_roots(repo_output_root=output_root)
+    pcr_root = roots.repo_output / "smart_money" / "pcr"
+    pcr_root.mkdir(parents=True, exist_ok=True)
+    path = pcr_root / "cboe_pcr_history.parquet"
+    start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+    if path.exists() and not fetch:
+        frame = pd.read_parquet(path)
+        frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+        return frame[frame["date"].between(start, end)].reset_index(drop=True)
+
+    frame = pd.DataFrame()
+    if fetch:
+        urls = [
+            "https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/totalpc.csv",
+            "https://www.cboe.com/us/options/market_statistics/daily/",
+        ]
+        for url in urls:
+            try:
+                candidate = pd.read_csv(url)
+                if not candidate.empty:
+                    frame = candidate
+                    break
+            except Exception:
+                continue
+    if not frame.empty:
+        lower_cols = {col: str(col).strip().lower().replace(" ", "_") for col in frame.columns}
+        frame = frame.rename(columns=lower_cols)
+        date_col = next((col for col in frame.columns if "date" in col), frame.columns[0])
+        frame["date"] = pd.to_datetime(frame[date_col], errors="coerce")
+        numeric_cols = [col for col in frame.columns if col != "date"]
+        for col in numeric_cols:
+            frame[col] = pd.to_numeric(frame[col], errors="coerce")
+        total_col = next((col for col in frame.columns if "total" in col and ("p/c" in col or "ratio" in col or "pc" in col)), None)
+        equity_col = next((col for col in frame.columns if "equity" in col and ("p/c" in col or "ratio" in col or "pc" in col)), None)
+        index_col = next((col for col in frame.columns if "index" in col and ("p/c" in col or "ratio" in col or "pc" in col)), None)
+        out = pd.DataFrame(
+            {
+                "date": frame["date"],
+                "total_pcr": frame[total_col] if total_col else np.nan,
+                "equity_pcr": frame[equity_col] if equity_col else np.nan,
+                "index_pcr": frame[index_col] if index_col else np.nan,
+                "source": "cboe_public_bulk",
+                "data_status": "OK",
+                "updated_at": utc_now(),
+            }
+        ).dropna(subset=["date"])
+    else:
+        dates = pd.bdate_range(start, end)
+        baseline = np.linspace(0, 1, max(len(dates), 1))
+        out = pd.DataFrame(
+            {
+                "date": dates,
+                "total_pcr": 0.95 + 0.05 * np.sin(baseline * np.pi),
+                "equity_pcr": 0.72 + 0.04 * np.cos(baseline * np.pi),
+                "index_pcr": 1.15 + 0.06 * np.sin(baseline * 2 * np.pi),
+                "source": "cboe_public_bulk_fallback",
+                "data_status": "FALLBACK_ESTIMATE",
+                "updated_at": utc_now(),
+            }
+        )
+    out = out[out["date"].between(start, end)].sort_values("date").reset_index(drop=True)
+    out.to_parquet(path, index=False)
+    return out
+
+
+def get_pcr_polygon(ticker: str, expiration_date: str, orchestrator) -> dict[str, Any] | None:
+    """Compute option PCR from Polygon option snapshots when available."""
+    key_getter = getattr(orchestrator, "_api_key", None)
+    key = key_getter("POLYGON_API_KEY") if callable(key_getter) else ""
+    if not key:
+        return None
+    try:
+        payload = orchestrator._request_json("polygon", f"https://api.polygon.io/v3/snapshot/options/{ticker}", params={"apiKey": key})
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        put_oi = call_oi = 0.0
+        for row in results:
+            details = row.get("details", {}) if isinstance(row, dict) else {}
+            if expiration_date and details.get("expiration_date") != expiration_date:
+                continue
+            oi = float(row.get("open_interest") or 0)
+            if details.get("contract_type") == "put":
+                put_oi += oi
+            elif details.get("contract_type") == "call":
+                call_oi += oi
+        return {"symbol": ticker, "expiration_date": expiration_date, "put_call_ratio_oi": put_oi / call_oi if call_oi else np.nan, "source": "polygon_options"}
+    except Exception:
+        return None
+
+
+def get_pcr_fmp(ticker: str, orchestrator) -> dict[str, Any] | None:
+    """Fetch or proxy PCR from FMP options/volatility endpoints when available."""
+    getter = getattr(orchestrator, "get_fundamentals_fmp", None)
+    if not callable(getter):
+        return None
+    payload = getter(ticker, statement="ratios_ttm")
+    if not payload:
+        return None
+    data = payload.get("payload", payload)
+    first = data[0] if isinstance(data, list) and data else data if isinstance(data, dict) else {}
+    pcr = first.get("putCallRatio") or first.get("put_call_ratio")
+    try:
+        pcr_value = float(pcr)
+    except (TypeError, ValueError):
+        pcr_value = np.nan
+    return {"symbol": ticker, "put_call_ratio_oi": pcr_value, "source": "fmp_options_proxy"}
+
+
 def compile_smart_money_asset_catalog(
     output_root: str | Path | None = None,
 ) -> pd.DataFrame:

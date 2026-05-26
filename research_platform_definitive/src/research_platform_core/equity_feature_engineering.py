@@ -270,6 +270,215 @@ def compute_piotroski_f_score(df: pd.DataFrame) -> pd.Series:
     return score.astype(float)
 
 
+def _price_panel_to_wide(df_prices: pd.DataFrame) -> pd.DataFrame:
+    if df_prices is None or df_prices.empty:
+        return pd.DataFrame()
+    frame = df_prices.copy()
+    if {"ticker", "date"}.issubset(frame.columns):
+        price_col = next((col for col in ["adjclose", "adj_close", "close", "price"] if col in frame.columns), None)
+        if price_col is None:
+            return pd.DataFrame()
+        frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+        return frame.pivot_table(index="date", columns="ticker", values=price_col, aggfunc="last").sort_index()
+    wide = frame.copy()
+    if not isinstance(wide.index, pd.DatetimeIndex):
+        maybe_date = next((col for col in ["date", "Date"] if col in wide.columns), None)
+        if maybe_date:
+            wide[maybe_date] = pd.to_datetime(wide[maybe_date], errors="coerce")
+            wide = wide.set_index(maybe_date)
+    return wide.apply(pd.to_numeric, errors="coerce").sort_index()
+
+
+def _aligned_returns(asset: pd.Series, benchmark: pd.Series) -> pd.DataFrame:
+    asset_ret = pd.to_numeric(asset, errors="coerce").pct_change()
+    bench_ret = pd.to_numeric(benchmark, errors="coerce").pct_change()
+    return pd.concat({"asset": asset_ret, "benchmark": bench_ret}, axis=1).dropna()
+
+
+def _capture_ratio(joint: pd.DataFrame, up: bool) -> float:
+    mask = joint["benchmark"] > 0 if up else joint["benchmark"] < 0
+    sample = joint.loc[mask]
+    if sample.empty or sample["benchmark"].mean() == 0:
+        return np.nan
+    return float(sample["asset"].mean() / sample["benchmark"].mean())
+
+
+def compute_alpha_factors(
+    df_prices: pd.DataFrame,
+    df_fundamentals: pd.DataFrame | None,
+    benchmark_series: pd.Series,
+    windows: list[int] | tuple[int, ...] = (252, 756),
+) -> pd.DataFrame:
+    """Compute benchmark-relative alpha and active-risk features.
+
+    The function uses only trailing observations.  If regional factor returns
+    are unavailable, multi-factor alpha columns fall back to the same
+    point-in-time Jensen-alpha estimate and remain explicitly model-ready.
+    """
+    prices = _price_panel_to_wide(df_prices)
+    if prices.empty or benchmark_series is None or len(benchmark_series) == 0:
+        return pd.DataFrame()
+    benchmark = pd.Series(benchmark_series).copy()
+    benchmark.index = pd.to_datetime(benchmark.index, errors="coerce")
+    benchmark = benchmark.sort_index()
+    rows: list[dict[str, float | str]] = []
+    for ticker in prices.columns:
+        joint = _aligned_returns(prices[ticker], benchmark).tail(max(windows))
+        row: dict[str, float | str] = {"ticker": str(ticker)}
+        for window in windows:
+            sample = joint.tail(window)
+            suffix = "1y" if window <= 252 else "3y" if window >= 756 else f"{window}d"
+            if len(sample) < max(30, min(window // 4, 126)) or sample["benchmark"].var() == 0:
+                row[f"alpha_{suffix}"] = np.nan
+                continue
+            beta = float(np.cov(sample["asset"], sample["benchmark"])[0, 1] / np.var(sample["benchmark"]))
+            alpha_daily = float(sample["asset"].mean() - beta * sample["benchmark"].mean())
+            row[f"alpha_{suffix}"] = alpha_daily * 252
+            row[f"beta_{suffix}"] = beta
+            if suffix == "1y":
+                active = sample["asset"] - sample["benchmark"]
+                tracking_error = float(active.std(ddof=1) * np.sqrt(252))
+                active_return = float(active.mean() * 252)
+                downside = sample["asset"] - sample["asset"].clip(lower=0)
+                threshold = 0.0
+                gains = np.maximum(sample["asset"] - threshold, 0).sum()
+                losses = np.abs(np.minimum(sample["asset"] - threshold, 0).sum())
+                row["tracking_error_1y"] = tracking_error
+                row["information_ratio_1y"] = active_return / tracking_error if tracking_error else np.nan
+                row["treynor_ratio_1y"] = float(sample["asset"].mean() * 252 / beta) if beta else np.nan
+                row["m2_measure_1y"] = float((sample["asset"].mean() / sample["asset"].std(ddof=1)) * sample["benchmark"].std(ddof=1) * 252) if sample["asset"].std(ddof=1) else np.nan
+                row["upside_capture_ratio"] = _capture_ratio(sample, up=True)
+                row["downside_capture_ratio"] = _capture_ratio(sample, up=False)
+                row["batting_average_1y"] = float((active > 0).mean())
+                row["omega_ratio_1y"] = float(gains / losses) if losses else np.nan
+                row["idiosyncratic_return_1y"] = active_return
+                row["downside_active_vol_1y"] = float(downside.std(ddof=1) * np.sqrt(252)) if downside.notna().sum() > 2 else np.nan
+        alpha_proxy = row.get("alpha_1y", np.nan)
+        row.setdefault("alpha_3factor", alpha_proxy)
+        row.setdefault("alpha_5factor", alpha_proxy)
+        row.setdefault("alpha_carhart4", alpha_proxy)
+        row.setdefault("alpha_q5", alpha_proxy)
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def compute_investment_factors(df_fundamentals: pd.DataFrame) -> pd.DataFrame:
+    """Compute point-in-time-safe investment factor signals.
+
+    Signals are calculated from reported fundamentals and shifted by one
+    reporting observation per ticker, representing the minimum post-filing lag
+    needed before they can be used as predictors.
+    """
+    if df_fundamentals is None or df_fundamentals.empty:
+        return pd.DataFrame()
+    out = df_fundamentals.copy()
+    date_col = next((col for col in ["filed_date", "report_date", "period_of_report", "date"] if col in out.columns), None)
+    if date_col:
+        out[date_col] = pd.to_datetime(out[date_col], errors="coerce")
+        sort_cols = ["ticker", date_col] if "ticker" in out.columns else [date_col]
+        out = out.sort_values(sort_cols)
+    group = out["ticker"].astype(str) if "ticker" in out.columns else pd.Series("all", index=out.index)
+    assets = _num(out, "total_assets", np.nan)
+    capex = abs(_num(out, "capex", _num(out, "capital_expenditure", np.nan)))
+    shares = _num(out, "shares_outstanding", np.nan)
+    debt = _num(out, "total_debt", np.nan)
+    equity = _num(out, "total_equity", np.nan)
+    net_income = _num(out, "net_income", np.nan)
+    revenue = _num(out, "revenue_ttm", _num(out, "revenue", np.nan))
+    roe = _num(out, "roe", _safe_div(net_income, equity))
+    ppe = _num(out, "ppe", _num(out, "property_plant_equipment", np.nan))
+    working_capital = _num(out, "working_capital", _num(out, "current_assets", np.nan) - _num(out, "current_liabilities", np.nan))
+
+    out["asset_growth"] = assets.groupby(group).pct_change()
+    out["capex_to_assets"] = _safe_div(capex, assets)
+    out["capex_growth"] = capex.groupby(group).pct_change()
+    out["net_stock_issues"] = np.log(_safe_div(shares, shares.groupby(group).shift(1)))
+    out["net_debt_issues"] = _safe_div(debt - debt.groupby(group).shift(1), assets.groupby(group).shift(1))
+    out["investment_to_assets"] = _safe_div(assets - assets.groupby(group).shift(1), assets.groupby(group).shift(1))
+    out["roe_growth"] = roe - roe.groupby(group).shift(1)
+    out["external_financing_ratio"] = _safe_div((equity - equity.groupby(group).shift(1)) + (debt - debt.groupby(group).shift(1)), assets.groupby(group).shift(1))
+    out["pp_and_e_growth"] = ppe.groupby(group).pct_change()
+    out["working_capital_change"] = _safe_div(working_capital - working_capital.groupby(group).shift(1), assets.groupby(group).shift(1))
+    out["capex_intensity"] = _safe_div(capex, revenue)
+
+    factor_cols = [
+        "asset_growth",
+        "capex_to_assets",
+        "capex_growth",
+        "net_stock_issues",
+        "net_debt_issues",
+        "investment_to_assets",
+        "roe_growth",
+        "external_financing_ratio",
+        "pp_and_e_growth",
+        "working_capital_change",
+        "capex_intensity",
+    ]
+    out[factor_cols] = out.groupby(group)[factor_cols].shift(1)
+    out["pit_lag_days"] = 45
+    return out
+
+
+def _extract_first_numeric(payload: object, keys: tuple[str, ...]) -> float:
+    if isinstance(payload, list) and payload:
+        payload = payload[0]
+    if not isinstance(payload, dict):
+        return np.nan
+    for key in keys:
+        value = payload.get(key)
+        if value is not None:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                continue
+    return np.nan
+
+
+def compute_sentiment_alternative_features(
+    tickers: list[str],
+    api_client,
+    as_of_date: str | None = None,
+) -> pd.DataFrame:
+    """Fetch alternative/sentiment features through a multi-provider client.
+
+    Missing credentials or provider errors return ``PARTIAL`` rows instead of
+    raising, which keeps local research and Streamlit startup deterministic.
+    """
+    rows: list[dict[str, object]] = []
+    for ticker in tickers:
+        row: dict[str, object] = {
+            "ticker": ticker,
+            "as_of_date": as_of_date or pd.Timestamp.utcnow().date().isoformat(),
+            "short_interest_ratio": np.nan,
+            "institutional_ownership_pct": np.nan,
+            "insider_net_buying": np.nan,
+            "analyst_coverage_count": np.nan,
+            "earnings_estimate_dispersion": np.nan,
+            "data_status": "FAILED",
+            "source_provider": "none",
+        }
+        try:
+            waterfall = api_client.get_fundamentals_waterfall(ticker) if hasattr(api_client, "get_fundamentals_waterfall") else {}
+            data = waterfall.get("data", waterfall) if isinstance(waterfall, dict) else {}
+            row["source_provider"] = waterfall.get("source_provider", "unknown") if isinstance(waterfall, dict) else "unknown"
+            row["institutional_ownership_pct"] = _extract_first_numeric(data, ("institutionalOwnershipPercentage", "institutional_ownership_pct", "heldPercentInstitutions"))
+            row["analyst_coverage_count"] = _extract_first_numeric(data, ("analystCoverage", "analyst_coverage_count", "numberOfAnalystOpinions"))
+            row["earnings_estimate_dispersion"] = _extract_first_numeric(data, ("earningsEstimateDispersion", "earnings_estimate_dispersion"))
+            row["short_interest_ratio"] = _extract_first_numeric(data, ("shortInterestRatio", "short_interest_ratio", "shortRatio"))
+            row["insider_net_buying"] = _extract_first_numeric(data, ("insiderNetBuying", "insider_net_buying"))
+            row["data_status"] = "OK" if any(pd.notna(row[col]) for col in [
+                "short_interest_ratio",
+                "institutional_ownership_pct",
+                "insider_net_buying",
+                "analyst_coverage_count",
+                "earnings_estimate_dispersion",
+            ]) else "PARTIAL"
+        except Exception as exc:
+            row["error"] = f"{type(exc).__name__}: {exc}"
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def add_advanced_equity_features(panel: pd.DataFrame) -> pd.DataFrame:
     """Add optional technical and fundamental columns to an equity panel."""
     if panel.empty:

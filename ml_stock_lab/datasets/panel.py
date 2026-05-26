@@ -60,6 +60,46 @@ def normalize_panel(df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
+def validate_panel_coverage(
+    panel: pd.DataFrame,
+    min_tickers: int = 5,
+    min_dates: int = 2,
+    min_rows: int | None = None,
+    date_col: str = "date",
+    ticker_col: str = "ticker",
+    required_columns: Iterable[str] = ("market_value",),
+) -> pd.DataFrame:
+    """Return a one-row diagnostic compatible with the canonical ML lab."""
+    frame = normalize_panel(panel)
+    min_rows = int(min_rows if min_rows is not None else max(1, min_tickers))
+    rows = int(len(frame))
+    reasons: list[str] = []
+    ticker_count = int(frame[ticker_col].nunique()) if ticker_col in frame.columns else 0
+    date_count = int(pd.to_datetime(frame[date_col], errors="coerce").nunique()) if date_col in frame.columns else 0
+    if rows < min_rows:
+        reasons.append("INSUFFICIENT_ROWS")
+    if ticker_count < min_tickers:
+        reasons.append("INSUFFICIENT_TICKERS")
+    if date_count < min_dates:
+        reasons.append("INSUFFICIENT_DATES")
+    for col in required_columns:
+        if col not in frame.columns or pd.to_numeric(frame[col], errors="coerce").notna().sum() == 0:
+            reasons.append(f"MISSING_{str(col).upper()}")
+    passes = not reasons
+    return pd.DataFrame(
+        [
+            {
+                "rows": rows,
+                "ticker_count": ticker_count,
+                "date_count": date_count,
+                "passes": passes,
+                "should_train": passes,
+                "reasons": ";".join(reasons),
+            }
+        ]
+    )
+
+
 def load_panel_csv(path: str | Path) -> pd.DataFrame:
     """Load a CSV file and normalize it into the standard panel schema."""
     return normalize_panel(pd.read_csv(path))

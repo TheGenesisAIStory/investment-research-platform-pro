@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Iterable
 
 import pandas as pd
@@ -20,6 +20,11 @@ class MetricMetadata:
     paper: str = ""
     typical_range: str = ""
     annualized: bool = False
+    source_paper: str = ""
+    source_doi: str = ""
+    interpretation_range: str = ""
+    is_higher_better: bool = True
+    metric_family: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -460,6 +465,118 @@ METRICS_METADATA.update(
         "active_return": MetricMetadata("active_return", "Active return", "portfolio", "Portfolio return minus benchmark return.", "return_portfolio - return_benchmark", "Positive values indicate outperformance before attribution split."),
     }
 )
+
+METRICS_METADATA.update(
+    {
+        "sterling_ratio": MetricMetadata("sterling_ratio", "Sterling ratio", "portfolio", "Annualized return divided by average annual drawdown.", "annualized_return / abs(avg_annual_drawdown)", "Higher values indicate stronger return per average drawdown unit."),
+        "burke_ratio": MetricMetadata("burke_ratio", "Burke ratio", "portfolio", "Annualized return divided by the square root of squared drawdowns.", "annualized_return / sqrt(sum(drawdown_i^2))", "Higher values indicate better return relative to multiple drawdown episodes."),
+        "martin_ratio": MetricMetadata("martin_ratio", "Martin ratio", "portfolio", "Annualized return divided by Ulcer index.", "annualized_return / ulcer_index", "Higher values indicate better compensation for persistent drawdowns."),
+        "gain_to_pain_ratio": MetricMetadata("gain_to_pain_ratio", "Gain-to-pain ratio", "portfolio", "Total gains divided by absolute total losses.", "sum(gains) / abs(sum(losses))", "Values above 1 indicate more aggregate gains than losses."),
+        "kappa_3_ratio": MetricMetadata("kappa_3_ratio", "Kappa 3 ratio", "portfolio", "Excess return divided by third lower partial moment.", "mean(r-threshold) / LPM_3^(1/3)", "Higher values indicate better compensation for downside skew and tail risk."),
+        "historical_var_95": MetricMetadata("historical_var_95", "Historical VaR 95%", "risk", "Empirical fifth percentile of return distribution.", "quantile(returns, 5%)", "More negative values indicate worse historical tail loss."),
+        "historical_var_99": MetricMetadata("historical_var_99", "Historical VaR 99%", "risk", "Empirical first percentile of return distribution.", "quantile(returns, 1%)", "More negative values indicate worse extreme historical tail loss."),
+        "parametric_var_99": MetricMetadata("parametric_var_99", "Parametric VaR 99%", "risk", "Gaussian one-percent value at risk.", "mean(return) - 2.326 * std(return)", "More negative values indicate larger Gaussian tail-loss estimate."),
+        "common_sense_ratio": MetricMetadata("common_sense_ratio", "Common sense ratio", "risk", "Tail ratio multiplied by gain-to-pain style payoff quality.", "tail_ratio * gain_to_pain_ratio", "Higher values indicate attractive upside/downside payoff quality."),
+        "ff3_r_squared": MetricMetadata("ff3_r_squared", "FF3 R-squared", "factor", "Regression explanatory power of Fama-French three factors.", "1 - SSE_FF3 / SST", "Higher values indicate stronger explanation by market, size and value factors."),
+        "ff5_r_squared": MetricMetadata("ff5_r_squared", "FF5 R-squared", "factor", "Regression explanatory power of Fama-French five factors.", "1 - SSE_FF5 / SST", "Higher values indicate stronger explanation by FF5 factors."),
+        "ff3_mkt_beta": MetricMetadata("ff3_mkt_beta", "FF3 market beta", "factor", "Market loading from FF3 regression.", "coefficient(MKT_RF)", "Higher values indicate stronger market exposure."),
+        "ff3_smb_beta": MetricMetadata("ff3_smb_beta", "FF3 SMB beta", "factor", "Size-factor loading from FF3 regression.", "coefficient(SMB)", "Positive values indicate small-cap factor exposure."),
+        "ff3_hml_beta": MetricMetadata("ff3_hml_beta", "FF3 HML beta", "factor", "Value-factor loading from FF3 regression.", "coefficient(HML)", "Positive values indicate value factor exposure."),
+        "ff5_rmw_beta": MetricMetadata("ff5_rmw_beta", "FF5 RMW beta", "factor", "Profitability-factor loading from FF5 regression.", "coefficient(RMW)", "Positive values indicate robust-profitability exposure."),
+        "ff5_cma_beta": MetricMetadata("ff5_cma_beta", "FF5 CMA beta", "factor", "Investment-factor loading from FF5 regression.", "coefficient(CMA)", "Positive values indicate conservative-investment exposure."),
+        "ic_mean_21d": MetricMetadata("ic_mean_21d", "Mean IC 21D", "model_validation", "Average information coefficient for 21-day horizon.", "mean(corr(prediction, realized_return_21d))", "Higher positive values indicate stronger short-horizon rank signal."),
+        "ic_mean_63d": MetricMetadata("ic_mean_63d", "Mean IC 63D", "model_validation", "Average information coefficient for 63-day horizon.", "mean(corr(prediction, realized_return_63d))", "Higher positive values indicate stronger medium-horizon rank signal."),
+        "ic_ir_63d": MetricMetadata("ic_ir_63d", "IC IR 63D", "model_validation", "Information ratio of 63-day IC over time.", "mean(IC_63d) / std(IC_63d)", "Higher values indicate more stable predictive information."),
+        "rank_ic_63d": MetricMetadata("rank_ic_63d", "Rank IC 63D", "model_validation", "Spearman rank IC for 63-day horizon.", "spearman(predicted_rank, realized_return_63d_rank)", "Higher positive values indicate better rank ordering."),
+        "cot_net_speculator_zscore": MetricMetadata("cot_net_speculator_zscore", "COT net speculator z-score", "smart_money", "Z-score of net non-commercial COT positioning.", "(net_speculator - mean_52w) / std_52w", "Positive values indicate crowded speculative long positioning versus one-year history."),
+        "etf_flow_momentum_score": MetricMetadata("etf_flow_momentum_score", "ETF flow momentum score", "smart_money", "Normalized ETF flow momentum composite.", "zscore(flow_1m) + zscore(flow_3m)", "Higher values indicate stronger recent ETF demand."),
+        "dark_pool_activity_proxy": MetricMetadata("dark_pool_activity_proxy", "Dark pool activity proxy", "smart_money", "Proxy for off-exchange or block trading activity.", "block_or_off_exchange_volume / total_volume", "Higher values indicate more opaque institutional trading activity."),
+    }
+)
+
+
+_METRIC_PAPER_DOI = {
+    "Gen.is.IA internal": "https://genisia.local/methodology/internal",
+    "Sharpe 1966": "10.1086/294846",
+    "Sortino-Price 1994": "https://www.pm-research.com/content/iijinvest/3/3/59",
+    "Young 1991": "https://www.tandfonline.com/doi/abs/10.1080/09603109100000023",
+    "Artzner-Delbaen-Eber-Heath 1999": "10.1111/1467-9965.00068",
+    "Fama-French 2015": "10.1016/j.jfineco.2014.10.010",
+    "Grinold-Kahn 2000": "https://www.mheducation.com/highered/product/active-portfolio-management-grinold-kahn/M9780070248823.html",
+    "Jensen 1968": "10.2307/2325404",
+}
+
+
+_METRIC_CATEGORY_DEFAULTS = {
+    "portfolio": ("Sharpe 1966", "performance", True, "Higher is better when robust after costs."),
+    "risk": ("Artzner-Delbaen-Eber-Heath 1999", "risk", False, "Lower risk magnitudes are usually better, conditional on expected return."),
+    "distribution": ("Artzner-Delbaen-Eber-Heath 1999", "risk", True, "Interpret with skew, tail and sample-size context."),
+    "model_validation": ("Grinold-Kahn 2000", "model", True, "Positive and stable values are better."),
+    "factor": ("Fama-French 2015", "factor", True, "Exposure is not inherently good or bad; use with target mandate."),
+    "smart_money": ("Gen.is.IA internal", "smart_money", True, "Directional interpretation depends on source and crowding context."),
+    "implementation": ("Gen.is.IA internal", "portfolio", False, "Lower values usually mean easier implementation."),
+    "attribution": ("Gen.is.IA internal", "portfolio", True, "Positive values contribute to active return."),
+    "data_quality": ("Gen.is.IA internal", "model", True, "Higher coverage is generally better."),
+    "model_governance": ("Gen.is.IA internal", "model", True, "Use with governance thresholds, not in isolation."),
+}
+
+
+_METRIC_LATEX = {
+    "information_ratio": r"IR=\frac{R_p-R_b}{\sigma(R_p-R_b)}",
+    "rank_ic": r"\rho_s(\hat{r}_{t+h},r_{t+h})",
+    "rank_ic_63d": r"\rho_s(\hat{r}_{t+63},r_{t+63})",
+    "cvar_95": r"ES_{95}=E[R\mid R\le VaR_{95}]",
+    "cvar_99": r"ES_{99}=E[R\mid R\le VaR_{99}]",
+    "historical_var_95": r"VaR_{95}=Q_{0.05}(R)",
+    "historical_var_99": r"VaR_{99}=Q_{0.01}(R)",
+    "parametric_var_99": r"\mu_R-2.326\sigma_R",
+    "calmar_ratio": r"\frac{\bar{r}_{ann}}{|MDD|}",
+    "ulcer_index": r"\sqrt{\frac{1}{T}\sum DD_t^2}",
+}
+
+
+def _metric_latex_from_formula(formula: str) -> str:
+    safe = str(formula or "see implementation").replace("_", r"\_")
+    return rf"\text{{{safe[:180]}}}"
+
+
+def _complete_metric_metadata(meta: MetricMetadata) -> MetricMetadata:
+    category_key = str(meta.category or "").strip().lower()
+    paper, family, higher_better, default_range = _METRIC_CATEGORY_DEFAULTS.get(
+        category_key,
+        ("Gen.is.IA internal", category_key or "model", True, "Interpret in strategy and sample context."),
+    )
+    if meta.id in {"sharpe", "sharpe_long_short", "sharpe_long_short_net_cost", "net_sharpe"}:
+        paper, family, higher_better, default_range = ("Sharpe 1966", "performance", True, ">1 good, >2 strong, sample dependent.")
+    if meta.id in {"sortino", "kappa_ratio", "kappa_3_ratio", "omega_ratio", "gain_to_pain_ratio"}:
+        paper, family, higher_better, default_range = ("Sortino-Price 1994", "performance", True, ">1 typically preferred, strategy dependent.")
+    if meta.id in {"calmar_ratio", "sterling_ratio", "burke_ratio", "martin_ratio"}:
+        paper, family, higher_better, default_range = ("Young 1991", "performance", True, ">1 strong, 0.5-1 acceptable, <0.5 weak.")
+    if meta.id.startswith("ff3_") or meta.id.startswith("ff5_"):
+        paper, family, higher_better, default_range = ("Fama-French 2015", "factor", True, "Exposure metric; sign depends on mandate.")
+    if meta.id.startswith("ic_") or meta.id.startswith("rank_ic") or meta.id in {"ic", "rank_ic"}:
+        paper, family, higher_better, default_range = ("Grinold-Kahn 2000", "model", True, "Positive and stable is preferred.")
+    if "cvar" in meta.id or "var" in meta.id:
+        paper, family, higher_better, default_range = ("Artzner-Delbaen-Eber-Heath 1999", "risk", False, "Less negative/lower loss magnitude is preferred.")
+    source_paper = meta.source_paper or meta.paper or paper
+    source_doi = meta.source_doi or _METRIC_PAPER_DOI.get(source_paper, "https://genisia.local/methodology/internal")
+    formula_latex = meta.formula_latex or _METRIC_LATEX.get(meta.id, _metric_latex_from_formula(meta.formula))
+    interpretation_range = meta.interpretation_range or meta.typical_range or default_range
+    typical_range = meta.typical_range or interpretation_range
+    return replace(
+        meta,
+        formula_latex=formula_latex,
+        paper=meta.paper or source_paper,
+        source_paper=source_paper,
+        source_doi=source_doi,
+        interpretation_range=interpretation_range,
+        typical_range=typical_range,
+        is_higher_better=higher_better,
+        metric_family=meta.metric_family or family,
+    )
+
+
+METRICS_METADATA = {key: _complete_metric_metadata(meta) for key, meta in METRICS_METADATA.items()}
 
 
 ALIASES = {
