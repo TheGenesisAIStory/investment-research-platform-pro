@@ -53,6 +53,33 @@ DEFAULT_BANK_IR_PAGES = {
     "CREDEM": "https://www.credem.it/content/credem/en/investor-relations.html",
 }
 
+
+def curated_listed_bank_universe() -> pd.DataFrame:
+    """Return a minimal listed Italian bank universe from curated ticker mappings."""
+    rows: list[dict[str, Any]] = []
+    for idx, (name, ticker) in enumerate(ITALIAN_LISTED_BANK_TICKERS.items(), start=1):
+        rows.append(
+            {
+                "bank_id": f"LISTED_IT_{idx:03d}",
+                "legal_name": name.title(),
+                "normalized_name": normalize_bank_name(name),
+                "country": "IT",
+                "is_significant": name in {"INTESA SANPAOLO", "UNICREDIT", "BANCO BPM", "BPER BANCA"},
+                "is_LSI": False,
+                "status": "listed_curated",
+                "listed_flag": True,
+                "ticker": ticker,
+                "group_name": infer_group_name(name),
+                "bank_category": "listed_bank",
+                "license_type": np.nan,
+                "lei": np.nan,
+                "bic": np.nan,
+                "swift": np.nan,
+                "source": "curated_italian_listed_bank_tickers",
+            }
+        )
+    return pd.DataFrame(rows)
+
 FUNDAMENTALS_SCHEMA = [
     "bank_id",
     "date",
@@ -471,6 +498,16 @@ def build_banks_universe(
         "source",
     ]
     out = agg[cols].sort_values(["country", "legal_name"]).reset_index(drop=True)
+    curated = curated_listed_bank_universe()
+    known_tickers = set(out["ticker"].dropna().astype(str))
+    known_names = set(out["normalized_name"].dropna().astype(str))
+    curated = curated[
+        ~curated["ticker"].astype(str).isin(known_tickers)
+        & ~curated["normalized_name"].astype(str).isin(known_names)
+    ]
+    if not curated.empty:
+        out = pd.concat([out, curated[cols]], ignore_index=True, sort=False).sort_values(["country", "legal_name"]).reset_index(drop=True)
+        out["bank_id"] = [str(value) if str(value).startswith("LISTED_IT_") else f"BANK_{i:06d}" for i, value in enumerate(out["bank_id"], start=1)]
     if output_dir:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -559,6 +596,8 @@ def build_yfinance_bank_panel(
 
 def build_market_panel(banks_universe: pd.DataFrame, start: str = "2015-01-01") -> pd.DataFrame:
     listed = banks_universe[banks_universe["listed_flag"] & banks_universe["ticker"].notna()]
+    if listed.empty:
+        listed = curated_listed_bank_universe()
     if listed.empty:
         return pd.DataFrame()
     panel = build_yfinance_bank_panel(listed["ticker"].dropna().unique().tolist(), start=start)

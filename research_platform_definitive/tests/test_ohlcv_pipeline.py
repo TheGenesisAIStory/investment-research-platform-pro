@@ -12,10 +12,20 @@ for candidate in [PROJECT_ROOT, PROJECT_ROOT / "src"]:
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
-from research_platform_core.loaders.ohlcv_client import normalize_ohlcv_frame, parse_yfinance_bulk
+from research_platform_core.loaders.ohlcv_client import (
+    classify_history_window,
+    classify_provider_error,
+    is_low_priority_structured_symbol,
+    is_variant_sensitive_symbol,
+    normalize_ohlcv_frame,
+    parse_yfinance_bulk,
+    provider_symbol_variants,
+)
+from research_platform_core.loaders.market_universe import _provider_symbol_for_index
 from research_platform_core.loaders.kaggle_seed_loader import import_kaggle_seeds
 from research_platform_core.api_orchestrator import DataProviderPolicyEngine, DataProviderRegistry, ProviderRequest, ProviderSpec, ProviderUsageTracker
-from research_platform_core.ohlcv_ingest import OhlcvIngestJob
+from research_platform_core.data_health import list_ohlcv_provider_failures, load_run_events
+from research_platform_core.ohlcv_ingest import OhlcvIngestJob, validate_provider_symbol
 from research_platform_core.ohlcv_store import OhlcvDatabase
 
 
@@ -53,6 +63,71 @@ def test_normalize_ohlcv_frame() -> None:
     assert float(out["close"].iloc[0]) == 1.5
 
 
+def test_ohlcv_history_classification_handles_recent_listing_and_timeout() -> None:
+    recent_listing = pd.DataFrame(
+        {
+            "date": ["2024-01-02", "2024-01-03"],
+            "close": [10.0, 10.5],
+            "provider_symbol": ["FBYD", "FBYD"],
+            "source": ["unit", "unit"],
+        }
+    )
+    history = classify_history_window(recent_listing, "2000-01-01", "2024-01-10")
+    assert history["coverage_status"] == "LIMITED_HISTORY"
+    assert classify_provider_error("curl: (28) Operation timed out") == "NETWORK_TIMEOUT"
+    assert classify_provider_error("possibly delisted; no price data found") == "DELISTED"
+
+
+def test_recent_listing_probe_prioritizes_common_ticker_for_preferred_like_symbol() -> None:
+    variants = provider_symbol_variants("FBYDP", prefer_common=True)
+    assert variants[0] == "FBYD"
+    assert "FBYDP" in variants
+
+
+def test_preferred_share_variants_prioritize_yahoo_dash_format() -> None:
+    variants = provider_symbol_variants("ARES$B", prefer_common=True)
+    assert variants[:3] == ["ARES-PB", "ARES-B", "ARES.B"]
+    assert "ARES$B" in variants
+
+
+def test_special_security_variants_skip_raw_when_requested() -> None:
+    warrant_variants = provider_symbol_variants("ACHR.W", prefer_common=True, include_raw=False)
+    assert warrant_variants[:3] == ["ACHR-WT", "ACHR-WS", "ACHR-W"]
+    assert "ACHR.W" not in warrant_variants
+    assert is_variant_sensitive_symbol("ACHR.W")
+    assert is_low_priority_structured_symbol("ACHR.W")
+
+    unit_variants = provider_symbol_variants("AIIA.U", prefer_common=True, include_raw=False)
+    assert unit_variants[0] == "AIIA-U"
+    assert "AIIA.U" not in unit_variants
+    assert is_variant_sensitive_symbol("AIIA.U")
+    assert is_low_priority_structured_symbol("AIIA.U")
+    assert not is_low_priority_structured_symbol("BRK.B")
+
+
+def test_validate_provider_symbol_rejects_metadata_tokens() -> None:
+    assert validate_provider_symbol("FOUNDATION")[0] is False
+    assert validate_provider_symbol("WEBSITE")[0] is False
+    assert validate_provider_symbol("OPERATOR")[0] is False
+    assert validate_provider_symbol("EXCHANGES")[0] is False
+    assert validate_provider_symbol("CONSTITUENTS")[0] is False
+    assert validate_provider_symbol("NAN")[0] is False
+    assert validate_provider_symbol("Investor Relations")[0] is False
+    assert validate_provider_symbol("ARES$B")[0] is True
+    assert validate_provider_symbol("DX-Y.NYB")[0] is True
+    assert validate_provider_symbol("ENEL.MI")[0] is True
+    assert validate_provider_symbol("III.L")[0] is True
+
+
+def test_provider_symbol_for_index_uses_yahoo_suffixes() -> None:
+    assert _provider_symbol_for_index("ENEL-MI", "ftsemib") == "ENEL.MI"
+    assert _provider_symbol_for_index("ADS-DE", "dax40") == "ADS.DE"
+    assert _provider_symbol_for_index("AC-PA", "cac40") == "AC.PA"
+    assert _provider_symbol_for_index("ACS-MC", "ibex35") == "ACS.MC"
+    assert _provider_symbol_for_index("III", "ftse100") == "III.L"
+    assert _provider_symbol_for_index("BT-A", "ftse100") == "BT-A.L"
+
+
 def test_sqlite_store_upserts(tmp_path: Path) -> None:
     db = OhlcvDatabase(database_url=f"sqlite:///{tmp_path / 'ohlcv.sqlite'}")
     assets = pd.DataFrame(
@@ -76,9 +151,77 @@ def test_ingest_job_uses_incremental_db(tmp_path: Path) -> None:
         ]
     )
     job.build_assets = lambda *args, **kwargs: assets
-    manifest = job.run_daily(markets=["unit"], start_date="2024-01-01", mode="full", max_assets=2, batch_size=2)
+    manifest = job.run_daily(markets=["unit"], start_date="2024-01-01", end_date="2024-01-10", mode="full", max_assets=2, batch_size=2)
     assert set(manifest["status"]) == {"downloaded"}
     assert int(manifest["rows"].sum()) == 4
+
+
+def test_ingest_job_can_stage_parquet_outside_financial_db(tmp_path: Path, monkeypatch) -> None:
+    parquet_root = tmp_path / "local_ohlcv"
+    monkeypatch.setenv("RESEARCH_PLATFORM_OHLCV_PARQUET_ROOT", str(parquet_root))
+    job = OhlcvIngestJob(financial_db_root=tmp_path / "db", output_root=tmp_path / "out", database_url=f"sqlite:///{tmp_path / 'ohlcv.sqlite'}", client=FakeOhlcvClient())
+    assets = pd.DataFrame(
+        [{"ticker": "AAA", "provider_symbol": "AAA", "exchange": "NASDAQ", "country": "US", "type": "stock", "name": "AAA Inc", "primary_source": "unit", "active_flag": True}]
+    )
+    job.build_assets = lambda *args, **kwargs: assets
+    manifest = job.run_daily(markets=["unit"], start_date="2024-01-01", end_date="2024-01-10", mode="full", max_assets=1, batch_size=1)
+    target_path = Path(str(manifest.loc[0, "target_path"]))
+    assert str(target_path).startswith(str(parquet_root))
+    assert target_path.exists()
+    assert manifest.loc[0, "parquet_storage_mode"] == "env_override"
+
+
+def test_ingest_job_records_parquet_write_failure_without_crashing(tmp_path: Path, monkeypatch) -> None:
+    job = OhlcvIngestJob(financial_db_root=tmp_path / "db", output_root=tmp_path / "out", database_url=f"sqlite:///{tmp_path / 'ohlcv.sqlite'}", client=FakeOhlcvClient())
+    assets = pd.DataFrame(
+        [{"ticker": "AAA", "provider_symbol": "AAA", "exchange": "NASDAQ", "country": "US", "type": "stock", "name": "AAA Inc", "primary_source": "unit", "active_flag": True}]
+    )
+    job.build_assets = lambda *args, **kwargs: assets
+
+    def fail_write(*args, **kwargs):
+        raise OSError(89, "Operation canceled")
+
+    monkeypatch.setattr(job, "_write_daily_file", fail_write)
+    manifest = job.run_daily(markets=["unit"], start_date="2024-01-01", end_date="2024-01-10", mode="full", max_assets=1, batch_size=1)
+    assert manifest.loc[0, "status"] == "downloaded_db_only"
+    assert manifest.loc[0, "write_status"] == "FAILED"
+    assert (tmp_path / "out" / "tables" / "OHLCV_write_failures.csv").exists()
+
+
+def test_ingest_job_records_invalid_symbol_provider_failure(tmp_path: Path) -> None:
+    job = OhlcvIngestJob(financial_db_root=tmp_path / "db", output_root=tmp_path / "out", database_url=f"sqlite:///{tmp_path / 'ohlcv.sqlite'}", client=FakeOhlcvClient())
+    assets = pd.DataFrame(
+        [{"ticker": "WEBSITE", "provider_symbol": "WEBSITE", "exchange": "NASDAQ", "country": "US", "type": "stock", "name": "bad metadata", "primary_source": "unit", "active_flag": True}]
+    )
+    job.build_assets = lambda *args, **kwargs: assets
+    manifest = job.run_daily(markets=["unit"], start_date="2024-01-01", end_date="2024-01-10", mode="full", max_assets=1, batch_size=1)
+    failures = list_ohlcv_provider_failures(tmp_path / "db", tmp_path / "out")
+
+    assert manifest.loc[0, "status"] == "invalid_symbol"
+    assert failures.loc[0, "error_type"] == "INVALID_SYMBOL"
+    assert failures.loc[0, "provider_symbol"] == "WEBSITE"
+
+
+def test_ingest_job_writes_structured_progress_jsonl(tmp_path: Path) -> None:
+    events_path = tmp_path / "out" / "runs" / "unit_run" / "progress.jsonl"
+    job = OhlcvIngestJob(
+        financial_db_root=tmp_path / "db",
+        output_root=tmp_path / "out",
+        database_url=f"sqlite:///{tmp_path / 'ohlcv.sqlite'}",
+        client=FakeOhlcvClient(),
+        run_id="unit_run",
+        run_events_path=events_path,
+    )
+    assets = pd.DataFrame(
+        [{"ticker": "AAA", "provider_symbol": "AAA", "exchange": "NASDAQ", "country": "US", "type": "stock", "name": "AAA Inc", "primary_source": "unit", "active_flag": True}]
+    )
+    job.build_assets = lambda *args, **kwargs: assets
+    job.run_daily(markets=["unit"], start_date="2024-01-01", end_date="2024-01-10", mode="full", max_assets=1, batch_size=1)
+
+    events = load_run_events(events_path)
+    assert not events.empty
+    assert events.loc[0, "run_id"] == "unit_run"
+    assert "processed" in events.columns
 
 
 def test_provider_policy_respects_daily_budget(tmp_path: Path) -> None:

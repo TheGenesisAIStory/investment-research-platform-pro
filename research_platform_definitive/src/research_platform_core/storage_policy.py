@@ -29,6 +29,7 @@ LOCAL_PROJECT_CANDIDATES = [
 
 FINANCIAL_DB_CANDIDATES = [
     Path("/content/drive/MyDrive/Database Finanziario"),
+    Path("/content/drive/MyDrive/GitHub/Database Finanziario"),
     Path.home() / "Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario",
 ]
 

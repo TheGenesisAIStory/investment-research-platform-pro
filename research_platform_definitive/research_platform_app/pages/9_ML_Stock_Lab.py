@@ -5,49 +5,203 @@ from pathlib import Path
 
 APP_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = APP_DIR.parent
-for candidate in [APP_DIR, PROJECT_ROOT]:
+SRC_ROOT = PROJECT_ROOT / "src"
+for candidate in [PROJECT_ROOT, APP_DIR, SRC_ROOT]:
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from support import configure_page, dataframe_with_download, load_ml_stock_lab_artifacts, metric_value, sidebar_roots
+from app_settings import build_model_score_view, load_platform_settings, model_registry_frame, save_platform_settings
+from data_bootstrap import render_bootstrap_banner
+from screener_workbench import explain_ml_signal, normalize_ticker
+from support import configure_page, dataframe_with_download, load_ml_stock_lab_artifacts, metric_value, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, safe_page_link, sidebar_roots
+from ui_ops import render_missing_data_cta
 
-try:
-    from src.ml_stock_lab import run_ml_stock_lab_experiment
-except Exception:
-    from ml_stock_lab import run_ml_stock_lab_experiment
+from research_platform_core.data_health import get_data_status_for_tickers, get_stage_health_for_universes
+from research_platform_core.factor_benchmarks import compute_factor_benchmark_summary, load_factor_benchmark_summary
+from research_platform_core.factor_portfolio_baselines import compute_factor_portfolio_baselines, load_factor_portfolio_baselines
+from research_platform_core.feature_metadata import metadata_for_feature
+from research_platform_core.llm_advisors import advise_forecast_horizon, advise_model_configuration, audit_model_governance
+from research_platform_core.model_monitoring import build_model_monitoring_artifacts, load_model_monitoring_artifacts
+from ml_stock_lab.factor_registry import FACTOR_BLOCKS
+from ml_stock_lab import run_ml_stock_lab_experiment
 
 
 configure_page("ML Stock Lab")
 
+
+@st.cache_data(ttl=300)
+def _cached_global_stage_health(financial_db_root: str, output_root: str) -> pd.DataFrame:
+    rows = [
+        get_stage_health_for_universes("equity_fundamentals", [], financial_db_root, output_root),
+        get_stage_health_for_universes("equity_prices", [], financial_db_root, output_root),
+    ]
+    return pd.concat(rows, ignore_index=True, sort=False)
+
+
+@st.cache_data(ttl=300)
+def _cached_ticker_status(financial_db_root: str, output_root: str, tickers: tuple[str, ...]) -> pd.DataFrame:
+    statuses = get_data_status_for_tickers(list(tickers), financial_db_root, output_root)
+    return pd.DataFrame([status.to_dict() for status in statuses.values()])
+
+
+def _worst_status(values: list[str]) -> str:
+    priority = {"FAILED": 4, "MISSING": 3, "PARTIAL": 2, "RUNNING": 2, "UNKNOWN": 1, "OK": 0}
+    clean = [str(value or "UNKNOWN").upper() for value in values]
+    return max(clean, key=lambda value: priority.get(value, 1)) if clean else "UNKNOWN"
+
 roots = sidebar_roots()
 output_root = roots["workspace"] / "ml_stock_lab"
+platform_settings = load_platform_settings(roots["workspace"])
+model_settings = platform_settings.get("models", {})
+model_registry_df = model_registry_frame(platform_settings)
+model_ids = model_registry_df["id"].astype(str).tolist() if not model_registry_df.empty and "id" in model_registry_df.columns else ["ols"]
+active_model_ids = [model_id for model_id in model_settings.get("active_models", ["ols"]) if model_id in model_ids] or model_ids[:1]
+composite_weights = {str(k): float(v) for k, v in model_settings.get("composite_weights", {}).items()}
 data = load_ml_stock_lab_artifacts(roots["workspace"])
+factor_benchmarks = load_factor_benchmark_summary(roots["workspace"])
+factor_portfolio_baselines = load_factor_portfolio_baselines(roots["workspace"])
+model_monitoring = load_model_monitoring_artifacts(roots["workspace"])
 
-st.title("ML Stock Lab")
-st.caption("Fair value ML, mispricing, z-score screening, expected return prediction and quintile portfolio diagnostics.")
+render_page_header(
+    "ML Stock Lab",
+    "Compare OLS/RF/GBRT/ensemble signals, inspect factor drivers, monitor model diagnostics and route validated scores back into Screener.",
+    "△",
+    module="LABS",
+    status="READY",
+)
+render_context_bar()
+render_page_intro(
+    "Review model signals, compare model stacks and refresh ML artifacts without opening the training notebooks.",
+    "Select a model, inspect signals and save the composite model used by the Screener.",
+)
+render_bootstrap_banner(roots, required=["equity_metadata", "ml_signals"])
 
 with st.sidebar:
-    universe = st.selectbox("Universe", ["Existing artifacts", "Database Finanziario subset"])
-    model = st.selectbox("Model", ["ols", "lasso", "rf", "gbrt", "ensemble"])
-    signal = st.selectbox("Signal", ["zscore", "mispricing_rel", "fair_value_hat"])
-    max_rows = st.number_input("Max rows", min_value=100, max_value=10000, value=2000, step=100)
+    st.markdown("### ML Controls")
+    universe = st.selectbox("Universe", ["Existing artifacts", "Database Finanziario subset"], help="Existing artifacts are fastest; DB subset is for controlled refreshes.")
+    model = st.selectbox(
+        "Primary model",
+        model_ids,
+        index=model_ids.index(active_model_ids[0]) if active_model_ids and active_model_ids[0] in model_ids else 0,
+        help="Model used when launching an on-demand refresh.",
+    )
+    with st.expander("Advanced options", expanded=False):
+        max_rows = st.number_input("Max rows", min_value=100, max_value=10000, value=2000, step=100)
+        target_horizon_days = st.selectbox("Expected-return horizon", [21, 63, 252], index=0, help="Forward return horizon used when the page has to create targets from prices.")
+        selected_feature_blocks = st.multiselect(
+            "Feature blocks",
+            list(FACTOR_BLOCKS.keys()),
+            default=["value", "quality", "momentum", "risk", "size", "growth", "model_based"],
+            format_func=lambda block_id: f"{FACTOR_BLOCKS[block_id].label}{' · experimental' if FACTOR_BLOCKS[block_id].experimental else ''}",
+            help="Canonical factor blocks used by model refreshes and model cards.",
+        )
+        include_macro_regime = st.checkbox(
+            "Include macro regime features",
+            value=False,
+            help="Adds the experimental lagged macro_regime feature block to model refreshes.",
+        )
+        if include_macro_regime and "macro_regime" not in selected_feature_blocks:
+            selected_feature_blocks = [*selected_feature_blocks, "macro_regime"]
+        ollama_model = st.text_input("Ollama model", value="llama3.1", help="Used only when an LLM advisor button is clicked.")
+
+status_signals = data["signals"]
+status_tickers = tuple(status_signals["ticker"].dropna().map(normalize_ticker).unique().tolist()[:500]) if not status_signals.empty and "ticker" in status_signals.columns else tuple()
+with st.container(border=True):
+    st.markdown("**Data Status & Readiness**")
+    st.caption("Readiness uses Data Health 2.0. Detailed failure diagnostics and restarts stay in Data Platform.")
+    try:
+        stage_health = _cached_global_stage_health(str(roots["financial_db"]), str(roots["workspace"]))
+        ticker_status = _cached_ticker_status(str(roots["financial_db"]), str(roots["workspace"]), status_tickers) if status_tickers else pd.DataFrame()
+        h1, h2, h3, h4 = st.columns(4)
+        fundamentals_status = stage_health[stage_health["stage"].astype(str).eq("equity_fundamentals")]["status"].astype(str).str.upper().tolist()
+        prices_status = stage_health[stage_health["stage"].astype(str).eq("equity_prices")]["status"].astype(str).str.upper().tolist()
+        h1.metric("Fundamentals", _worst_status(fundamentals_status))
+        h2.metric("Prices", _worst_status(prices_status))
+        if ticker_status.empty:
+            complete = partial = missing = 0
+        else:
+            statuses = ticker_status["overall_status"].astype(str).str.upper()
+            complete = int(statuses.eq("OK").sum())
+            partial = int(statuses.eq("PARTIAL").sum())
+            missing = int(statuses.isin(["FAILED", "MISSING"]).sum())
+        h3.metric("Ticker readiness", f"{complete} OK", f"{partial} partial")
+        h4.metric("Missing / Failed", missing)
+        stage_worst = _worst_status([*fundamentals_status, *prices_status])
+        if stage_worst in {"FAILED", "MISSING"} or missing > 0:
+            st.error("I dati per questo universo/ticker sono incompleti; valuta un refresh da Data Platform prima di interpretare i punteggi ML.")
+        elif stage_worst in {"PARTIAL", "RUNNING"} or partial > 0:
+            st.warning("Dati parziali o in aggiornamento: interpreta score e quintili con cautela e verifica Data Platform.")
+        else:
+            st.success("Data readiness OK per gli artifact ML correnti.")
+        run_rows = stage_health[stage_health["run_id"].fillna("").astype(str).str.len().gt(0)] if "run_id" in stage_health.columns else pd.DataFrame()
+        if not run_rows.empty:
+            st.caption("Recent run context: " + " · ".join(f"{row.stage}: {row.run_id}" for row in run_rows.itertuples()))
+        button_cols = st.columns([0.35, 0.65])
+        if button_cols[0].button("Apri Data Health & Restart", width="stretch"):
+            st.switch_page("pages/8_🗄️_Data_Platform.py")
+        with button_cols[1]:
+            safe_page_link("pages/8_🗄️_Data_Platform.py", "Open Data Platform")
+        if not ticker_status.empty:
+            with st.expander("Ticker readiness sample", expanded=False):
+                show_cols = ["ticker", "overall_status", "fundamentals_status", "prices_status", "price_coverage_status", "provider_error_type", "last_price_date", "message"]
+                st.dataframe(ticker_status[[col for col in show_cols if col in ticker_status.columns]], width="stretch", hide_index=True)
+    except Exception as exc:
+        st.warning(f"Data readiness temporarily unavailable: {type(exc).__name__}. Open Data Platform for full diagnostics.")
 
 with st.container(border=True):
     st.markdown("**Operational controls**")
     c1, c2 = st.columns(2)
     if c1.button("Run ML Stock Lab refresh", width="stretch"):
-        result = run_ml_stock_lab_experiment(output_root, roots["financial_db"], model=model, max_rows=int(max_rows))
-        st.success(f"ML Stock Lab artifacts written to {output_root}")
-        st.json({"status": result["status"], "paths": result.get("paths", {})})
-        data = load_ml_stock_lab_artifacts(roots["workspace"])
-    c2.page_link("pages/5_Run_Notebooks.py", label="Open Run Notebooks")
+        try:
+            result = run_ml_stock_lab_experiment(
+                output_root,
+                roots["financial_db"],
+                model=model,
+                max_rows=int(max_rows),
+                feature_blocks=selected_feature_blocks,
+                target_horizon_days=int(target_horizon_days),
+            )
+            st.success(f"ML Stock Lab artifacts written to {output_root}")
+            st.json({"status": result["status"], "paths": result.get("paths", {})})
+            data = load_ml_stock_lab_artifacts(roots["workspace"])
+        except Exception as exc:
+            log_dir = output_root / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_path = log_dir / f"ml_stock_lab_{pd.Timestamp.now(tz='UTC').strftime('%Y%m%d_%H%M%S')}.log"
+            log_path.write_text(f"{type(exc).__name__}: {exc}", encoding="utf-8")
+            st.error("ML Stock Lab refresh failed cleanly. Check input artifacts, then retry from Notebook Runner or this page.")
+            st.caption(f"Diagnostic log: {log_path}")
+    with c2:
+        safe_page_link("pages/6_🧪_Notebook_Runner.py", "Open Notebook Runner")
 
 signals = data["signals"]
+model_score_view = build_model_score_view(signals, active_model_ids, composite_weights)
 quintiles = data["quintile_returns"]
 metrics = data["metrics"]
+signal_options = [col for col in ["score_composite", "ml_score", "zscore", "mispricing_rel", "fair_value_hat", *[f"score_{model_id}" for model_id in active_model_ids]] if col in (model_score_view.columns if not model_score_view.empty else signals.columns)]
+signal = st.selectbox("Signal", signal_options or ["score"], help="Metric visualized in signal charts when present.")
+
+if signals.empty:
+    render_missing_data_cta(
+        "ML Stock Lab",
+        job_id="ml_stock_lab_experiments_refresh",
+        output_path=output_root / "tables" / "MLStockLab_signals.csv",
+        cli_hint="python research_platform_app/scheduler.py --once --jobs ml_stock_lab_experiments_refresh",
+    )
+
+context_ticker = normalize_ticker(st.session_state.get("selected_ticker", ""))
+signal_tickers = sorted(signals["ticker"].dropna().map(normalize_ticker).unique().tolist()) if not signals.empty and "ticker" in signals.columns else []
+selected_signal_ticker = ""
+if signal_tickers:
+    default_index = signal_tickers.index(context_ticker) if context_ticker in signal_tickers else 0
+    selected_signal_ticker = st.selectbox("Selected ticker for ML explanation", signal_tickers, index=default_index)
+    st.session_state["selected_ticker"] = selected_signal_ticker
+
+render_selected_ticker_context(roots, st.session_state.get("selected_ticker", ""), expanded=False)
 
 cols = st.columns(4)
 cols[0].metric("Panel Rows", len(data["panel"]))
@@ -65,7 +219,24 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_overview, tab_signals, tab_quintiles, tab_models, tab_docs = st.tabs(["Overview", "Signals", "Quintile Backtest", "Models", "Methodology"])
+with st.expander("Explain selected ML signal", expanded=bool(selected_signal_ticker)):
+    if not selected_signal_ticker:
+        st.info("Select a ticker with ML artifacts to see signal reasoning.")
+    else:
+        explanation_frame = signals.copy()
+        if "score" in explanation_frame.columns and "ml_score" not in explanation_frame.columns:
+            explanation_frame["ml_score"] = explanation_frame["score"]
+        drivers, explanation = explain_ml_signal(explanation_frame, selected_signal_ticker)
+        st.write(explanation)
+        if drivers.empty:
+            st.info("No SHAP-like driver proxy is available for this ticker yet.")
+        else:
+            st.dataframe(drivers, width="stretch", hide_index=True)
+            st.plotly_chart(px.bar(drivers, x="driver", y="value", color="family", template="plotly_white", title="ML driver proxy"), width="stretch")
+
+tab_overview, tab_signals, tab_quintiles, tab_baselines, tab_models, tab_docs = st.tabs(
+    ["Overview", "Signals", "Quintile Backtest", "Factor Baselines", "Models & Settings", "Methodology"]
+)
 
 with tab_overview:
     dataframe_with_download("ML Stock Lab metrics", metrics, "MLStockLab_metrics.csv")
@@ -75,11 +246,34 @@ with tab_overview:
         st.info("No ML Stock Lab artifacts found yet. Run the refresh button or the orchestration job.")
 
 with tab_signals:
-    dataframe_with_download("ML signals", signals, "MLStockLab_signals.csv")
-    if not signals.empty and signal in signals.columns:
-        st.plotly_chart(px.histogram(signals, x=signal, nbins=30, title=f"{signal} distribution", template="plotly_white"), width="stretch")
-        x = "ticker" if "ticker" in signals.columns else signals.index
-        st.plotly_chart(px.bar(signals.sort_values(signal, ascending=False).head(30), x=x, y=signal, title=f"Top {signal}", template="plotly_white"), width="stretch")
+    dataframe_with_download("ML signals", model_score_view if not model_score_view.empty else signals, "MLStockLab_signals.csv")
+    render_feature_metadata_expander(
+        [
+            "score_ols",
+            "score_rf",
+            "score_gbrt",
+            "score_composite",
+            "ml_score",
+            "fair_value_hat",
+            "mispricing_rel",
+            "zscore",
+            "value_score",
+            "quality_score",
+            "momentum_12_1",
+            "risk_score",
+            "piotroski_f_score",
+            "altman_z_score",
+            "fcf_yield",
+            "momentum_12m_1m",
+            "idiosyncratic_vol",
+        ],
+        "Signal and feature glossary",
+    )
+    chart_frame = model_score_view if not model_score_view.empty else signals
+    if not chart_frame.empty and signal in chart_frame.columns:
+        st.plotly_chart(px.histogram(chart_frame, x=signal, nbins=30, title=f"{signal} distribution", template="plotly_white"), width="stretch")
+        x = "ticker" if "ticker" in chart_frame.columns else chart_frame.index
+        st.plotly_chart(px.bar(chart_frame.sort_values(signal, ascending=False).head(30), x=x, y=signal, title=f"Top {signal}", template="plotly_white"), width="stretch")
     left, right = st.columns(2)
     with left:
         dataframe_with_download("Top names", data["top"], "MLStockLab_top.csv")
@@ -89,12 +283,267 @@ with tab_signals:
 with tab_quintiles:
     dataframe_with_download("Quintile returns", quintiles, "MLStockLab_quintile_returns.csv")
     dataframe_with_download("Quintile metrics", data["quintile_metrics"], "MLStockLab_quintile_metrics.csv")
+    render_metric_metadata_expander(["rank_ic", "ic", "sharpe_long_short", "hit_ratio", "turnover", "max_drawdown"], "Backtest metric glossary")
     if not quintiles.empty and {"quantile", "return"}.issubset(quintiles.columns):
         st.plotly_chart(px.bar(quintiles, x="quantile", y="return", color="date" if "date" in quintiles.columns else None, title="Quintile / Long-Short Returns", template="plotly_white"), width="stretch")
 
+with tab_baselines:
+    st.subheader("Baselines & Factor Benchmarks")
+    st.caption(
+        "Transparent factor portfolios are the control group for the ML stack: "
+        "top-bucket long-only and top-minus-bottom spreads for value, quality, momentum, risk, size, growth and composite factors."
+    )
+    action_cols = st.columns([0.35, 0.25, 0.4])
+    baseline_target = action_cols[0].selectbox("Benchmark target", ["forward_return_21d", "forward_return_63d", "forward_return_252d", "forward_return"], index=0)
+    baseline_rows = action_cols[1].number_input(
+        "Rows sampled",
+        min_value=50_000,
+        max_value=2_000_000,
+        value=250_000,
+        step=50_000,
+        help="Interactive computation is capped for responsiveness. Scheduled jobs can compute the full panel with max_rows=None.",
+    )
+    if action_cols[2].button("Compute / refresh factor baselines", width="stretch"):
+        with st.spinner("Computing transparent factor benchmark portfolios..."):
+            factor_benchmarks = compute_factor_benchmark_summary(
+                roots["workspace"],
+                target_col=baseline_target,
+                max_rows=int(baseline_rows),
+                write=True,
+            )
+        st.success("Factor benchmark summary updated.")
+    if factor_benchmarks.empty:
+        st.info("No factor benchmark summary found yet. Use the refresh action above after the FactorUniversePanel is available.")
+    else:
+        ok_frame = factor_benchmarks[factor_benchmarks.get("status", "").astype(str).str.upper().eq("OK")] if "status" in factor_benchmarks.columns else factor_benchmarks
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Benchmarks", len(factor_benchmarks))
+        c2.metric("OK factors", len(ok_frame))
+        c3.metric("Avg RankIC", f"{pd.to_numeric(ok_frame.get('rank_ic_mean', pd.Series(dtype=float)), errors='coerce').mean():.3f}" if not ok_frame.empty and "rank_ic_mean" in ok_frame.columns else "n/a")
+        c4.metric("Avg LS spread", f"{pd.to_numeric(ok_frame.get('long_short_mean_return', pd.Series(dtype=float)), errors='coerce').mean():.2%}" if not ok_frame.empty and "long_short_mean_return" in ok_frame.columns else "n/a")
+        dataframe_with_download("Factor benchmark summary", factor_benchmarks, "FactorBenchmarkSummary.csv")
+        render_metric_metadata_expander(["rank_ic", "top_mean_return", "long_short_mean_return", "long_short_sharpe", "top_long_sharpe"], "Factor benchmark metric glossary")
+        plot_cols = [col for col in ["long_short_mean_return", "top_mean_return", "rank_ic_mean", "long_short_sharpe"] if col in factor_benchmarks.columns]
+        if plot_cols and "factor" in factor_benchmarks.columns:
+            melted = factor_benchmarks.melt(id_vars=["factor"], value_vars=plot_cols, var_name="metric", value_name="value")
+            melted["value"] = pd.to_numeric(melted["value"], errors="coerce")
+            st.plotly_chart(
+                px.bar(
+                    melted.dropna(subset=["value"]),
+                    x="factor",
+                    y="value",
+                    color="metric",
+                    barmode="group",
+                    template="plotly_white",
+                    title="ML control group: pure factor baseline metrics",
+                ),
+                width="stretch",
+            )
+
+    st.markdown("#### Monthly factor portfolios")
+    st.caption(
+        "Governance baseline portfolios use monthly rebalancing: long-only top decile and dollar-neutral top-minus-bottom factor baskets."
+    )
+    portfolio_cols = st.columns([0.3, 0.3, 0.4])
+    portfolio_rows = portfolio_cols[0].number_input(
+        "Panel rows for portfolio baselines",
+        min_value=50_000,
+        max_value=2_000_000,
+        value=500_000,
+        step=50_000,
+        help="Use the scheduled job with no cap for the full 2000-2026 panel.",
+    )
+    portfolio_horizons = portfolio_cols[1].multiselect("Horizons", [21, 63, 252], default=[21, 63, 252])
+    if portfolio_cols[2].button("Compute monthly factor portfolios", width="stretch"):
+        with st.spinner("Computing monthly factor portfolio controls..."):
+            factor_portfolio_baselines = compute_factor_portfolio_baselines(
+                roots["workspace"],
+                horizons=portfolio_horizons,
+                max_rows=int(portfolio_rows),
+                write=True,
+            )
+        st.success("Monthly factor portfolio baselines updated.")
+    portfolio_metrics = factor_portfolio_baselines.get("metrics", pd.DataFrame()) if isinstance(factor_portfolio_baselines, dict) else pd.DataFrame()
+    portfolio_returns = factor_portfolio_baselines.get("returns", pd.DataFrame()) if isinstance(factor_portfolio_baselines, dict) else pd.DataFrame()
+    if portfolio_metrics.empty:
+        st.info("Monthly factor portfolio metrics are not available yet.")
+    else:
+        dataframe_with_download("Monthly factor baseline metrics", portfolio_metrics, "baseline_portfolio_metrics.csv")
+        if {"factor", "strategy", "horizon", "sharpe"}.issubset(portfolio_metrics.columns):
+            plot = portfolio_metrics.copy()
+            plot["sharpe"] = pd.to_numeric(plot["sharpe"], errors="coerce")
+            st.plotly_chart(
+                px.bar(
+                    plot.dropna(subset=["sharpe"]),
+                    x="factor",
+                    y="sharpe",
+                    color="strategy",
+                    facet_col="horizon",
+                    barmode="group",
+                    template="plotly_white",
+                    title="Factor baseline Sharpe by horizon",
+                ),
+                width="stretch",
+            )
+    if not portfolio_returns.empty and {"month", "factor", "strategy", "return"}.issubset(portfolio_returns.columns):
+        chart_returns = portfolio_returns.copy()
+        chart_returns["return"] = pd.to_numeric(chart_returns["return"], errors="coerce")
+        chart_returns["equity_curve"] = chart_returns.groupby(["factor", "strategy", "horizon"])["return"].transform(lambda s: (1 + s.fillna(0)).cumprod())
+        st.plotly_chart(
+            px.line(
+                chart_returns,
+                x="month",
+                y="equity_curve",
+                color="factor",
+                line_dash="strategy",
+                facet_col="horizon",
+                template="plotly_white",
+                title="Monthly factor baseline equity curves",
+            ),
+            width="stretch",
+        )
+
 with tab_models:
+    st.subheader("Model Settings")
+    st.caption("This is the app-level model routing used by Screener_Builder. Training artifacts remain versioned by ML Stock Lab jobs.")
+    if not model_registry_df.empty:
+        st.dataframe(model_registry_df, width="stretch", hide_index=True)
+    selected_models = st.multiselect(
+        "Models active in Screener and comparison views",
+        model_ids,
+        default=active_model_ids,
+        help="Choose one or more validated models. Score columns are displayed when matching artifacts exist.",
+    )
+    weights = {}
+    if selected_models:
+        weight_cols = st.columns(min(len(selected_models), 4))
+        for idx, model_id in enumerate(selected_models):
+            with weight_cols[idx % len(weight_cols)]:
+                weights[model_id] = st.slider(
+                    f"{model_id} weight",
+                    0.0,
+                    1.0,
+                    float(composite_weights.get(model_id, 1.0 / max(len(selected_models), 1))),
+                    step=0.05,
+                    help="Weight used in the composite score when model-specific score columns are available.",
+                )
+    if st.button("Save Model Settings", width="stretch"):
+        platform_settings["models"] = {
+            **model_settings,
+            "active_models": selected_models,
+            "composite_weights": weights,
+            "screener_enabled": True,
+        }
+        save_path = save_platform_settings(roots["workspace"], platform_settings)
+        st.success(f"Model settings saved: {save_path.name}")
+    if not model_score_view.empty:
+        score_cols = [col for col in model_score_view.columns if col.startswith("score_")]
+        show_cols = list(dict.fromkeys([col for col in ["ticker", *score_cols, "score_composite", "zscore", "mispricing_rel", "fair_value_hat"] if col in model_score_view.columns]))
+        if show_cols:
+            st.dataframe(model_score_view[show_cols].head(500), width="stretch", hide_index=True)
     dataframe_with_download("Model comparison", data["model_comparison"], "MLStockLab_model_comparison.csv")
     dataframe_with_download("Prediction metrics", data["prediction_metrics"], "MLStockLab_prediction_metrics.csv")
+    render_metric_metadata_expander(["r2_os", "rank_ic", "ic", "hit_ratio", "sharpe"], "Model validation metric glossary")
+    st.markdown("#### Model Performance Over Time")
+    monitor_cols = st.columns([0.35, 0.65])
+    rolling_window = monitor_cols[0].number_input("Rolling IC window", min_value=20, max_value=504, value=252, step=21)
+    if monitor_cols[1].button("Build / refresh rolling IC monitoring", width="stretch"):
+        with st.spinner("Computing rolling IC from prediction artifacts..."):
+            model_monitoring = build_model_monitoring_artifacts(roots["workspace"], window=int(rolling_window), write=True)
+        st.success("Rolling IC monitoring updated.")
+    monitor_summary = model_monitoring.get("summary", pd.DataFrame()) if isinstance(model_monitoring, dict) else pd.DataFrame()
+    monitor_rolling = model_monitoring.get("rolling", pd.DataFrame()) if isinstance(model_monitoring, dict) else pd.DataFrame()
+    if monitor_summary.empty:
+        st.info("No rolling IC monitoring artifact found yet.")
+    else:
+        dataframe_with_download("Model monitoring summary", monitor_summary, "model_monitoring_summary.csv")
+    if not monitor_rolling.empty and {"date", "model", "rank_ic_rolling_12m"}.issubset(monitor_rolling.columns):
+        st.plotly_chart(
+            px.line(
+                monitor_rolling,
+                x="date",
+                y="rank_ic_rolling_12m",
+                color="model",
+                template="plotly_white",
+                title="Rolling 12M RankIC by model",
+            ),
+            width="stretch",
+        )
+    with st.expander("LLM Model Advisor", expanded=False):
+        st.caption("Ollama reviews configurations and governance; quantitative rankings remain produced by the ML/factor models.")
+        use_case = st.text_input("Use case", value="medium-term stock picking for a buy-side research workflow")
+        advisor_cols = st.columns(3)
+        if advisor_cols[0].button("Suggest model configuration", width="stretch"):
+            with st.spinner("Asking Ollama for a governed model configuration..."):
+                advice = advise_model_configuration(
+                    universe=universe,
+                    target_horizon_days=int(target_horizon_days),
+                    feature_blocks=selected_feature_blocks,
+                    available_models=model_ids,
+                    active_models=selected_models if "selected_models" in locals() else active_model_ids,
+                    metrics=data.get("training_metrics", metrics),
+                    constraints={"use_case": use_case, "interpretability": "balanced", "latency": "interactive app"},
+                    model=ollama_model,
+                )
+            if advice["status"] == "OK":
+                st.markdown(advice["content"])
+            else:
+                st.warning(f"Ollama unavailable: {advice.get('error') or 'no response'}")
+        if advisor_cols[1].button("Advise forecast horizon", width="stretch"):
+            with st.spinner("Reviewing forecast horizon trade-offs..."):
+                advice = advise_forecast_horizon(
+                    use_case=use_case,
+                    current_horizon_days=int(target_horizon_days),
+                    turnover_hint="lower turnover preferred unless IC is materially stronger",
+                    cost_bps=10.0,
+                    feature_blocks=selected_feature_blocks,
+                    metrics=data.get("training_metrics", metrics),
+                    model=ollama_model,
+                )
+            if advice["status"] == "OK":
+                st.markdown(advice["content"])
+            else:
+                st.warning(f"Ollama unavailable: {advice.get('error') or 'no response'}")
+        if advisor_cols[2].button("Audit model governance", width="stretch"):
+            with st.spinner("Running LLM governance audit..."):
+                advice = audit_model_governance(
+                    model_cards=data.get("training_model_cards", pd.DataFrame()),
+                    metrics=data.get("training_metrics", metrics),
+                    feature_importance=data.get("training_feature_importance", pd.DataFrame()),
+                    model=ollama_model,
+                )
+            if advice["status"] == "OK":
+                st.markdown(advice["content"])
+            else:
+                st.warning(f"Ollama unavailable: {advice.get('error') or 'no response'}")
+    st.markdown("#### Training artifacts")
+    dataframe_with_download("Training metrics", data.get("training_metrics", pd.DataFrame()), "MLTraining_metrics.csv")
+    dataframe_with_download("Model cards", data.get("training_model_cards", pd.DataFrame()), "MLTraining_model_cards.csv")
+    feature_importance = data.get("training_feature_importance", pd.DataFrame())
+    if not feature_importance.empty:
+        feature_importance = feature_importance.copy()
+        if "feature" in feature_importance.columns:
+            feature_importance["display_name"] = feature_importance["feature"].map(
+                lambda feature: metadata_for_feature(str(feature)).name if metadata_for_feature(str(feature)) else str(feature)
+            )
+            feature_importance["category"] = feature_importance["feature"].map(
+                lambda feature: metadata_for_feature(str(feature)).category if metadata_for_feature(str(feature)) else "artifact"
+            )
+        dataframe_with_download("Feature importance", feature_importance, "MLTraining_feature_importance.csv")
+        if {"feature", "importance", "model"}.issubset(feature_importance.columns):
+            st.plotly_chart(
+                px.bar(
+                    feature_importance.sort_values("importance", key=lambda s: pd.to_numeric(s, errors="coerce").abs(), ascending=False).head(25),
+                    x="display_name" if "display_name" in feature_importance.columns else "feature",
+                    y="importance",
+                    color="category" if "category" in feature_importance.columns else "model",
+                    hover_data=[col for col in ["feature", "model", "category"] if col in feature_importance.columns],
+                    template="plotly_white",
+                    title="Top model feature importances / coefficients",
+                ),
+                width="stretch",
+            )
+            render_feature_metadata_expander(feature_importance["feature"].head(40).tolist(), "Feature importance glossary")
 
 with tab_docs:
     st.markdown(
@@ -110,3 +559,5 @@ with tab_docs:
         The page reuses `output/ml_stock_lab/tables/MLStockLab_*` when available and only recalculates on demand.
         """
     )
+
+render_footer()

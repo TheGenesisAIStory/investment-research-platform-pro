@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,11 +17,6 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
 
 @dataclass(frozen=True)
@@ -55,12 +49,8 @@ SMART_MONEY_CONTRACTS = (
 
 
 def _generate_missing() -> None:
-    try:
-        from src.ml_stock_lab.lab import run_ml_stock_lab_experiment
-        from src.smart_money_engine.pipeline import run_smart_money_engine
-    except ModuleNotFoundError:
-        from ml_stock_lab.lab import run_ml_stock_lab_experiment
-        from smart_money_engine.pipeline import run_smart_money_engine
+    from ml_stock_lab.lab import run_ml_stock_lab_experiment
+    from smart_money_engine.pipeline import run_smart_money_engine
 
     if not (ROOT / "output/ml_stock_lab/tables/MLStockLab_metrics.csv").exists():
         run_ml_stock_lab_experiment(output_root=ROOT / "output/ml_stock_lab")

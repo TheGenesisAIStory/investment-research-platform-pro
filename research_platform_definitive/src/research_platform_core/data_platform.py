@@ -13,12 +13,10 @@ from typing import Any, Iterable
 import numpy as np
 import pandas as pd
 
+from .storage_policy import FINANCIAL_DB_CANDIDATES as STORAGE_FINANCIAL_DB_CANDIDATES
 
-DEFAULT_FINANCIAL_DB_CANDIDATES = [
-    Path("/content/drive/MyDrive/Database Finanziario"),
-    Path("/content/drive/MyDrive/GitHub/Database Finanziario"),
-    Path.home() / "Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/Database Finanziario",
-]
+
+DEFAULT_FINANCIAL_DB_CANDIDATES = STORAGE_FINANCIAL_DB_CANDIDATES
 
 ROLE_KEYWORDS = {
     "prices": ["price", "prices", "ohlcv", "market", "stoxx", "equity", "_1d"],
@@ -49,8 +47,155 @@ class DataPlatformRoots:
     source: str
 
 
+@dataclass(frozen=True)
+class OhlcvParquetRoot:
+    path: Path
+    source: str
+    storage_mode: str
+    financial_db_root: Path
+    output_root: Path
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def is_cloud_backed_path(path: Path | str) -> bool:
+    text = str(path).lower()
+    return any(marker in text for marker in ["cloudstorage", "google drive", "/content/drive", "il mio drive"])
+
+
+def _load_platform_ohlcv_root(output_root: Path) -> Path | None:
+    settings_path = output_root / "config" / "platform_settings.json"
+    if not settings_path.exists():
+        return None
+    try:
+        payload = json.loads(settings_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    data_settings = payload.get("data", {}) if isinstance(payload, dict) else {}
+    value = data_settings.get("ohlcv_parquet_root") or payload.get("ohlcv_parquet_root")
+    if value:
+        return Path(str(value)).expanduser()
+    return None
+
+
+def _load_manifest_ohlcv_root(output_root: Path) -> Path | None:
+    manifest_path = output_root / "tables" / "OHLCV_daily_manifest.csv"
+    if not manifest_path.exists() or manifest_path.stat().st_size <= 1:
+        return None
+    try:
+        manifest = pd.read_csv(manifest_path, usecols=lambda col: col in {"parquet_root", "target_path"}, nrows=5000)
+    except Exception:
+        return None
+    if "parquet_root" in manifest.columns:
+        roots = manifest["parquet_root"].dropna().astype(str)
+        roots = roots[roots.str.len().gt(0)]
+        if not roots.empty:
+            counts = roots.value_counts()
+            for value in counts.index:
+                path = Path(str(value)).expanduser()
+                if (path / "daily").exists() or path.exists():
+                    return path
+    if "target_path" in manifest.columns:
+        paths = manifest["target_path"].dropna().astype(str)
+        paths = paths[paths.str.len().gt(0)]
+        for value in paths.tail(200):
+            path = Path(str(value)).expanduser()
+            parts = path.parts
+            if "daily" in parts:
+                daily_idx = parts.index("daily")
+                candidate = Path(*parts[:daily_idx]) if path.is_absolute() else Path(*parts[:daily_idx])
+                if (candidate / "daily").exists():
+                    return candidate
+    return None
+
+
+def get_ohlcv_parquet_root_info(
+    financial_db_root: Path | str | None = None,
+    output_root: Path | str | None = None,
+    explicit_root: Path | str | None = None,
+    create: bool = False,
+) -> OhlcvParquetRoot:
+    """Resolve the single source of truth for OHLCV parquet files.
+
+    Priority:
+    1. explicit_root argument, used by programmatic restarts;
+    2. RESEARCH_PLATFORM_OHLCV_PARQUET_ROOT;
+    3. output/config/platform_settings.json -> data.ohlcv_parquet_root;
+    4. latest OHLCV manifest parquet_root, so app restarts can see the root
+       used by the last successful CLI/UI run;
+    5. direct Financial DB root unless it is cloud-backed;
+    6. local staging mirror under output/data_cache for Google Drive mounts.
+    """
+    roots = resolve_data_platform_roots(financial_db_root=financial_db_root, repo_output_root=output_root)
+    if explicit_root:
+        path = Path(explicit_root).expanduser()
+        source = "explicit"
+        storage_mode = "explicit"
+    elif os.environ.get("RESEARCH_PLATFORM_OHLCV_PARQUET_ROOT"):
+        path = Path(os.environ["RESEARCH_PLATFORM_OHLCV_PARQUET_ROOT"]).expanduser()
+        source = "env:RESEARCH_PLATFORM_OHLCV_PARQUET_ROOT"
+        storage_mode = "env_override"
+    else:
+        settings_root = _load_platform_ohlcv_root(roots.repo_output)
+        if settings_root is not None:
+            path = settings_root
+            source = "settings:data.ohlcv_parquet_root"
+            storage_mode = "settings_override"
+        elif (manifest_root := _load_manifest_ohlcv_root(roots.repo_output)) is not None:
+            path = manifest_root
+            source = "manifest:OHLCV_daily_manifest.parquet_root"
+            storage_mode = "manifest_override"
+        elif os.environ.get("RESEARCH_PLATFORM_OHLCV_WRITE_MODE", "").lower() == "drive":
+            path = roots.financial_db / "MarketData" / "OHLCV"
+            source = "env:RESEARCH_PLATFORM_OHLCV_WRITE_MODE=drive"
+            storage_mode = "drive_forced"
+        elif is_cloud_backed_path(roots.financial_db):
+            path = roots.repo_output / "data_cache" / "financial_db_mirror" / "MarketData" / "OHLCV"
+            source = "auto:local_staging_for_cloud_db"
+            storage_mode = "local_staging_for_cloud_db"
+        else:
+            path = roots.financial_db / "MarketData" / "OHLCV"
+            source = "auto:financial_db"
+            storage_mode = "financial_db"
+    if create:
+        path.mkdir(parents=True, exist_ok=True)
+    return OhlcvParquetRoot(path, source, storage_mode, roots.financial_db, roots.repo_output)
+
+
+def get_ohlcv_parquet_root(
+    financial_db_root: Path | str | None = None,
+    output_root: Path | str | None = None,
+    explicit_root: Path | str | None = None,
+    create: bool = False,
+) -> Path:
+    return get_ohlcv_parquet_root_info(financial_db_root, output_root, explicit_root=explicit_root, create=create).path
+
+
+def get_ohlcv_daily_search_roots(
+    financial_db_root: Path | str | None = None,
+    output_root: Path | str | None = None,
+    explicit_root: Path | str | None = None,
+    include_legacy: bool = True,
+) -> list[Path]:
+    """Return ordered daily OHLCV parquet roots for loaders.
+
+    The canonical root always comes from `get_ohlcv_parquet_root_info`. Legacy
+    locations are included only as compatibility fallbacks so older artifacts
+    remain readable during the migration to local parquet staging.
+    """
+    info = get_ohlcv_parquet_root_info(financial_db_root, output_root, explicit_root=explicit_root)
+    roots = [info.path / "daily"]
+    if include_legacy:
+        legacy = [
+            info.financial_db_root / "MarketData" / "OHLCV" / "daily",
+            info.output_root / "data_cache" / "financial_db_mirror" / "MarketData" / "OHLCV" / "daily",
+        ]
+        for path in legacy:
+            if path not in roots:
+                roots.append(path)
+    return roots
 
 
 def discover_financial_database_root(extra_candidates: Iterable[Path | str] | None = None) -> tuple[Path, str, bool]:
@@ -125,7 +270,7 @@ def build_dataset_inventory(root: Path, max_files: int | None = None) -> pd.Data
             "role": infer_dataset_role(path),
             "size_mb": round(stat.st_size / (1024 * 1024), 4),
             "modified_utc": modified.isoformat(),
-            "age_hours": round((pd.Timestamp.utcnow() - modified).total_seconds() / 3600, 2),
+            "age_hours": round((pd.Timestamp.now(tz="UTC") - modified).total_seconds() / 3600, 2),
             "parent": _safe_relative(path.parent, root),
             "exists": True,
         })
@@ -227,7 +372,7 @@ def should_refresh(path: Path, max_age_hours: int = 24 * 7, min_rows: int | None
     path = Path(path)
     if not path.exists() or path.stat().st_size <= 1:
         return True
-    age_hours = (pd.Timestamp.utcnow() - pd.Timestamp(path.stat().st_mtime, unit="s", tz="UTC")).total_seconds() / 3600
+    age_hours = (pd.Timestamp.now(tz="UTC") - pd.Timestamp(path.stat().st_mtime, unit="s", tz="UTC")).total_seconds() / 3600
     if age_hours > max_age_hours:
         return True
     if min_rows is not None and path.suffix.lower() in {".csv", ".parquet"}:
@@ -500,3 +645,134 @@ def write_data_platform_status(root: Path, output_root: Path, max_files: int | N
     contract_path.write_text(json.dumps(contracts, indent=2, default=str), encoding="utf-8")
     paths["api_contract"] = contract_path
     return paths
+
+
+def _path_marker_mtime(path: Path) -> str:
+    path = Path(path)
+    if not path.exists():
+        return ""
+    try:
+        candidates = [path] if path.is_file() else [child for child in path.iterdir() if child.is_file()]
+    except OSError:
+        return ""
+    if not candidates:
+        try:
+            return pd.Timestamp(path.stat().st_mtime, unit="s", tz="UTC").isoformat()
+        except OSError:
+            return ""
+    latest_values = []
+    for candidate in candidates:
+        try:
+            latest_values.append(candidate.stat().st_mtime)
+        except OSError:
+            continue
+    if not latest_values:
+        return ""
+    latest = max(latest_values)
+    return pd.Timestamp(latest, unit="s", tz="UTC").isoformat()
+
+
+def shared_database_contract(financial_db_root: Path | str, output_root: Path | str | None = None) -> pd.DataFrame:
+    """Return the single shared Financial DB/artifact contract without recursive scans."""
+    db = Path(financial_db_root).expanduser()
+    out = Path(output_root).expanduser() if output_root is not None else Path.cwd() / "output"
+    ohlcv_info = get_ohlcv_parquet_root_info(db, out)
+    rows = [
+        {
+            "domain": "equity_fundamentals",
+            "label": "Equity universes and fundamentals",
+            "owner": "research_platform_core.loaders.equity_universe",
+            "consumer": "Screener, Valuation, ML Stock Lab",
+            "path": db / "Equities",
+            "marker": db / "Equities",
+        },
+        {
+            "domain": "ohlcv_prices",
+            "label": "Daily OHLCV and asset master",
+            "owner": "research_platform_core.ohlcv_ingest",
+            "consumer": "Screener, Portfolio, ML training",
+            "path": ohlcv_info.path if ohlcv_info.path.exists() else db / "MarketData" / "OHLCV",
+            "marker": db / "MarketData" / "OHLCV" / "manifests" / "ohlcv_daily_manifest.csv",
+            "storage_note": f"Parquet storage={ohlcv_info.storage_mode}; manifest remains under the shared DB root.",
+        },
+        {
+            "domain": "factor_libraries",
+            "label": "Fama-French, AQR and derived equity factors",
+            "owner": "research_platform_core.data_completion",
+            "consumer": "ML Stock Lab, Portfolio diagnostics",
+            "path": db / "Factors",
+            "marker": db / "Factors" / "EquityFactorPanel.csv",
+        },
+        {
+            "domain": "smart_money",
+            "label": "Smart Money / Gov Data artifacts",
+            "owner": "smart_money_engine",
+            "consumer": "Smart Money page, Screener",
+            "path": out / "smart_money",
+            "marker": out / "smart_money" / "SmartMoneyManifest.json",
+        },
+        {
+            "domain": "banking",
+            "label": "Banking Data Lab artifacts",
+            "owner": "research_platform_core.banking_data",
+            "consumer": "Banking Data Lab, Screener, Portfolio",
+            "path": out / "banks_pipeline",
+            "marker": out / "banks_pipeline" / "banks_universe.csv",
+        },
+        {
+            "domain": "ml_training",
+            "label": "ML model training artifacts",
+            "owner": "ml_stock_lab.training",
+            "consumer": "ML Stock Lab, Screener",
+            "path": out / "ml_training_lab",
+            "marker": out / "ml_training_lab" / "MLTraining_manifest.json",
+        },
+        {
+            "domain": "coverage_manifest",
+            "label": "Data completion and coverage manifests",
+            "owner": "research_platform_core.data_completion",
+            "consumer": "Data Platform, validators",
+            "path": out / "data_completion",
+            "marker": out / "data_completion" / "ResearchDataCoverageValidation.csv",
+        },
+    ]
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        path = Path(row["path"])
+        marker = Path(row["marker"])
+        normalized.append(
+            {
+                **{k: v for k, v in row.items() if k not in {"path", "marker"}},
+                "path": str(path),
+                "marker": str(marker),
+                "exists": path.exists(),
+                "marker_exists": marker.exists(),
+                "last_update_utc": _path_marker_mtime(marker if marker.exists() else path),
+            }
+        )
+    return pd.DataFrame(normalized)
+
+
+def recent_run_logs(output_root: Path | str, limit: int = 12) -> pd.DataFrame:
+    """List recent orchestrated run logs without reading stacktraces into the UI."""
+    runs_root = Path(output_root).expanduser() / "runs"
+    rows: list[dict[str, Any]] = []
+    if not runs_root.exists():
+        return pd.DataFrame(columns=["run_id", "status", "pid", "log_path", "modified_utc"])
+    for run_dir in sorted([p for p in runs_root.iterdir() if p.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)[:limit]:
+        log_path = run_dir / "backfill.log"
+        if not log_path.exists():
+            log_path = run_dir / "run.log"
+        pid_path = run_dir / "backfill.pid"
+        pid = pid_path.read_text(encoding="utf-8").strip() if pid_path.exists() else ""
+        status = "RUNNING_OR_RECENT" if log_path.exists() and log_path.stat().st_size >= 0 else "NO_LOG"
+        rows.append(
+            {
+                "run_id": run_dir.name,
+                "status": status,
+                "pid": pid,
+                "log_path": str(log_path) if log_path.exists() else "",
+                "modified_utc": pd.Timestamp(run_dir.stat().st_mtime, unit="s", tz="UTC").isoformat(),
+            }
+        )
+    return pd.DataFrame(rows)

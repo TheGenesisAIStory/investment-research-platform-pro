@@ -14,24 +14,33 @@ for candidate in [APP_DIR, PROJECT_ROOT]:
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
-from support import configure_page, dataframe_with_download, sidebar_roots
+from support import configure_page, dataframe_with_download, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
 
 
 configure_page("Laboratorio Research Library")
 
 roots = sidebar_roots()
-lab_root = PROJECT_ROOT / "laboratorio"
+lab_root = PROJECT_ROOT / "archive" / "laboratorio"
 manifest_path = lab_root / "LABORATORIO_MANIFEST.csv"
 repo_map_path = lab_root / "BEST_PRACTICE_REPOSITORIES.csv"
 review_path = lab_root / "BEST_PRACTICE_REVIEW.md"
 
-st.title("Laboratorio Research Library")
-st.caption(
-    "Curated notebook library: only references that can improve the canonical Research Platform are retained."
+render_page_header(
+    "Research Library",
+    "Curated notebook library: only references that can improve the canonical Gen.is.IA platform are retained.",
+    "▧",
+    module="LABS",
+    status="WIP",
+)
+render_context_bar()
+render_page_intro(
+    "Browse retained research notebooks and promotion candidates without treating the archive as production code.",
+    "Filter by category or promotion target, then promote stable ideas into package modules before app exposure.",
 )
 
 if not manifest_path.exists():
     st.error(f"Laboratorio manifest not found: {manifest_path}")
+    render_footer()
     st.stop()
 
 manifest = pd.read_csv(manifest_path)
@@ -150,3 +159,5 @@ with tab_review:
         st.markdown(review_path.read_text(encoding="utf-8"))
     else:
         st.info("Best-practice review notes are not available.")
+
+render_footer()

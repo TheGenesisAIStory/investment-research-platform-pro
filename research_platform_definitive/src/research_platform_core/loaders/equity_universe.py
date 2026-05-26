@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from io import BytesIO
 import time
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -43,9 +45,53 @@ WIKIPEDIA_TABLES = {
     "nikkei225": "https://en.wikipedia.org/wiki/Nikkei_225",
 }
 
+HTML_USER_AGENT = "TheGenesisAI-InvestmentResearchPlatform/1.0 (research data backfill; contact: local)"
+MIN_USEFUL_CONSTITUENTS_CSV_BYTES = 96
+
 
 def _clean_symbol(symbol: object) -> str:
     return str(symbol or "").strip().replace(".", "-").upper()
+
+
+def _read_html_tables(url: str) -> list[pd.DataFrame]:
+    """Read provider HTML tables with a user-agent to avoid generic bot 403s."""
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": HTML_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        html = response.read()
+    return pd.read_html(BytesIO(html))
+
+
+def _is_cloud_storage_path(path: Path) -> bool:
+    return any(part == "CloudStorage" for part in path.expanduser().parts)
+
+
+def _is_suspicious_constituents_cache(path: Path) -> bool:
+    """Detect placeholder/header-only Drive files before pandas can block on them."""
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return True
+    return _is_cloud_storage_path(path) and size < MIN_USEFUL_CONSTITUENTS_CSV_BYTES
+
+
+def _remove_suspicious_constituents_cache(path: Path) -> bool:
+    if not _is_suspicious_constituents_cache(path):
+        return False
+    try:
+        path.unlink(missing_ok=True)
+        return True
+    except OSError:
+        return False
+
+
+def _empty_constituents_frame() -> pd.DataFrame:
+    return pd.DataFrame(columns=["symbol", "name", "sector", "source", "as_of"])
 
 
 class EquityUniverseManager:
@@ -64,11 +110,27 @@ class EquityUniverseManager:
             rows.append({"universe": key, "target_path": str(path), "exists": path.exists(), **meta})
         return pd.DataFrame(rows)
 
+    def _constituents_path(self, universe: str) -> Path:
+        meta = EQUITY_UNIVERSES[universe]
+        return self.base_dir / meta["region"] / universe / "constituents_current.csv"
+
+    def _read_constituents_cache(self, path: Path) -> pd.DataFrame:
+        if not path.exists() or _is_suspicious_constituents_cache(path):
+            return _empty_constituents_frame()
+        try:
+            frame = pd.read_csv(path)
+        except Exception:
+            return _empty_constituents_frame()
+        if "symbol" not in frame.columns:
+            return _empty_constituents_frame()
+        frame["symbol"] = frame["symbol"].map(_clean_symbol)
+        return frame.dropna(subset=["symbol"]).drop_duplicates("symbol").reset_index(drop=True)
+
     def get_current_constituents(self, universe: str) -> pd.DataFrame:
         universe = universe.lower()
         if universe not in WIKIPEDIA_TABLES:
-            return pd.DataFrame(columns=["symbol", "name", "sector", "source"])
-        tables = pd.read_html(WIKIPEDIA_TABLES[universe])
+            return _empty_constituents_frame()
+        tables = _read_html_tables(WIKIPEDIA_TABLES[universe])
         candidates = [t for t in tables if any(str(c).lower() in {"symbol", "ticker", "ticker symbol", "code"} for c in t.columns)]
         if not candidates:
             candidates = tables[:1]
@@ -82,20 +144,53 @@ class EquityUniverseManager:
                 "name": raw[name_col].astype(str) if name_col is not None else "",
                 "sector": raw[sector_col].astype(str) if sector_col is not None else "",
                 "source": WIKIPEDIA_TABLES[universe],
-                "as_of": pd.Timestamp.utcnow().date().isoformat(),
+                "as_of": pd.Timestamp.now(tz="UTC").date().isoformat(),
             }
         )
         return out.dropna(subset=["symbol"]).drop_duplicates("symbol").reset_index(drop=True)
 
     def write_constituents(self, universe: str, refresh: bool = False) -> dict[str, Any]:
-        meta = EQUITY_UNIVERSES[universe]
-        target = self.base_dir / meta["region"] / universe / "constituents_current.csv"
-        if target.exists() and not refresh:
-            return {"universe": universe, "status": "cache_hit", "target_path": str(target), "rows": len(pd.read_csv(target))}
-        df = self.get_current_constituents(universe)
+        target = self._constituents_path(universe)
+        if target.exists() and not refresh and not _is_suspicious_constituents_cache(target):
+            cached = self._read_constituents_cache(target)
+            return {"universe": universe, "status": "cache_hit", "target_path": str(target), "rows": len(cached)}
+        try:
+            df = self.get_current_constituents(universe)
+        except Exception as exc:
+            cached = self._read_constituents_cache(target) if target.exists() else _empty_constituents_frame()
+            if not cached.empty:
+                return {
+                    "universe": universe,
+                    "status": "cache_hit_after_provider_error",
+                    "target_path": str(target),
+                    "rows": len(cached),
+                    "error": str(exc),
+                    "updated_at": utc_now(),
+                }
+            df = _empty_constituents_frame()
+            payload = {
+                "universe": universe,
+                "status": "provider_failed_empty_written",
+                "target_path": str(target),
+                "rows": 0,
+                "error": str(exc),
+                "updated_at": utc_now(),
+            }
+            target.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(target, index=False)
+            target.with_suffix(".metadata.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+            return payload
         target.parent.mkdir(parents=True, exist_ok=True)
+        removed_suspicious_cache = _remove_suspicious_constituents_cache(target)
         df.to_csv(target, index=False)
-        payload = {"universe": universe, "status": "written", "target_path": str(target), "rows": len(df), "updated_at": utc_now()}
+        payload = {
+            "universe": universe,
+            "status": "written",
+            "target_path": str(target),
+            "rows": len(df),
+            "removed_suspicious_cache": removed_suspicious_cache,
+            "updated_at": utc_now(),
+        }
         target.with_suffix(".metadata.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
         return payload
 
@@ -109,10 +204,10 @@ class EquityUniverseManager:
 
     def sync_prices(self, universe: str, symbols: list[str] | None = None, max_symbols: int | None = None, refresh: bool = False, stale_hours: int = 24 * 7) -> pd.DataFrame:
         if symbols is None:
-            constituents_path = self.base_dir / EQUITY_UNIVERSES[universe]["region"] / universe / "constituents_current.csv"
-            if not constituents_path.exists():
+            constituents_path = self._constituents_path(universe)
+            if not constituents_path.exists() or _is_suspicious_constituents_cache(constituents_path):
                 self.write_constituents(universe)
-            symbols = pd.read_csv(constituents_path)["symbol"].dropna().astype(str).tolist()
+            symbols = self._read_constituents_cache(constituents_path)["symbol"].dropna().astype(str).tolist()
         symbols = symbols[:max_symbols] if max_symbols else symbols
         import yfinance as yf
 
@@ -139,10 +234,10 @@ class EquityUniverseManager:
 
     def sync_fundamentals(self, universe: str, symbols: list[str] | None = None, max_symbols: int | None = None, refresh: bool = False) -> pd.DataFrame:
         if symbols is None:
-            constituents_path = self.base_dir / EQUITY_UNIVERSES[universe]["region"] / universe / "constituents_current.csv"
-            if not constituents_path.exists():
+            constituents_path = self._constituents_path(universe)
+            if not constituents_path.exists() or _is_suspicious_constituents_cache(constituents_path):
                 self.write_constituents(universe)
-            symbols = pd.read_csv(constituents_path)["symbol"].dropna().astype(str).tolist()
+            symbols = self._read_constituents_cache(constituents_path)["symbol"].dropna().astype(str).tolist()
         symbols = symbols[:max_symbols] if max_symbols else symbols
         import yfinance as yf
 

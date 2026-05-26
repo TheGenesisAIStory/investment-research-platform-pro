@@ -7,15 +7,30 @@ APP_DIR = Path(__file__).resolve().parents[1]
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 PROJECT_ROOT = APP_DIR.parent
-for extra in [PROJECT_ROOT, PROJECT_ROOT / "company_valuation" / "src"]:
+for extra in [PROJECT_ROOT / "company_valuation" / "src", PROJECT_ROOT, PROJECT_ROOT / "src"]:
     if str(extra) not in sys.path:
         sys.path.insert(0, str(extra))
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
+import yfinance as yf
 
-from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_workflow_steps, show_empty, sidebar_roots
+from data_bootstrap import render_bootstrap_banner
+from screener_workbench import format_valuation_explanation
+from support import configure_page, dataframe_with_download, load_company_artifacts, load_smart_money_artifacts, load_ml_stock_lab_artifacts, metric_value, numeric_cols, render_context_bar, render_feature_metadata_expander, render_footer, render_metric_metadata_expander, render_page_header, render_page_intro, render_selected_ticker_context, render_workflow_steps, safe_page_link, show_empty, sidebar_roots
+from ui_ops import render_missing_data_cta
+from research_platform_core import (
+    compute_asset_based_valuation,
+    compute_comps_valuation,
+    compute_dcf_valuation,
+    compute_ddm_valuation,
+    compute_eva_residual_income,
+    compute_market_multiples,
+    compute_wacc,
+    fair_value_summary,
+)
 
 try:
     from valuation_monte_carlo import (
@@ -41,14 +56,107 @@ except Exception:
 
 configure_page("Valuation Research")
 
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_live_valuation_snapshot(ticker: str) -> dict[str, object]:
+    try:
+        info = yf.Ticker(ticker).info or {}
+    except Exception as exc:
+        return {"ticker": ticker.upper(), "error": str(exc)}
+    return {
+        "ticker": ticker.upper(),
+        "shortName": info.get("shortName") or info.get("longName"),
+        "sector": info.get("sector"),
+        "industry": info.get("industry"),
+        "marketCap": info.get("marketCap"),
+        "currentPrice": info.get("currentPrice") or info.get("regularMarketPrice"),
+        "trailingPE": info.get("trailingPE"),
+        "forwardPE": info.get("forwardPE"),
+        "enterpriseToEbitda": info.get("enterpriseToEbitda"),
+        "priceToBook": info.get("priceToBook"),
+        "priceToSalesTrailing12Months": info.get("priceToSalesTrailing12Months"),
+        "enterpriseValue": info.get("enterpriseValue"),
+        "totalRevenue": info.get("totalRevenue"),
+        "ebitda": info.get("ebitda"),
+        "freeCashflow": info.get("freeCashflow"),
+        "operatingCashflow": info.get("operatingCashflow"),
+        "totalDebt": info.get("totalDebt"),
+        "totalCash": info.get("totalCash"),
+        "sharesOutstanding": info.get("sharesOutstanding"),
+        "trailingEps": info.get("trailingEps"),
+        "bookValue": info.get("bookValue"),
+        "beta": info.get("beta"),
+        "dividendRate": info.get("dividendRate"),
+        "payoutRatio": info.get("payoutRatio"),
+        "earningsGrowth": info.get("earningsGrowth"),
+        "currency": info.get("currency"),
+    }
+
+
+def format_live_value(value: object) -> str:
+    if value is None or value == "":
+        return "n/a"
+    if isinstance(value, (int, float)):
+        if abs(float(value)) >= 1_000_000:
+            return f"{float(value) / 1_000_000_000:.2f}B"
+        return f"{float(value):.2f}"
+    return str(value)
+
 roots = sidebar_roots()
 root = roots["company"]
 data = load_company_artifacts(root)
 smart_money = load_smart_money_artifacts(roots["workspace"])
 ml_lab = load_ml_stock_lab_artifacts(roots["workspace"])
 
-st.title("Equity Valuation Research")
-st.caption("Notebook-generated fair value, ranking, screener context, diagnostics and model evidence.")
+render_page_header(
+    "Valuation",
+    "Ticker-level valuation workspace with live multiples, exported DCF/EVA/residual-income artifacts and explainable assumptions.",
+    "◇",
+    module="RESEARCH",
+    status="READY",
+)
+render_context_bar()
+render_page_intro(
+    "Open a ticker-level valuation workspace with live multiples, exported DCF/EVA/RI artifacts and explainable assumptions.",
+    "Select a ticker or arrive from Screener to review Snapshot, Assumptions and Explain-this-valuation tabs.",
+)
+render_bootstrap_banner(roots, required=["equity_metadata", "company_screener"])
+
+context_ticker = str(st.session_state.get("selected_ticker", "") or "").strip().upper()
+
+with st.container(border=True):
+    st.markdown("**Live valuation snapshot · yfinance cached 5 minutes**")
+    live_ticker = st.text_input("Ticker", value=context_ticker or "AAPL", key="live_valuation_ticker").strip().upper() or "AAPL"
+    st.session_state["selected_ticker"] = live_ticker
+    live_snapshot = fetch_live_valuation_snapshot(live_ticker)
+    if live_snapshot.get("error"):
+        st.warning(f"Live valuation data is temporarily unavailable for {live_ticker}: {live_snapshot['error']}")
+    else:
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("P/E", format_live_value(live_snapshot.get("trailingPE")))
+        c2.metric("EV/EBITDA", format_live_value(live_snapshot.get("enterpriseToEbitda")))
+        c3.metric("Price / Book", format_live_value(live_snapshot.get("priceToBook")))
+        c4.metric("Market Cap", format_live_value(live_snapshot.get("marketCap")))
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "ticker": live_snapshot.get("ticker"),
+                        "name": live_snapshot.get("shortName"),
+                        "sector": live_snapshot.get("sector"),
+                        "industry": live_snapshot.get("industry"),
+                        "currency": live_snapshot.get("currency"),
+                        "trailing_pe": live_snapshot.get("trailingPE"),
+                        "ev_to_ebitda": live_snapshot.get("enterpriseToEbitda"),
+                        "price_to_book": live_snapshot.get("priceToBook"),
+                    }
+                ]
+            ),
+            width="stretch",
+            hide_index=True,
+        )
+
+render_selected_ticker_context(roots, st.session_state.get("selected_ticker", live_ticker), expanded=False)
 
 valuation_gap = data["valuation_gap"]
 extended = data["extended_valuation"]
@@ -83,7 +191,10 @@ tickers = sorted(set(tickers))
 control = st.container(border=True)
 with control:
     c1, c2, c3 = st.columns(3)
-    selected = c1.selectbox("Ticker", ["All", *tickers], index=0) if tickers else "All"
+    default_index = ["All", *tickers].index(context_ticker) if context_ticker in tickers else 0
+    selected = c1.selectbox("Ticker", ["All", *tickers], index=default_index) if tickers else "All"
+    if selected != "All":
+        st.session_state["selected_ticker"] = selected
     universe_options = ["All"]
     for col in ["index_membership", "index", "country", "sector"]:
         if col in screener.columns:
@@ -114,6 +225,30 @@ smart_view = filter_ticker(smart_scores)
 smart_event_view = filter_ticker(smart_events)
 ml_signal_view = filter_ticker(ml_lab["signals"])
 
+
+def first_row_payload(*frames: pd.DataFrame) -> dict[str, object]:
+    payload: dict[str, object] = {}
+    for frame in frames:
+        if frame is not None and not frame.empty:
+            payload.update(frame.iloc[0].dropna().to_dict())
+    payload.update({k: v for k, v in live_snapshot.items() if v is not None})
+    payload.setdefault("current_price", payload.get("currentPrice") or payload.get("price"))
+    payload.setdefault("price", payload.get("current_price"))
+    payload.setdefault("market_cap", payload.get("marketCap") or payload.get("market_cap"))
+    payload.setdefault("enterprise_value", payload.get("enterpriseValue") or payload.get("enterprise_value"))
+    payload.setdefault("revenue_ttm", payload.get("totalRevenue") or payload.get("revenue_ttm"))
+    payload.setdefault("free_cash_flow", payload.get("freeCashflow") or payload.get("free_cash_flow"))
+    payload.setdefault("operating_cash_flow", payload.get("operatingCashflow") or payload.get("operating_cash_flow"))
+    payload.setdefault("total_debt", payload.get("totalDebt") or payload.get("total_debt"))
+    payload.setdefault("cash", payload.get("totalCash") or payload.get("cash"))
+    payload.setdefault("shares_outstanding", payload.get("sharesOutstanding") or payload.get("shares_outstanding"))
+    payload.setdefault("eps_ttm", payload.get("trailingEps") or payload.get("eps_ttm"))
+    payload.setdefault("annual_dividend", payload.get("dividendRate") or payload.get("annual_dividend"))
+    return payload
+
+
+valuation_payload = first_row_payload(valuation_view, screener_view, ml_signal_view)
+
 cols = st.columns(4)
 cols[0].metric("Ticker", selected if selected != "All" else "Universe")
 cols[1].metric("Fair Value", metric_value(valuation_view, ["blended_fair_value", "fair_value", "target_price", "value"], "n/a"))
@@ -121,8 +256,12 @@ cols[2].metric("Upside", metric_value(valuation_view, ["upside", "upside_to_fair
 cols[3].metric("Screener Matches", len(screener_view) if not screener_view.empty else 0)
 
 if valuation_view.empty:
-    st.warning("Run Company Valuation notebook to compute fair value and valuation outputs.")
-    st.page_link("pages/5_Run_Notebooks.py", label="Open Run Notebooks")
+    render_missing_data_cta(
+        "Valuation",
+        job_id="valuation_research_refresh",
+        output_path=root / "tables" / "ScreenerResults.csv",
+        cli_hint="python research_platform_app/scheduler.py --once --jobs valuation_research_refresh",
+    )
 
 status_box = st.container(border=True)
 with status_box:
@@ -143,7 +282,41 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_overview, tab_models, tab_dcf_mc, tab_screener, tab_smart_money, tab_ml_lab, tab_diagnostics = st.tabs(["Overview", "Models", "DCF Monte Carlo", "Screener Context", "Smart Money", "ML Lab", "Diagnostics & Caveats"])
+with st.expander("Explain this valuation", expanded=False):
+    explain_ticker = selected if selected != "All" else st.session_state.get("selected_ticker", live_ticker)
+    st.markdown(f"**{explain_ticker} · valuation reasoning pre-read**")
+    explanation_source = valuation_view.iloc[0] if not valuation_view.empty else pd.Series(live_snapshot)
+    st.write(format_valuation_explanation(str(explain_ticker), explanation_source))
+    e1, e2, e3, e4 = st.columns(4)
+    e1.metric("P/E", format_live_value(live_snapshot.get("trailingPE")) if not live_snapshot.get("error") else "n/a")
+    e2.metric("EV/EBITDA", format_live_value(live_snapshot.get("enterpriseToEbitda")) if not live_snapshot.get("error") else "n/a")
+    e3.metric("P/B", format_live_value(live_snapshot.get("priceToBook")) if not live_snapshot.get("error") else "n/a")
+    e4.metric("Artifact Upside", metric_value(valuation_view, ["upside", "upside_to_fair_value", "valuation_gap"], "n/a"))
+    assumptions_view = dcf_assumptions if not dcf_assumptions.empty else data["valuation_assumptions"]
+    if assumptions_view.empty:
+        st.info("DCF/WACC/growth assumption tables are not available for this ticker yet.")
+    else:
+        dataframe_with_download("Valuation assumptions", assumptions_view, "valuation_assumptions_for_selected_ticker.csv")
+    render_feature_metadata_expander(
+        ["fair_value_hat", "mispricing_rel", "zscore", "valuation_signal_score", "pe", "pb", "ev_ebitda", "roe"],
+        "Valuation score glossary",
+    )
+
+tab_overview, tab_dcf_intrinsic, tab_market_multiples, tab_eva_residual, tab_fair_value, tab_models, tab_dcf_mc, tab_screener, tab_smart_money, tab_ml_lab, tab_diagnostics = st.tabs(
+    [
+        "Overview",
+        "DCF & Intrinsic Value",
+        "Multipli di Mercato",
+        "Residual Income / EVA",
+        "DDM & Fair Value Summary",
+        "Models",
+        "DCF Monte Carlo",
+        "Screener Context",
+        "Smart Money",
+        "ML Lab",
+        "Diagnostics & Caveats",
+    ]
+)
 
 with tab_overview:
     if valuation_view.empty:
@@ -155,10 +328,110 @@ with tab_overview:
         label_col = "ticker" if "ticker" in valuation_view.columns else valuation_view.index
         st.plotly_chart(px.bar(valuation_view.head(40), x=label_col, y=value_col, title=f"{value_col} by ticker", template="plotly_white"), width="stretch")
 
+with tab_dcf_intrinsic:
+    st.markdown("### DCF & Intrinsic Value")
+    st.caption("Assumptions are explicit and editable. The model uses current/free cash flow, net debt and shares when available.")
+    a1, a2, a3, a4 = st.columns(4)
+    base_wacc = compute_wacc(valuation_payload)
+    wacc_input = a1.slider("WACC", 0.04, 0.18, float(base_wacc.get("wacc", 0.09) or 0.09), step=0.005, format="%.3f")
+    growth_stage1 = a2.slider("Stage-1 growth", -0.05, 0.20, 0.06, step=0.005, format="%.3f")
+    terminal_growth = a3.slider("Terminal growth", 0.00, 0.05, 0.025, step=0.0025, format="%.3f")
+    n_years = a4.slider("Projection years", 3, 10, 5)
+    dcf = compute_dcf_valuation(
+        valuation_payload,
+        current_price=valuation_payload.get("current_price") or valuation_payload.get("price"),
+        wacc=float(wacc_input),
+        growth_stage1=float(growth_stage1),
+        terminal_growth=float(terminal_growth),
+        n_years=int(n_years),
+    )
+    if dcf.empty:
+        st.info("DCF inputs are not available for this ticker.")
+    else:
+        latest = dcf.iloc[-1]
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Intrinsic price", format_live_value(latest.get("intrinsic_price_dcf")))
+        k2.metric("Upside / downside", f"{float(latest.get('upside_dcf')):.1%}" if pd.notna(latest.get("upside_dcf")) else "n/a")
+        k3.metric("Enterprise value", format_live_value(latest.get("enterprise_value_dcf")))
+        k4.metric("Equity value", format_live_value(latest.get("equity_value_dcf")))
+        waterfall = dcf[dcf["component"].astype(str).str.startswith("PV")][["component", "present_value"]].copy()
+        st.plotly_chart(px.bar(waterfall, x="component", y="present_value", title="DCF value bridge: PV FCF + terminal value", template="plotly_white"), width="stretch")
+        st.dataframe(dcf, width="stretch", hide_index=True)
+    render_feature_metadata_expander(["intrinsic_price_dcf", "upside_dcf", "wacc_spread", "ev_fcf"], "DCF feature glossary")
+
+with tab_market_multiples:
+    st.markdown("### Multipli di Mercato")
+    multiples = compute_market_multiples(valuation_payload)
+    comps = compute_comps_valuation(valuation_payload, screener if not screener.empty else screener_view)
+    rows = []
+    for metric in ["pe_ratio", "pb_ratio", "ps_ratio", "pcf_ratio", "ev_ebitda", "ev_ebit", "ev_sales", "ev_fcf", "dividend_yield", "peg_ratio"]:
+        rows.append(
+            {
+                "multiple": metric,
+                "current": multiples.get(metric),
+                "sector_reference": comps.get("sector_pe_median") if metric == "pe_ratio" else comps.get("sector_ev_ebitda_median") if metric == "ev_ebitda" else None,
+                "interpretation": "Lower is cheaper" if metric not in {"dividend_yield"} else "Higher is more income support",
+            }
+        )
+    multiples_df = pd.DataFrame(rows)
+    st.dataframe(multiples_df, width="stretch", hide_index=True)
+    radar = multiples_df.dropna(subset=["current"]).head(6).copy()
+    if not radar.empty:
+        radar["normalized"] = pd.to_numeric(radar["current"], errors="coerce").rank(pct=True)
+        fig = px.line_polar(radar, r="normalized", theta="multiple", line_close=True, title="Relative multiple profile", template="plotly_white")
+        st.plotly_chart(fig, width="stretch")
+    comp_rows = pd.DataFrame([comps])
+    st.dataframe(comp_rows, width="stretch", hide_index=True)
+    render_feature_metadata_expander(["pe_ratio", "pb_ratio", "ps_ratio", "ev_ebitda", "ev_ebit", "ev_sales", "peg_ratio", "premium_discount_to_sector"], "Market multiples glossary")
+
+with tab_eva_residual:
+    st.markdown("### Residual Income / EVA")
+    eva = compute_eva_residual_income(valuation_payload, wacc=float(wacc_input) if "wacc_input" in locals() else None)
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("ROIC", f"{float(eva.get('roic')):.1%}" if pd.notna(eva.get("roic")) else "n/a")
+    k2.metric("WACC", f"{float(eva.get('wacc')):.1%}" if pd.notna(eva.get("wacc")) else "n/a")
+    k3.metric("ROIC - WACC", f"{float(eva.get('wacc_spread')):.1%}" if pd.notna(eva.get("wacc_spread")) else "n/a")
+    k4.metric("EVA", format_live_value(eva.get("eva")))
+    st.dataframe(pd.DataFrame([eva]).T.reset_index().rename(columns={"index": "metric", 0: "value"}), width="stretch", hide_index=True)
+    if not eva_summary.empty:
+        dataframe_with_download("Stored EVA scenario summary", eva_summary, "EVAScenarioSummary.csv")
+    else:
+        st.info("Stored multi-year EVA artifacts are not available yet. Use the DCF Monte Carlo tab to generate scenario bands.")
+    render_feature_metadata_expander(["roic", "wacc_spread", "eva", "intrinsic_pb"], "Residual income and EVA glossary")
+
+with tab_fair_value:
+    st.markdown("### DDM & Fair Value Summary")
+    ddm = compute_ddm_valuation(valuation_payload)
+    asset_value = compute_asset_based_valuation(valuation_payload)
+    dcf_value = dcf["intrinsic_price_dcf"].dropna().iloc[-1] if "dcf" in locals() and not dcf.empty and dcf["intrinsic_price_dcf"].notna().any() else float("nan")
+    summary_models = {
+        "DCF": dcf_value,
+        "DDM Gordon": ddm.get("intrinsic_price_ddm"),
+        "DDM 2-stage": ddm.get("intrinsic_price_ddm_2stage"),
+        "Comps P/E": comps.get("implied_price_pe") if "comps" in locals() else float("nan"),
+        "Comps EV/EBITDA": comps.get("implied_price_ev_ebitda") if "comps" in locals() else float("nan"),
+        "Tangible Book": asset_value.get("tangible_book_per_share"),
+    }
+    fv = fair_value_summary(summary_models, current_price=valuation_payload.get("current_price") or valuation_payload.get("price"))
+    if fv.empty:
+        st.info("No fair value models have enough inputs for this ticker.")
+    else:
+        low, high = fv["range_low"].iloc[0], fv["range_high"].iloc[0]
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Fair value low", format_live_value(low))
+        c2.metric("Fair value high", format_live_value(high))
+        c3.metric("Models available", len(fv))
+        st.dataframe(fv, width="stretch", hide_index=True)
+        st.plotly_chart(px.bar(fv, x="model", y="fair_value", color="upside", title="Fair value range by model", template="plotly_white", color_continuous_scale="RdYlGn"), width="stretch")
+    with st.expander("DDM and asset-based inputs", expanded=False):
+        st.dataframe(pd.DataFrame([ddm | asset_value]), width="stretch", hide_index=True)
+    render_feature_metadata_expander(["intrinsic_price_ddm", "intrinsic_price_ddm_2stage", "book_value_per_share", "tangible_book_per_share", "liquidation_value_approx"], "DDM and asset valuation glossary")
+
 with tab_models:
     dataframe_with_download("Extended valuation results", filter_ticker(extended), "extended_valuation_results.csv")
     dataframe_with_download("Valuation model registry", data["valuation_models"], "valuation_model_registry.csv")
     dataframe_with_download("Valuation assumptions", data["valuation_assumptions"], "valuation_assumptions.csv")
+    render_metric_metadata_expander(["alpha", "beta", "volatility", "cvar", "max_drawdown"], "Valuation risk metric glossary")
     with st.expander("Model interpretation", expanded=True):
         st.markdown("DCF, residual income, multiples and scenario outputs should be compared as a range. Wide dispersion is a model-risk signal, not just noise.")
 
@@ -342,7 +615,7 @@ with tab_smart_money:
     )
     if smart_view.empty:
         st.info("Run the Smart Money Government Data Refresh job to compute ownership, insider, activism, macro-flow and public-spending overlays.")
-        st.page_link("pages/5_Run_Notebooks.py", label="Open Run Notebooks")
+        safe_page_link("pages/6_🧪_Notebook_Runner.py", "Open Notebook Runner")
     else:
         dataframe_with_download("Smart Money issuer overlay", smart_view, "valuation_smart_money_overlay.csv")
         if "composite_institutional_interest_score" in smart_view.columns:
@@ -355,7 +628,7 @@ with tab_ml_lab:
     st.markdown("ML Stock Lab provides model-implied fair value and mispricing signals that can be compared with the valuation engine.")
     if ml_signal_view.empty:
         st.info("Run ML Stock Lab refresh to compute fair value ML, mispricing and quintile artifacts.")
-        st.page_link("pages/9_ML_Stock_Lab.py", label="Open ML Stock Lab")
+        safe_page_link("pages/9_ML_Stock_Lab.py", "Open ML Stock Lab")
     else:
         dataframe_with_download("ML Stock Lab valuation overlay", ml_signal_view, "valuation_ml_stock_lab_overlay.csv")
         if {"market_value", "fair_value_hat"}.issubset(ml_signal_view.columns):
@@ -377,3 +650,5 @@ with tab_diagnostics:
             - ML outputs are overlays and should not override valuation assumptions without review.
             """
         )
+
+render_footer()

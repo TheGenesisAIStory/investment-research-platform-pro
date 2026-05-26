@@ -124,7 +124,7 @@ def load_api_folder_inventory(api_root: Path | str) -> pd.DataFrame:
                 "suffix": path.suffix.lower(),
                 "size_kb": round(stat.st_size / 1024, 2),
                 "modified_utc": modified.isoformat(),
-                "age_hours": round((pd.Timestamp.utcnow() - modified).total_seconds() / 3600, 2),
+                "age_hours": round((pd.Timestamp.now(tz="UTC") - modified).total_seconds() / 3600, 2),
                 "exists": True,
                 "secret_policy": "private_drive_file_do_not_commit",
             }
