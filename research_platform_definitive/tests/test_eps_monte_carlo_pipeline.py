@@ -78,10 +78,14 @@ def test_registry_metadata_and_notebook_skeleton() -> None:
     for section in [
         "Mount Google Drive",
         "Feature Engineering",
+        "Auto-Import Canonical Factors",
+        "validate_training_matrix",
         "Model Training",
         "Walk-Forward",
         "SHAP Feature Importance",
         "Factor IC Analysis",
+        "save_ic_heatmap",
         "Export Artifacts",
+        "runs_log.json",
     ]:
         assert section in sources

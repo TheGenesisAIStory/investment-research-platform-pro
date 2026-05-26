@@ -8,7 +8,7 @@ Decision policy applied:
 - EPS factors: `create_new_module`; implemented as experimental in `factors/eps_factors.py`.
 - Monte Carlo simulation: `create_new_module`; implemented as experimental in `simulation/monte_carlo.py`.
 - Colab Pro pipeline: `cloud_handoff`; created notebook skeleton in `colab/ml_training_pipeline.ipynb`.
-- Cross-asset completeness check: `docs_only`; missing functions are flagged as `STUB` rather than silently invented.
+- Cross-asset completeness check: `extend_existing_module`; `cross_asset_value` and `global_risk_factor` are now implemented in the existing module, while `liquidity_factor` remains a documented `STUB`.
 
 ## Academic Documentation Audit
 
@@ -35,9 +35,9 @@ Decision policy applied:
 | `commodity_factors.py` | Commodity carry proxy | Gorton-Rouwenhorst 2006; Bartram et al. 2021 | experimental | no |
 | `commodity_factors.py` | Commodity mean reversion | Asness-Moskowitz-Pedersen 2013, Journal of Finance | experimental | no |
 | `cross_asset_factors.py` | cross_asset_momentum | Asness-Moskowitz-Pedersen 2013, Journal of Finance | experimental | no |
-| `cross_asset_factors.py` | Cross-asset value | Asness-Moskowitz-Pedersen 2013, Journal of Finance | STUB | yes - implementation missing |
-| `cross_asset_factors.py` | Global risk factor | Bartram et al. 2021; PCA risk-factor literature | STUB | yes - implementation missing |
-| `cross_asset_factors.py` | Liquidity factor | Pastor-Stambaugh 2003, Journal of Political Economy; Amihud 2002, Journal of Financial Markets | STUB | yes - implementation missing |
+| `cross_asset_factors.py` | Cross-asset value | Asness-Moskowitz-Pedersen 2013, Journal of Finance | implemented experimental | no |
+| `cross_asset_factors.py` | Global risk factor | Bartram et al. 2021; PCA risk-factor literature | implemented experimental | no |
+| `cross_asset_factors.py` | Liquidity factor | Pastor-Stambaugh 2003, Journal of Political Economy; Amihud 2002, Journal of Financial Markets | STUB - owner: Data Platform; timeline: next provider-liquidity cycle | yes - implementation missing |
 | `smart_money.py` | COT hedging pressure | De Roon et al. 2000, Journal of Finance; CFTC COT | experimental | no |
 | `macro_context.py` / `ml_stock_lab/macro_features.py` | Macro context block | Fama-French conditional returns; Adrian-Shin 2010 | experimental | no |
 | `regime_detection.py` | Market regime label | Ang-Bekaert 2002; Gen.is.IA internal rule system | implemented | no |
@@ -64,13 +64,31 @@ Decision policy applied:
 | `simulation/monte_carlo.py` | `monte_carlo_factor_uncertainty` | Glasserman 2003 | implemented experimental | no |
 | `colab/ml_training_pipeline.ipynb` | Colab Pro ML pipeline | Gen.is.IA cloud handoff | implemented skeleton | no |
 | `cross_asset_factors.py` | `cross_asset_momentum` | Asness-Moskowitz-Pedersen 2013 | implemented alias to `build_cross_asset_momentum` | no |
-| `cross_asset_factors.py` | `cross_asset_value` | Asness-Moskowitz-Pedersen 2013 | STUB | yes |
-| `cross_asset_factors.py` | `global_risk_factor` | PCA-based global risk-factor literature | STUB | yes |
-| `cross_asset_factors.py` | `liquidity_factor` | Amihud 2002; Pastor-Stambaugh 2003 | STUB | yes |
+| `cross_asset_factors.py` | `cross_asset_value` | Asness-Moskowitz-Pedersen 2013 | implemented experimental | no |
+| `cross_asset_factors.py` | `global_risk_factor` | PCA-based global risk-factor literature | implemented experimental | no |
+| `cross_asset_factors.py` | `liquidity_factor` | Amihud 2002; Pastor-Stambaugh 2003 | STUB - owner: Data Platform; timeline: after Amihud/volume panel is standardized | yes |
+
+## DATA_ARTIFACTS
+
+| Artifact / manifest | State | CI impact | Note |
+| --- | --- | --- | --- |
+| `output/data_completion/*_2000_2026.csv` manifests | LOCAL_ONLY - not required for CI | none | `validate_research_data_coverage.py` exits 0 but can report these staging manifests as `MISSING` on a clean local checkout. Treat as artifact availability, not code regression. |
+| Runtime training/log outputs under `output/logs/`, `output/ml_training_lab/`, `output/ml_stock_lab/` | LOCAL_ONLY - not required for CI | none | Heavy or generated outputs remain untracked by policy; sync lightweight summaries only when explicitly requested. |
+
+## PR / Merge Checklist
+
+| Item | Status | Note |
+| --- | --- | --- |
+| STUB factors documented with owner and timeline | done | `liquidity_factor` remains the only cross-asset STUB from this audit. |
+| data_completion manifest gap added as DATA_ARTIFACTS note | done | Classified as `LOCAL_ONLY - not required for CI`. |
+| CHANGELOG.md updated with v2.x entry | done | See root `CHANGELOG.md`. |
+| PR description includes commits `1c849c7`, `223903f`, `901e7e4` | ready | Include these commit IDs in the PR body. |
+| EPS lag reviewed for ticker edge cases | done | EPS factors use per-ticker fiscal-period shift and naive consensus proxy when unavailable. |
+| Monte Carlo seed reproducibility reviewed | done | `seed=42` uses NumPy Generator semantics compatible with NumPy >= 1.17. |
 
 ## Residual Notes
 
 - EPS consensus coverage is provider-dependent. The implementation uses a rolling historical EPS mean as a naive proxy when consensus is unavailable.
 - Monte Carlo simulation assumes the supplied factor matrix is already point-in-time safe.
 - The Colab notebook is a handoff skeleton, not a committed heavy training run.
-- Cross-asset value, PCA global risk and cross-asset liquidity are intentionally flagged as stubs because the current repository has no robust PPP/value/spread/liquidity panel for those functions yet.
+- Cross-asset value and PCA global risk are implemented as experimental utilities. Cross-asset liquidity remains a STUB until the Amihud/volume panel is standardized across asset classes.
