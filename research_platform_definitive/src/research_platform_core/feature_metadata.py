@@ -25,6 +25,20 @@ class FeatureMetadata:
     leakage_risk: bool = False
     data_requirement: tuple[str, ...] = ()
     source_paper: str = ""
+    alias: tuple[str, ...] = ()
+    asset_class: str = "equity"
+    formula_latex: str = ""
+    computation_window: str = ""
+    normalization: str = ""
+    source_doi: str = ""
+    economic_rationale: str = ""
+    factor_zoo_category: str = ""
+    point_in_time_safe: bool = True
+    lag_required: str = "none"
+    winsorize_bounds: tuple[float, float] = (0.01, 0.99)
+    direction: str = "neutral"
+    typical_range: str = ""
+    implementation_module: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

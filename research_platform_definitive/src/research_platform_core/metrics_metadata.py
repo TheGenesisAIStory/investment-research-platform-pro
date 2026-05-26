@@ -16,8 +16,12 @@ class MetricMetadata:
     definition: str
     formula: str
     interpretation: str
+    formula_latex: str = ""
+    paper: str = ""
+    typical_range: str = ""
+    annualized: bool = False
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
 

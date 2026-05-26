@@ -375,6 +375,13 @@ def _render_workflows(company: dict[str, pd.DataFrame], portfolio: dict[str, pd.
             "pages/3_📁_Portfolio_Research.py",
             "Open Portfolio",
         )
+    with st.container(border=True):
+        st.markdown("### □ Research Methodology")
+        st.caption("Built on Fama-French (1993, 2015), Carhart momentum, AQR QMJ/BAB, Amihud liquidity, Piotroski quality and risk-adjusted portfolio analytics.")
+        c1, c2 = st.columns([0.35, 0.65])
+        if c1.button("Open Academic Reference", width="stretch"):
+            st.switch_page("pages/15_📚_Academic_Reference.py")
+        c2.caption("Use the reference browser for formulas, papers, leakage flags, metric definitions and cached FF/AQR factor returns.")
 
 
 def _render_advanced_ops(roots: dict[str, Path], artifacts: pd.DataFrame, freshness: pd.DataFrame, runs: pd.DataFrame) -> None:

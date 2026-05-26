@@ -37,6 +37,60 @@ ASSET_CLASS_MAP = {
     "volatility_index": "yield_proxy",
 }
 
+EXPANDED_MULTI_ASSET_ROWS: tuple[dict[str, Any], ...] = (
+    # Equity indices and regional ETFs.
+    {"symbol": "GSPC", "provider_symbol": "^GSPC", "name": "S&P 500 Index", "asset_class": "equity_index", "region": "us", "currency": "USD", "category": "large_cap", "exposure": "US equity index", "priority": 1},
+    {"symbol": "IXIC", "provider_symbol": "^IXIC", "name": "NASDAQ Composite", "asset_class": "equity_index", "region": "us", "currency": "USD", "category": "growth", "exposure": "US technology/growth index", "priority": 1},
+    {"symbol": "DJI", "provider_symbol": "^DJI", "name": "Dow Jones Industrial Average", "asset_class": "equity_index", "region": "us", "currency": "USD", "category": "blue_chip", "exposure": "US blue-chip index", "priority": 2},
+    {"symbol": "RUT", "provider_symbol": "^RUT", "name": "Russell 2000 Index", "asset_class": "equity_index", "region": "us", "currency": "USD", "category": "small_cap", "exposure": "US small-cap index", "priority": 2},
+    {"symbol": "DIA", "provider_symbol": "DIA", "name": "SPDR Dow Jones Industrial Average ETF", "asset_class": "equity_index_etf", "region": "us", "currency": "USD", "category": "blue_chip", "exposure": "US Dow ETF", "priority": 2},
+    {"symbol": "URTH", "provider_symbol": "URTH", "name": "iShares MSCI World ETF", "asset_class": "equity_index_etf", "region": "global", "currency": "USD", "category": "developed_markets", "exposure": "MSCI World proxy", "priority": 1},
+    {"symbol": "VEA", "provider_symbol": "VEA", "name": "Vanguard Developed Markets ETF", "asset_class": "equity_index_etf", "region": "global", "currency": "USD", "category": "developed_ex_us", "exposure": "Developed markets ex-US", "priority": 2},
+    {"symbol": "STOXX50E", "provider_symbol": "^STOXX50E", "name": "EURO STOXX 50 Index", "asset_class": "equity_index", "region": "eu", "currency": "EUR", "category": "large_cap", "exposure": "Eurozone large-cap index", "priority": 1},
+    {"symbol": "GDAXI", "provider_symbol": "^GDAXI", "name": "DAX Index", "asset_class": "equity_index", "region": "eu", "currency": "EUR", "category": "country_equity", "exposure": "Germany equity index", "priority": 2},
+    {"symbol": "FCHI", "provider_symbol": "^FCHI", "name": "CAC 40 Index", "asset_class": "equity_index", "region": "eu", "currency": "EUR", "category": "country_equity", "exposure": "France equity index", "priority": 2},
+    {"symbol": "IBEX", "provider_symbol": "^IBEX", "name": "IBEX 35 Index", "asset_class": "equity_index", "region": "eu", "currency": "EUR", "category": "country_equity", "exposure": "Spain equity index", "priority": 2},
+    {"symbol": "AEX", "provider_symbol": "^AEX", "name": "AEX Index", "asset_class": "equity_index", "region": "eu", "currency": "EUR", "category": "country_equity", "exposure": "Netherlands equity index", "priority": 3},
+    {"symbol": "EWN", "provider_symbol": "EWN", "name": "iShares MSCI Netherlands ETF", "asset_class": "equity_index_etf", "region": "eu", "currency": "USD", "category": "country_equity", "exposure": "Netherlands ETF", "priority": 3},
+    {"symbol": "EWC", "provider_symbol": "EWC", "name": "iShares MSCI Canada ETF", "asset_class": "equity_index_etf", "region": "global", "currency": "USD", "category": "country_equity", "exposure": "Canada ETF", "priority": 3},
+    {"symbol": "EWZ", "provider_symbol": "EWZ", "name": "iShares MSCI Brazil ETF", "asset_class": "equity_index_etf", "region": "em", "currency": "USD", "category": "country_equity", "exposure": "Brazil ETF", "priority": 2},
+    {"symbol": "EWW", "provider_symbol": "EWW", "name": "iShares MSCI Mexico ETF", "asset_class": "equity_index_etf", "region": "em", "currency": "USD", "category": "country_equity", "exposure": "Mexico ETF", "priority": 3},
+    {"symbol": "EWA", "provider_symbol": "EWA", "name": "iShares MSCI Australia ETF", "asset_class": "equity_index_etf", "region": "apac", "currency": "USD", "category": "country_equity", "exposure": "Australia ETF", "priority": 3},
+    {"symbol": "EWH", "provider_symbol": "EWH", "name": "iShares MSCI Hong Kong ETF", "asset_class": "equity_index_etf", "region": "apac", "currency": "USD", "category": "country_equity", "exposure": "Hong Kong ETF", "priority": 3},
+    {"symbol": "EWT", "provider_symbol": "EWT", "name": "iShares MSCI Taiwan ETF", "asset_class": "equity_index_etf", "region": "apac", "currency": "USD", "category": "country_equity", "exposure": "Taiwan ETF", "priority": 3},
+    {"symbol": "EWY", "provider_symbol": "EWY", "name": "iShares MSCI South Korea ETF", "asset_class": "equity_index_etf", "region": "apac", "currency": "USD", "category": "country_equity", "exposure": "Korea ETF", "priority": 3},
+    {"symbol": "EWS", "provider_symbol": "EWS", "name": "iShares MSCI Singapore ETF", "asset_class": "equity_index_etf", "region": "apac", "currency": "USD", "category": "country_equity", "exposure": "Singapore ETF", "priority": 3},
+    {"symbol": "AAXJ", "provider_symbol": "AAXJ", "name": "iShares MSCI All Country Asia ex Japan ETF", "asset_class": "equity_index_etf", "region": "apac", "currency": "USD", "category": "regional_equity", "exposure": "Asia Pacific ex Japan", "priority": 2},
+    {"symbol": "EWJ", "provider_symbol": "EWJ", "name": "iShares MSCI Japan ETF", "asset_class": "equity_index_etf", "region": "jp", "currency": "USD", "category": "country_equity", "exposure": "Japan ETF", "priority": 1},
+    {"symbol": "DXJ", "provider_symbol": "DXJ", "name": "WisdomTree Japan Hedged Equity Fund", "asset_class": "equity_index_etf", "region": "jp", "currency": "USD", "category": "currency_hedged", "exposure": "Japan hedged equity ETF", "priority": 2},
+    {"symbol": "N225", "provider_symbol": "^N225", "name": "Nikkei 225 Index", "asset_class": "equity_index", "region": "jp", "currency": "JPY", "category": "large_cap", "exposure": "Japan large-cap index", "priority": 1},
+    # FX.
+    {"symbol": "USDBRL", "provider_symbol": "USDBRL=X", "name": "USD / BRL", "asset_class": "fx", "region": "em", "currency": "BRL", "category": "em_fx", "exposure": "Brazilian real", "priority": 2},
+    {"symbol": "USDMXN", "provider_symbol": "USDMXN=X", "name": "USD / MXN", "asset_class": "fx", "region": "em", "currency": "MXN", "category": "em_fx", "exposure": "Mexican peso", "priority": 2},
+    {"symbol": "USDCNY", "provider_symbol": "USDCNY=X", "name": "USD / CNY", "asset_class": "fx", "region": "em", "currency": "CNY", "category": "em_fx", "exposure": "Chinese yuan", "priority": 2},
+    {"symbol": "USDINR", "provider_symbol": "USDINR=X", "name": "USD / INR", "asset_class": "fx", "region": "em", "currency": "INR", "category": "em_fx", "exposure": "Indian rupee", "priority": 2},
+    {"symbol": "USDTRY", "provider_symbol": "USDTRY=X", "name": "USD / TRY", "asset_class": "fx", "region": "em", "currency": "TRY", "category": "em_fx", "exposure": "Turkish lira", "priority": 3},
+    {"symbol": "USDZAR", "provider_symbol": "USDZAR=X", "name": "USD / ZAR", "asset_class": "fx", "region": "em", "currency": "ZAR", "category": "em_fx", "exposure": "South African rand", "priority": 3},
+    {"symbol": "USDKRW", "provider_symbol": "USDKRW=X", "name": "USD / KRW", "asset_class": "fx", "region": "em", "currency": "KRW", "category": "em_fx", "exposure": "Korean won", "priority": 3},
+    # Fixed income and yield proxies.
+    {"symbol": "TYX", "provider_symbol": "^TYX", "name": "US 30Y Treasury Yield Index", "asset_class": "rate_index", "region": "us", "currency": "percent", "category": "rates", "exposure": "US 30Y yield proxy", "priority": 2},
+    {"symbol": "BNDW", "provider_symbol": "BNDW", "name": "Vanguard Total World Bond ETF", "asset_class": "fixed_income_etf", "region": "global", "currency": "USD", "category": "global_bonds", "exposure": "Global aggregate bond ETF", "priority": 2},
+    {"symbol": "IAGG", "provider_symbol": "IAGG", "name": "iShares Core International Aggregate Bond ETF", "asset_class": "fixed_income_etf", "region": "global", "currency": "USD", "category": "global_bonds_ex_us", "exposure": "International aggregate bonds", "priority": 3},
+    {"symbol": "IBCI_AS", "provider_symbol": "IBCI.AS", "name": "iShares EUR Government Bond ETF proxy", "asset_class": "fixed_income_etf", "region": "eu", "currency": "EUR", "category": "duration", "exposure": "Euro government bond proxy", "priority": 2},
+    {"symbol": "BTPI_MI", "provider_symbol": "BTPI.MI", "name": "BTP inflation-linked bond ETF proxy", "asset_class": "fixed_income_etf", "region": "it", "currency": "EUR", "category": "sovereign", "exposure": "Italy BTP proxy", "priority": 2},
+    # Commodity ETFs and futures.
+    {"symbol": "DJP", "provider_symbol": "DJP", "name": "iPath Bloomberg Commodity Index ETN", "asset_class": "commodity_etf", "region": "global", "currency": "USD", "category": "broad_commodities", "exposure": "Broad commodity basket", "priority": 2},
+    {"symbol": "PDBC", "provider_symbol": "PDBC", "name": "Invesco Optimum Yield Diversified Commodity Strategy", "asset_class": "commodity_etf", "region": "global", "currency": "USD", "category": "broad_commodities", "exposure": "Broad commodity ETF", "priority": 2},
+    {"symbol": "IAU", "provider_symbol": "IAU", "name": "iShares Gold Trust", "asset_class": "commodity_etf", "region": "global", "currency": "USD", "category": "precious_metals", "exposure": "Gold ETF", "priority": 2},
+    {"symbol": "CPER", "provider_symbol": "CPER", "name": "United States Copper Index Fund", "asset_class": "commodity_etf", "region": "global", "currency": "USD", "category": "industrial_metals", "exposure": "Copper ETF", "priority": 3},
+    {"symbol": "GC_F", "provider_symbol": "GC=F", "name": "Gold future", "asset_class": "commodity_future", "region": "global", "currency": "USD", "category": "precious_metals", "exposure": "Gold futures proxy", "priority": 1},
+    {"symbol": "SI_F", "provider_symbol": "SI=F", "name": "Silver future", "asset_class": "commodity_future", "region": "global", "currency": "USD", "category": "precious_metals", "exposure": "Silver futures proxy", "priority": 1},
+    # Crypto.
+    {"symbol": "MATIC", "provider_symbol": "MATIC-USD", "name": "Polygon", "asset_class": "crypto", "region": "global", "currency": "USD", "category": "crypto_alt", "exposure": "Polygon price", "priority": 3},
+    {"symbol": "IBIT", "provider_symbol": "IBIT", "name": "iShares Bitcoin Trust", "asset_class": "crypto_etf", "region": "us", "currency": "USD", "category": "crypto_etf", "exposure": "US spot bitcoin ETF", "priority": 1},
+    {"symbol": "FBTC", "provider_symbol": "FBTC", "name": "Fidelity Wise Origin Bitcoin Fund", "asset_class": "crypto_etf", "region": "us", "currency": "USD", "category": "crypto_etf", "exposure": "US spot bitcoin ETF", "priority": 2},
+)
+
 
 def _read_csv(path: Path) -> pd.DataFrame:
     if not path.exists() or path.stat().st_size <= 1:
@@ -185,12 +239,19 @@ def multi_asset_universe_catalog(
 ) -> pd.DataFrame:
     """Return the normalized multi-asset catalog used by ingestion and UI."""
     catalog = macro_asset_catalog(regions=regions, asset_classes=asset_classes).copy()
+    extra = pd.DataFrame(EXPANDED_MULTI_ASSET_ROWS)
+    if not extra.empty:
+        extra["source"] = "yfinance"
+        extra["status"] = "READY"
+        extra["country"] = extra.get("country", extra["region"].astype(str).str.upper())
+        catalog = pd.concat([catalog, extra], ignore_index=True, sort=False)
+        catalog = catalog.drop_duplicates("symbol", keep="first")
     catalog["asset_class"] = catalog["asset_class"].map(_normalized_asset_class)
     catalog["region"] = catalog["region"].astype(str).str.lower().replace({"usa": "us", "italy": "it", "crypto": "global"})
     catalog["source"] = catalog.get("source", "yfinance").fillna("yfinance")
     catalog["data_status"] = catalog.get("status", "READY").fillna("READY").replace({"READY": "PLANNED", "PROXY": "PLANNED"})
     catalog["priority"] = [
-        _priority_for_asset(row.get("asset_class"), row.get("region"), row.get("symbol"))
+        int(row.get("priority")) if pd.notna(row.get("priority", pd.NA)) else _priority_for_asset(row.get("asset_class"), row.get("region"), row.get("symbol"))
         for _, row in catalog.iterrows()
     ]
     catalog["notes"] = catalog.apply(
@@ -367,7 +428,7 @@ def compile_multi_asset_universe_manifest(
     roots = resolve_data_platform_roots(financial_db_root=financial_db_root, repo_output_root=output_root)
     table_root = roots.repo_output / TABLE_REL.parent
     table_root.mkdir(parents=True, exist_ok=True)
-    catalog = macro_asset_catalog()
+    catalog = multi_asset_universe_catalog()
     catalog.to_csv(table_root / "MacroAssetCatalog.csv", index=False)
     manifest_paths = [
         roots.repo_output / "macro_market" / "tables" / "MacroAssetManifest.csv",

@@ -10,7 +10,9 @@ from __future__ import annotations
 import json
 import re
 import time
+import zipfile
 from dataclasses import asdict, dataclass
+from io import BytesIO
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Iterable
@@ -27,6 +29,33 @@ AQR_DATASET_PAGES = (
     "https://www.aqr.com/Insights/Datasets?page=2",
 )
 AQR_BASE_URL = "https://www.aqr.com"
+FRENCH_FTP_BASE_URL = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/"
+
+FF3_REGIONS = {
+    "US": "F-F_Research_Data_Factors",
+    "EU": "Europe_3_Factors",
+    "JP": "Japan_3_Factors",
+    "APAC": "Asia_Pacific_ex_Japan_3_Factors",
+    # Ken French publishes emerging-market factors as the 5-factor bundle.
+    # The downloader can still return an FF3-compatible subset from it.
+    "EM": "Emerging_5_Factors",
+    "WORLD": "Developed_ex_US_3_Factors",
+}
+
+FF5_REGIONS = {
+    "US": "F-F_Research_Data_5_Factors_2x3",
+    "EU": "Europe_5_Factors",
+    "JP": "Japan_5_Factors",
+    "APAC": "Asia_Pacific_ex_Japan_5_Factors",
+    "EM": "Emerging_5_Factors",
+}
+
+FF_MOM_REGIONS = {
+    "US": "F-F_Momentum_Factor",
+    "EU": "Europe_Mom_Factor",
+    "JP": "Japan_Mom_Factor",
+    "APAC": "Asia_Pacific_ex_Japan_Mom_Factor",
+}
 
 
 @dataclass(frozen=True)
@@ -72,6 +101,214 @@ def slugify(value: Any) -> str:
     text = re.sub(r"\.(xlsx|xls)$", "", text)
     text = re.sub(r"[^a-z0-9]+", "_", text)
     return re.sub(r"_+", "_", text).strip("_")
+
+
+def _normalize_region(region: str) -> str:
+    text = str(region or "").strip().upper()
+    aliases = {"EUROPE": "EU", "JAPAN": "JP", "GLOBAL": "WORLD", "WORLD": "WORLD", "DEVELOPED": "WORLD"}
+    return aliases.get(text, text)
+
+
+def _normalize_factor_columns(frame: pd.DataFrame) -> pd.DataFrame:
+    rename = {
+        "Mkt-RF": "MKT_RF",
+        "Mkt_RF": "MKT_RF",
+        "MKT-RF": "MKT_RF",
+        "MKT RF": "MKT_RF",
+        "Mom": "MOM",
+        "UMD": "MOM",
+    }
+    out = frame.copy()
+    out = out.rename(columns={col: rename.get(str(col).strip(), str(col).strip().replace("-", "_").replace(" ", "_").upper()) for col in out.columns})
+    if "DATE" in out.columns and "date" not in out.columns:
+        out = out.rename(columns={"DATE": "date"})
+    if "date" not in out.columns:
+        out = out.reset_index().rename(columns={out.index.name or "index": "date"})
+    out["date"] = pd.to_datetime(out["date"], errors="coerce")
+    out = out.dropna(subset=["date"])
+    for col in out.columns:
+        if col == "date":
+            continue
+        out[col] = pd.to_numeric(out[col], errors="coerce")
+        max_abs = out[col].abs().max(skipna=True)
+        if pd.notna(max_abs) and max_abs > 2:
+            out[col] = out[col] / 100.0
+    wanted = [col for col in ["MKT_RF", "SMB", "HML", "RMW", "CMA", "MOM", "RF"] if col in out.columns]
+    return out[["date", *wanted]].sort_values("date").reset_index(drop=True)
+
+
+def _ff_cache_path(region: str, factor_set: str, output_root: str | Path | None = None) -> Path:
+    roots = resolve_data_platform_roots(repo_output_root=output_root)
+    path = roots.repo_output / "ff_factors" / f"{_normalize_region(region)}_{factor_set.upper().replace('+', '_')}.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _cache_is_fresh(path: Path, max_age_days: int = 30) -> bool:
+    if not path.exists() or path.stat().st_size <= 100:
+        return False
+    modified = pd.Timestamp(path.stat().st_mtime, unit="s", tz="UTC")
+    return (pd.Timestamp.now("UTC") - modified).days <= max_age_days
+
+
+def _read_french_zip(dataset: str) -> pd.DataFrame:
+    from .loaders.fama_french import parse_fama_french_csv
+
+    import requests
+
+    url = FRENCH_FTP_BASE_URL + f"{dataset}_CSV.zip"
+    response = requests.get(url, timeout=60, headers={"User-Agent": "ResearchPlatform/1.0 FamaFrenchRegional"})
+    response.raise_for_status()
+    with zipfile.ZipFile(BytesIO(response.content)) as archive:
+        csv_names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
+        if not csv_names:
+            raise ValueError(f"No CSV found in {dataset}")
+        text = archive.read(csv_names[0]).decode("utf-8", errors="ignore")
+    return parse_fama_french_csv(text, "monthly")
+
+
+def _read_french_datareader(dataset: str, start_date: str) -> pd.DataFrame:
+    try:
+        from pandas_datareader import data as pdr_data
+    except Exception as exc:
+        raise ImportError("pandas_datareader is unavailable") from exc
+
+    bundle = pdr_data.DataReader(dataset, "famafrench", start=start_date)
+    frame = next((item for item in bundle.values() if isinstance(item, pd.DataFrame)), pd.DataFrame())
+    if frame.empty:
+        return frame
+    out = frame.copy()
+    if isinstance(out.index, pd.PeriodIndex):
+        out.index = out.index.to_timestamp(how="end")
+    out.index.name = "date"
+    return out.reset_index()
+
+
+def download_ff_factors(
+    region: str,
+    factor_set: str = "FF5+MOM",
+    start_date: str = "2000-01-01",
+    *,
+    output_root: str | Path | None = None,
+    refresh: bool = False,
+) -> pd.DataFrame:
+    """Download regional Fama-French factors with local parquet caching.
+
+    Returns columns ``date, MKT_RF, SMB, HML, [RMW, CMA], [MOM], RF`` in
+    decimal return units.  ``FF6`` and ``FF5+MOM`` are synonyms.
+    """
+    region_key = _normalize_region(region)
+    factor_key = str(factor_set or "FF5+MOM").strip().upper().replace(" ", "")
+    if factor_key == "FF6":
+        factor_key = "FF5+MOM"
+    cache_path = _ff_cache_path(region_key, factor_key, output_root)
+    if not refresh and _cache_is_fresh(cache_path):
+        cached = pd.read_parquet(cache_path)
+        return cached[cached["date"].ge(pd.to_datetime(start_date))].reset_index(drop=True)
+
+    if region_key == "IT":
+        raise ValueError("Italy FF factors are constructed locally with construct_it_local_factors().")
+    if region_key not in FF3_REGIONS:
+        raise KeyError(f"Unsupported Fama-French region: {region}")
+
+    frames: list[pd.DataFrame] = []
+    if factor_key in {"FF3", "FF5+MOM"}:
+        dataset = FF3_REGIONS[region_key]
+        try:
+            frames.append(_read_french_datareader(dataset, start_date))
+        except Exception:
+            frames.append(_read_french_zip(dataset))
+    if factor_key in {"FF5", "FF5+MOM"} and region_key in FF5_REGIONS:
+        dataset = FF5_REGIONS[region_key]
+        try:
+            frames = [_read_french_datareader(dataset, start_date)]
+        except Exception:
+            frames = [_read_french_zip(dataset)]
+    if factor_key == "FF5+MOM" and region_key in FF_MOM_REGIONS:
+        dataset = FF_MOM_REGIONS[region_key]
+        try:
+            frames.append(_read_french_datareader(dataset, start_date))
+        except Exception:
+            frames.append(_read_french_zip(dataset))
+
+    normalized = [_normalize_factor_columns(frame) for frame in frames if isinstance(frame, pd.DataFrame) and not frame.empty]
+    if not normalized:
+        return pd.DataFrame(columns=["date", "MKT_RF", "SMB", "HML", "RF"])
+    out = normalized[0]
+    for frame in normalized[1:]:
+        out = out.merge(frame, on="date", how="outer", suffixes=("", "_dup"))
+        for col in [c for c in out.columns if c.endswith("_dup")]:
+            base = col[:-4]
+            if base in out.columns:
+                out[base] = out[base].combine_first(out[col])
+            out = out.drop(columns=[col])
+    out = out[out["date"].ge(pd.to_datetime(start_date))].sort_values("date").reset_index(drop=True)
+    out.to_parquet(cache_path, index=False)
+    cache_path.with_suffix(".metadata.json").write_text(
+        json.dumps({"region": region_key, "factor_set": factor_key, "rows": len(out), "updated_at": utc_now()}, indent=2),
+        encoding="utf-8",
+    )
+    return out
+
+
+def construct_it_local_factors(
+    panel_df: pd.DataFrame,
+    start_date: str = "2000-01-01",
+    *,
+    output_root: str | Path | None = None,
+    write: bool = True,
+) -> pd.DataFrame:
+    """Construct lightweight Italy SMB/HML/MOM factors from the equity panel."""
+    if panel_df is None or panel_df.empty or "date" not in panel_df.columns:
+        return pd.DataFrame(columns=["date", "MKT_RF", "SMB", "HML", "MOM", "RF"])
+    frame = panel_df.copy()
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    country = frame.get("country", pd.Series("", index=frame.index)).astype(str).str.upper()
+    exchange = frame.get("exchange", pd.Series("", index=frame.index)).astype(str).str.upper()
+    symbol = frame.get("ticker", frame.get("symbol", pd.Series("", index=frame.index))).astype(str).str.upper()
+    it_mask = country.isin({"IT", "ITALY"}) | exchange.isin({"MIL", "BIT", "MILAN"}) | symbol.str.endswith((".MI", "-MI"))
+    frame = frame[it_mask & frame["date"].ge(pd.to_datetime(start_date))].copy()
+    if frame.empty:
+        return pd.DataFrame(columns=["date", "MKT_RF", "SMB", "HML", "MOM", "RF"])
+    ret_col = next((col for col in ["ret_21d", "return_21d", "forward_return_21d", "realized_return"] if col in frame.columns), None)
+    size_col = next((col for col in ["market_cap", "marketvalue", "market_value", "log_market_cap"] if col in frame.columns), None)
+    bm_col = next((col for col in ["book_to_market", "bm", "value_score"] if col in frame.columns), None)
+    mom_col = next((col for col in ["momentum_12m_1m", "momentum_12_1", "momentum_score"] if col in frame.columns), None)
+    if ret_col is None:
+        return pd.DataFrame(columns=["date", "MKT_RF", "SMB", "HML", "MOM", "RF"])
+    frame["month"] = frame["date"].dt.to_period("M").dt.to_timestamp("M")
+    for col in [ret_col, size_col, bm_col, mom_col]:
+        if col:
+            frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    rows: list[dict[str, Any]] = []
+    for date, group in frame.groupby("month"):
+        group = group.dropna(subset=[ret_col])
+        if len(group) < 4:
+            continue
+        market = float(group[ret_col].mean())
+
+        def spread(sort_col: str | None, low_long: bool = False) -> float | None:
+            if sort_col is None or group[sort_col].notna().sum() < 4:
+                return None
+            low = group[sort_col].quantile(0.3)
+            high = group[sort_col].quantile(0.7)
+            low_ret = group.loc[group[sort_col].le(low), ret_col].mean()
+            high_ret = group.loc[group[sort_col].ge(high), ret_col].mean()
+            return float(low_ret - high_ret) if low_long else float(high_ret - low_ret)
+
+        rows.append({
+            "date": pd.Timestamp(date),
+            "MKT_RF": market,
+            "SMB": spread(size_col, low_long=True),
+            "HML": spread(bm_col),
+            "MOM": spread(mom_col),
+            "RF": 0.0,
+        })
+    out = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
+    if write:
+        cache_path = _ff_cache_path("IT", "LOCAL_FACTORS", output_root)
+        out.to_parquet(cache_path, index=False)
+    return out
 
 
 def _request_text(url: str, timeout: int = 30) -> str:
@@ -482,8 +719,13 @@ def refresh_aqr_factor_library(
 __all__ = [
     "AqrDataset",
     "AqrFactorProvider",
+    "FF3_REGIONS",
+    "FF5_REGIONS",
+    "FF_MOM_REGIONS",
+    "construct_it_local_factors",
     "discover_aqr_dataset_pages",
     "discover_aqr_datasets",
+    "download_ff_factors",
     "get_all_factors_panel",
     "get_aqr_factor_panel",
     "parse_aqr_excel",
