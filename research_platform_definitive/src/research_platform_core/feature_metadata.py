@@ -826,6 +826,10 @@ _PAPER_DOI = {
     "Altman 1995": "https://pages.stern.nyu.edu/~ealtman/Zscores.pdf",
     "Sloan 1996": "10.2307/2491046",
     "Kakushadze 2015": "https://arxiv.org/abs/1601.00991",
+    "Ball-Brown 1968": "10.2307/2490232",
+    "Bernard-Thomas 1989": "10.1016/0165-4101(89)90035-7",
+    "Hawkins et al. 1984": "https://genisia.local/methodology/analyst-revisions",
+    "Basu 1977": "10.1111/j.1540-6261.1977.tb01979.x",
     "Bartram et al. 2021": "10.1007/s11573-021-01035-y",
     "Asness-Moskowitz-Pedersen 2013": "10.1111/jofi.12021",
     "Lustig-Verdelhan 2007": "10.1257/aer.97.1.89",
@@ -865,6 +869,7 @@ _CATEGORY_TO_ZOO = {
     "factor_profitability": "profitability",
     "factor_zoo_academic": "intangibles",
     "alpha101": "technical",
+    "eps_factors": "momentum",
     "fx_factors": "macro",
     "fi_factors": "macro",
     "commodity_factors": "macro",
@@ -899,6 +904,7 @@ _CATEGORY_DEFAULT_PAPER = {
     "factor_profitability": "Fama-French 2015",
     "factor_zoo_academic": "Hou-Xue-Zhang 2015",
     "alpha101": "Kakushadze 2015",
+    "eps_factors": "Ball-Brown 1968",
     "fx_factors": "Bartram et al. 2021",
     "fi_factors": "Bartram et al. 2021",
     "commodity_factors": "Bartram et al. 2021",
@@ -1319,6 +1325,91 @@ for _asset in ("spy", "qqq", "dxy", "tlt", "hyg", "lqd", "brent", "gold", "coppe
                 asset_class="multi_asset",
             ),
         )
+
+
+for _feature_id, _name, _formula, _latex, _source, _zoo, _direction in (
+    (
+        "eps_surprise",
+        "EPS surprise",
+        "(actual_EPS - consensus_EPS) / abs(consensus_EPS)",
+        r"\frac{EPS^{actual}_t-EPS^{cons}_t}{|EPS^{cons}_t|}",
+        "Ball-Brown 1968",
+        "momentum",
+        "positive",
+    ),
+    (
+        "eps_revision",
+        "EPS revision 1M",
+        "change(consensus_EPS, 1 observation) / lag(consensus_EPS)",
+        r"\frac{EPS^{cons}_t-EPS^{cons}_{t-1}}{|EPS^{cons}_{t-1}|}",
+        "Hawkins et al. 1984",
+        "smart_money",
+        "positive",
+    ),
+    (
+        "eps_revision_3m",
+        "EPS revision 3M",
+        "change(consensus_EPS, 3 observations) / lag_3(consensus_EPS)",
+        r"\frac{EPS^{cons}_t-EPS^{cons}_{t-3}}{|EPS^{cons}_{t-3}|}",
+        "Hawkins et al. 1984",
+        "smart_money",
+        "positive",
+    ),
+    (
+        "eps_forecast_accuracy",
+        "EPS forecast accuracy",
+        "rolling_mean(abs(actual_EPS - forecast_EPS), 4 quarters)",
+        r"MAE_4=E(|EPS^{actual}-EPS^{forecast}|)",
+        "Gen.is.IA internal",
+        "quality",
+        "negative",
+    ),
+    (
+        "eps_growth_momentum",
+        "EPS growth momentum",
+        "EPS_t / EPS_t-4 - 1",
+        r"\frac{EPS_t}{EPS_{t-4}}-1",
+        "Bernard-Thomas 1989",
+        "momentum",
+        "positive",
+    ),
+):
+    FEATURE_METADATA.setdefault(
+        _feature_id,
+        _academic_feature(
+            _feature_id,
+            _name,
+            "eps_factors",
+            "earnings",
+            f"Experimental lagged earnings feature: {_name}.",
+            _formula,
+            _latex,
+            "Use after a minimum one fiscal-quarter lag; consensus EPS falls back to a naive rolling EPS proxy when unavailable.",
+            _source,
+            _zoo,
+            direction=_direction,
+            data_requirement=("actual_eps", "consensus_eps", "price"),
+            lag_required="1 fiscal quarter",
+            implementation_module="factors/eps_factors.py",
+            asset_class="equity",
+        ),
+    )
+
+_earnings_yield_meta = FEATURE_METADATA.get("earnings_yield")
+if _earnings_yield_meta is not None and "Basu" not in str(_earnings_yield_meta.source_paper):
+    FEATURE_METADATA["earnings_yield"] = replace(
+        _earnings_yield_meta,
+        formula="EPS / price",
+        formula_latex=r"\frac{EPS_t}{P_t}",
+        source_paper="Basu 1977",
+        source_doi=_PAPER_DOI["Basu 1977"],
+        economic_rationale="Stocks with high earnings per unit of price can earn value premia when the market over-discounts near-term earnings.",
+        data_requirement=("eps", "price"),
+        lag_required="1 fiscal quarter",
+        implementation_module="factors/eps_factors.py",
+        point_in_time_safe=True,
+        leakage_risk=False,
+    )
 
 try:
     from .alpha101 import Alpha101Suite

@@ -57,4 +57,9 @@ def build_cross_asset_momentum(macro_history_df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
-__all__ = ["CORE_CROSS_ASSET_SYMBOLS", "build_cross_asset_momentum", "sanitize_symbol"]
+def cross_asset_momentum(macro_history_df: pd.DataFrame) -> pd.DataFrame:
+    """Alias for the implemented cross-asset momentum builder."""
+    return build_cross_asset_momentum(macro_history_df)
+
+
+__all__ = ["CORE_CROSS_ASSET_SYMBOLS", "build_cross_asset_momentum", "cross_asset_momentum", "sanitize_symbol"]

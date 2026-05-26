@@ -555,6 +555,74 @@ METRICS_METADATA.update(
     }
 )
 
+METRICS_METADATA.update(
+    {
+        "mc_p05": MetricMetadata(
+            "mc_p05",
+            "Monte Carlo 5th percentile",
+            "simulation",
+            "Fifth percentile terminal return from simulated paths.",
+            "percentile(simulated_terminal_return, 5%)",
+            "Lower band for adverse but non-extreme simulated outcomes.",
+            source_paper="Glasserman 2003",
+        ),
+        "mc_p25": MetricMetadata(
+            "mc_p25",
+            "Monte Carlo 25th percentile",
+            "simulation",
+            "Twenty-fifth percentile terminal return from simulated paths.",
+            "percentile(simulated_terminal_return, 25%)",
+            "Lower-interquartile scenario outcome.",
+            source_paper="Glasserman 2003",
+        ),
+        "mc_p50": MetricMetadata(
+            "mc_p50",
+            "Monte Carlo median",
+            "simulation",
+            "Median terminal return from simulated paths.",
+            "percentile(simulated_terminal_return, 50%)",
+            "Central simulated scenario outcome.",
+            source_paper="Glasserman 2003",
+        ),
+        "mc_p75": MetricMetadata(
+            "mc_p75",
+            "Monte Carlo 75th percentile",
+            "simulation",
+            "Seventy-fifth percentile terminal return from simulated paths.",
+            "percentile(simulated_terminal_return, 75%)",
+            "Upper-interquartile scenario outcome.",
+            source_paper="Glasserman 2003",
+        ),
+        "mc_p95": MetricMetadata(
+            "mc_p95",
+            "Monte Carlo 95th percentile",
+            "simulation",
+            "Ninety-fifth percentile terminal return from simulated paths.",
+            "percentile(simulated_terminal_return, 95%)",
+            "Upper scenario band for favorable simulated outcomes.",
+            source_paper="Glasserman 2003",
+        ),
+        "mc_var_95": MetricMetadata(
+            "mc_var_95",
+            "Monte Carlo VaR 95%",
+            "simulation",
+            "Fifth percentile terminal return from Monte Carlo paths.",
+            "Q_5%(simulated_terminal_return)",
+            "More negative values indicate worse simulated downside risk.",
+            source_paper="Glasserman 2003",
+        ),
+        "mc_cvar_95": MetricMetadata(
+            "mc_cvar_95",
+            "Monte Carlo CVaR 95%",
+            "simulation",
+            "Average terminal return conditional on being below Monte Carlo VaR 95%.",
+            "mean(simulated_terminal_return | terminal_return <= VaR_95)",
+            "More negative values indicate worse expected shortfall in simulation.",
+            source_paper="Glasserman 2003",
+        ),
+    }
+)
+
 
 _METRIC_PAPER_DOI = {
     "Gen.is.IA internal": "https://genisia.local/methodology/internal",
@@ -565,6 +633,7 @@ _METRIC_PAPER_DOI = {
     "Fama-French 2015": "10.1016/j.jfineco.2014.10.010",
     "Grinold-Kahn 2000": "https://www.mheducation.com/highered/product/active-portfolio-management-grinold-kahn/M9780070248823.html",
     "Jensen 1968": "10.2307/2325404",
+    "Glasserman 2003": "https://link.springer.com/book/10.1007/978-0-387-21617-1",
 }
 
 
@@ -579,6 +648,7 @@ _METRIC_CATEGORY_DEFAULTS = {
     "attribution": ("Gen.is.IA internal", "portfolio", True, "Positive values contribute to active return."),
     "data_quality": ("Gen.is.IA internal", "model", True, "Higher coverage is generally better."),
     "model_governance": ("Gen.is.IA internal", "model", True, "Use with governance thresholds, not in isolation."),
+    "simulation": ("Glasserman 2003", "risk", True, "Interpret by horizon, covariance quality and simulation assumptions."),
 }
 
 
@@ -593,6 +663,11 @@ _METRIC_LATEX = {
     "parametric_var_99": r"\mu_R-2.326\sigma_R",
     "calmar_ratio": r"\frac{\bar{r}_{ann}}{|MDD|}",
     "ulcer_index": r"\sqrt{\frac{1}{T}\sum DD_t^2}",
+    "mc_p05": r"Q_{0.05}(R_T^{sim})",
+    "mc_p50": r"Q_{0.50}(R_T^{sim})",
+    "mc_p95": r"Q_{0.95}(R_T^{sim})",
+    "mc_var_95": r"VaR_{95}=Q_{0.05}(R_T^{sim})",
+    "mc_cvar_95": r"CVaR_{95}=E[R_T^{sim}\mid R_T^{sim}\le VaR_{95}]",
 }
 
 
