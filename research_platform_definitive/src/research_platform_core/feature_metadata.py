@@ -1326,6 +1326,50 @@ for _asset in ("spy", "qqq", "dxy", "tlt", "hyg", "lqd", "brent", "gold", "coppe
             ),
         )
 
+for _feature_id, _name, _formula, _zoo, _direction in (
+    (
+        "xasset_value_score",
+        "Cross-asset value score",
+        "mean(zscore_lagged(equity_value, fx_ppp, fi_yield_reversion, commodity_value))",
+        "value",
+        "positive",
+    ),
+    (
+        "global_risk_factor",
+        "Global risk factor",
+        "rolling_PC1(cross_asset_returns, window=60, data_through_t-1)",
+        "risk",
+        "neutral",
+    ),
+    (
+        "global_risk_explained_variance",
+        "Global risk explained variance",
+        "eigenvalue_PC1 / sum(eigenvalues)",
+        "risk",
+        "neutral",
+    ),
+):
+    FEATURE_METADATA.setdefault(
+        _feature_id,
+        _academic_feature(
+            _feature_id,
+            _name,
+            "cross_asset_momentum",
+            "cross_asset_value_risk",
+            f"Experimental cross-asset factor: {_name}.",
+            _formula,
+            _latex_from_formula(_formula),
+            "Use as an experimental context feature; compare incremental IC before promotion.",
+            "Asness-Moskowitz-Pedersen 2013" if "value" in _feature_id else "Bartram et al. 2021",
+            _zoo,
+            direction=_direction,
+            data_requirement=("cross_asset_factor_inputs",),
+            lag_required="1 observation",
+            implementation_module="cross_asset_factors.py",
+            asset_class="multi_asset",
+        ),
+    )
+
 
 for _feature_id, _name, _formula, _latex, _source, _zoo, _direction in (
     (

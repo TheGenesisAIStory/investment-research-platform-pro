@@ -1,4 +1,4 @@
-"""Cross-asset momentum factors from Macro DB proxies."""
+"""Cross-asset factors from Macro DB and factor signal inputs."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import pandas as pd
 
 
 CORE_CROSS_ASSET_SYMBOLS: tuple[str, ...] = ("SPY", "QQQ", "DX-Y.NYB", "TLT", "HYG", "LQD", "BZ=F", "GC=F", "HG=F", "BTC-USD")
+RATES_KEYS: tuple[str, ...] = ("fi", "fixed_income", "rates", "bond", "bonds")
 
 
 def sanitize_symbol(symbol: object) -> str:
@@ -29,6 +30,29 @@ def _wide_from_macro_history(macro_history_df: pd.DataFrame) -> pd.DataFrame:
     numeric = frame.select_dtypes("number").copy()
     numeric.index = frame["date"]
     return numeric.sort_index()
+
+
+def _numeric_signal_frame(frame: pd.DataFrame | pd.Series, prefix: str) -> pd.DataFrame:
+    if frame is None:
+        return pd.DataFrame()
+    if isinstance(frame, pd.Series):
+        out = frame.to_frame(name=frame.name or prefix)
+    else:
+        out = frame.copy()
+    if "date" in out.columns:
+        out = out.copy()
+        out["date"] = pd.to_datetime(out["date"], errors="coerce")
+        out = out.set_index("date")
+    out = out.apply(pd.to_numeric, errors="coerce").sort_index()
+    out = out.loc[:, ~out.columns.duplicated()]
+    out.columns = [f"{prefix}_{sanitize_symbol(col)}" for col in out.columns]
+    return out
+
+
+def _rolling_zscore(frame: pd.DataFrame, window: int = 60) -> pd.DataFrame:
+    mean = frame.rolling(window, min_periods=max(12, min(window, 20))).mean()
+    std = frame.rolling(window, min_periods=max(12, min(window, 20))).std().replace(0, np.nan)
+    return (frame - mean) / std
 
 
 def build_cross_asset_momentum(macro_history_df: pd.DataFrame) -> pd.DataFrame:
@@ -62,4 +86,121 @@ def cross_asset_momentum(macro_history_df: pd.DataFrame) -> pd.DataFrame:
     return build_cross_asset_momentum(macro_history_df)
 
 
-__all__ = ["CORE_CROSS_ASSET_SYMBOLS", "build_cross_asset_momentum", "cross_asset_momentum", "sanitize_symbol"]
+def cross_asset_value(
+    value_signals_dict: dict[str, pd.DataFrame | pd.Series],
+    *,
+    zscore_window: int = 60,
+) -> pd.DataFrame:
+    """Combine equity, FX, FI and commodity value signals with anti-leakage.
+
+    Each supplied signal matrix is shifted by one observation, normalized by a
+    rolling z-score independently, prefixed by asset class, then averaged into
+    `xasset_value_score`.  Inputs are expected to be point-in-time value signals
+    such as HML, PPP deviation, yield reversion or commodity value proxies.
+
+    Reference: Asness, Moskowitz and Pedersen (2013).
+    """
+    if not value_signals_dict:
+        return pd.DataFrame()
+    parts: list[pd.DataFrame] = []
+    for asset_class, frame in value_signals_dict.items():
+        numeric = _numeric_signal_frame(frame, str(asset_class).lower())
+        if numeric.empty:
+            continue
+        parts.append(_rolling_zscore(numeric.shift(1), window=zscore_window))
+    if not parts:
+        return pd.DataFrame()
+    combined = pd.concat(parts, axis=1).sort_index()
+    out = pd.DataFrame(index=combined.index)
+    for col in combined.columns:
+        out[f"xasset_value_{col}"] = combined[col]
+    out["xasset_value_score"] = combined.mean(axis=1, skipna=True)
+    out["date"] = out.index
+    return out.reset_index(drop=True)
+
+
+def _stack_asset_returns(asset_ret_dict: dict[str, pd.DataFrame | pd.Series]) -> tuple[pd.DataFrame, list[str], list[str]]:
+    parts: list[pd.DataFrame] = []
+    equity_cols: list[str] = []
+    rates_cols: list[str] = []
+    for asset_class, frame in (asset_ret_dict or {}).items():
+        key = str(asset_class).lower()
+        numeric = _numeric_signal_frame(frame, key)
+        if numeric.empty:
+            continue
+        parts.append(numeric)
+        if key == "equity":
+            equity_cols.extend(numeric.columns)
+        if key in RATES_KEYS:
+            rates_cols.extend(numeric.columns)
+    if not parts:
+        return pd.DataFrame(), equity_cols, rates_cols
+    return pd.concat(parts, axis=1).sort_index(), equity_cols, rates_cols
+
+
+def global_risk_factor(
+    asset_ret_dict: dict[str, pd.DataFrame | pd.Series],
+    *,
+    window: int = 60,
+) -> pd.DataFrame:
+    """Rolling PCA global risk factor from cross-asset returns.
+
+    The PCA window uses observations available up to `t-1`.  PC1 orientation is
+    anchored so equity loadings are positive and rates/fixed-income loadings are
+    negative when those groups are available.
+
+    Returns columns: `global_risk_factor` and
+    `global_risk_explained_variance`.
+    """
+    returns, equity_cols, rates_cols = _stack_asset_returns(asset_ret_dict)
+    if returns.empty:
+        return pd.DataFrame()
+    returns = returns.replace([np.inf, -np.inf], np.nan).sort_index()
+    shifted = returns.shift(1)
+    out = pd.DataFrame(index=returns.index, columns=["global_risk_factor", "global_risk_explained_variance"], dtype=float)
+    min_periods = max(12, min(int(window), 24))
+    for pos in range(len(shifted)):
+        start = max(0, pos - int(window) + 1)
+        sample = shifted.iloc[start : pos + 1].dropna(axis=1, how="all").dropna(how="any")
+        if len(sample) < min_periods or sample.shape[1] < 2:
+            continue
+        centered = sample - sample.mean(axis=0)
+        cov = np.cov(centered.to_numpy(dtype=float), rowvar=False)
+        cov = np.atleast_2d(np.nan_to_num(cov, nan=0.0, posinf=0.0, neginf=0.0))
+        if cov.shape[0] != sample.shape[1]:
+            continue
+        eigvals, eigvecs = np.linalg.eigh(cov)
+        order = np.argsort(eigvals)[::-1]
+        eigvals = eigvals[order]
+        eigvec = eigvecs[:, order[0]]
+        cols = list(sample.columns)
+
+        anchor = np.zeros(len(cols), dtype=float)
+        for col in equity_cols:
+            if col in cols:
+                anchor[cols.index(col)] = 1.0
+        for col in rates_cols:
+            if col in cols:
+                anchor[cols.index(col)] = -1.0
+        if np.any(anchor):
+            if float(np.dot(eigvec, anchor)) < 0:
+                eigvec = -eigvec
+        elif eigvec.sum() < 0:
+            eigvec = -eigvec
+
+        current = shifted.iloc[pos][cols].astype(float)
+        out.iloc[pos, out.columns.get_loc("global_risk_factor")] = float(np.dot(current.fillna(0.0).to_numpy(), eigvec))
+        total_var = float(np.nansum(np.maximum(eigvals, 0.0)))
+        out.iloc[pos, out.columns.get_loc("global_risk_explained_variance")] = float(eigvals[0] / total_var) if total_var > 0 else np.nan
+    out["date"] = out.index
+    return out.reset_index(drop=True)
+
+
+__all__ = [
+    "CORE_CROSS_ASSET_SYMBOLS",
+    "build_cross_asset_momentum",
+    "cross_asset_momentum",
+    "cross_asset_value",
+    "global_risk_factor",
+    "sanitize_symbol",
+]

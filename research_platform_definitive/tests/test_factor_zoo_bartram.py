@@ -6,7 +6,7 @@ import pytest
 
 from ml_stock_lab.factor_registry import FACTOR_BLOCKS, get_factors_by_asset_class, get_factors_by_category
 from research_platform_core.commodity_factors import build_commodity_factors
-from research_platform_core.cross_asset_factors import build_cross_asset_momentum
+from research_platform_core.cross_asset_factors import build_cross_asset_momentum, cross_asset_value, global_risk_factor
 from research_platform_core.feature_metadata import metadata_for_feature
 from research_platform_core.fi_factors import build_fi_factors
 from research_platform_core.fx_factors import build_fx_factors
@@ -115,6 +115,39 @@ def test_cross_asset_factor_builders_smoke(builder, expected_column: str) -> Non
     assert result[expected_column].iloc[260:].notna().any()
 
 
+def test_cross_asset_value_combines_lagged_value_signals() -> None:
+    dates = pd.date_range("2018-01-31", periods=90, freq="ME")
+    t = np.arange(len(dates), dtype=float)
+    value_signals = {
+        "equity": pd.DataFrame({"hml": np.sin(t / 7.0)}, index=dates),
+        "fx": pd.DataFrame({"ppp": np.cos(t / 9.0)}, index=dates),
+        "fi": pd.DataFrame({"yield_reversion": np.sin(t / 11.0)}, index=dates),
+        "commodity": pd.DataFrame({"gold_value": np.cos(t / 13.0)}, index=dates),
+    }
+    result = cross_asset_value(value_signals, zscore_window=24)
+    assert "date" in result.columns
+    assert "xasset_value_score" in result.columns
+    assert "xasset_value_equity_hml" in result.columns
+    assert result["xasset_value_score"].iloc[:12].isna().any()
+    assert result["xasset_value_score"].iloc[30:].notna().any()
+
+
+def test_global_risk_factor_rolling_pca_outputs() -> None:
+    dates = pd.date_range("2015-01-31", periods=96, freq="ME")
+    t = np.arange(len(dates), dtype=float)
+    equity = pd.DataFrame({"spy": 0.01 * np.sin(t / 5.0) + 0.002}, index=dates)
+    fx = pd.DataFrame({"dxy": 0.004 * np.cos(t / 7.0)}, index=dates)
+    fi = pd.DataFrame({"tlt": -0.006 * np.sin(t / 5.0) + 0.001}, index=dates)
+    commodity = pd.DataFrame({"gold": 0.005 * np.cos(t / 8.0)}, index=dates)
+    result = global_risk_factor({"equity": equity, "fx": fx, "fi": fi, "commodity": commodity}, window=36)
+    assert "date" in result.columns
+    assert "global_risk_factor" in result.columns
+    assert "global_risk_explained_variance" in result.columns
+    assert result["global_risk_factor"].iloc[:12].isna().any()
+    assert result["global_risk_factor"].iloc[45:].notna().any()
+    assert result["global_risk_explained_variance"].dropna().between(0, 1).all()
+
+
 def test_factor_builders_degrade_when_proxy_missing() -> None:
     frame = _macro_history()
     missing_fx = frame[~frame["symbol"].eq("EURUSD=X")]
@@ -147,6 +180,8 @@ def test_cot_hedging_pressure_features() -> None:
 def test_factor_zoo_registry_and_metadata() -> None:
     assert "fx_factors" in FACTOR_BLOCKS
     assert "cross_asset_momentum" in FACTOR_BLOCKS
+    assert "cross_asset_value" in FACTOR_BLOCKS
+    assert "global_risk_factor" in FACTOR_BLOCKS
     assert get_factors_by_asset_class("fx")
     assert get_factors_by_category("momentum")
     for feature_id in [
@@ -157,6 +192,9 @@ def test_factor_zoo_registry_and_metadata() -> None:
         "commodity_mom_gold",
         "cot_hedging_pressure_gold",
         "xasset_vol_adj_mom_spy",
+        "xasset_value_score",
+        "global_risk_factor",
+        "global_risk_explained_variance",
     ]:
         meta = metadata_for_feature(feature_id)
         assert meta is not None, feature_id
