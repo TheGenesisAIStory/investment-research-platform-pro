@@ -155,9 +155,25 @@ sostituirli.
 | `alpha101` | experimental | 101 | Kakushadze (2016), arXiv:1601.00991 | off |
 
 Risultati retraining Alpha101: gli artifact `_alpha101` vengono prodotti da
-`scripts/train_ml_models_2000_2026.py --use-alpha101 True`. La tabella
-comparativa IC/RankIC/Sharpe va aggiornata con i valori del run locale appena
-il job termina.
+`scripts/train_ml_models_2000_2026.py --use-alpha101 True`. Il run locale del
+2026-05-26 e' completato con 4/4 modelli `OK`, split temporale 2000-2018 /
+2019-2026, target 21d e 121 feature complessive. Poiche' il factor panel storico
+contiene `price` e `market_value` ma non OHLCV completo, il retraining usa il
+fallback proxy rank-based per il blocco Alpha101; il modulo
+`research_platform_core.alpha101` resta la fonte completa delle 101 formule
+WorldQuant quando un panel OHLCV e' disponibile.
+
+| Model | IC | RankIC | Net LS Sharpe | Fit rows | Prediction rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| OLS | 0.0175 | -0.0451 | 0.6208 | 137,780 | 137,220 |
+| RF | -0.0102 | -0.0085 | 0.6199 | 15,000 | 137,220 |
+| GBRT | -0.0117 | -0.0185 | 0.5966 | 15,000 | 137,220 |
+| Ensemble | -0.0057 | -0.0272 | 0.6210 | 15,000 | 137,220 |
+
+Gli artifact completi sono disponibili localmente in
+`output/ml_training_lab/*_alpha101.*` e
+`output/ml_stock_lab/tables/*_alpha101.csv`; i file panel/prediction pesanti non
+sono pensati per essere versionati in Git.
 
 La metodologia e' documentata in `docs/MACRO_CONTEXT_LAYER.md`.
 

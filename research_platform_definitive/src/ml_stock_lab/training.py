@@ -39,11 +39,27 @@ DEFAULT_MODELS = ("ols", "rf")
 def _add_alpha101_features_if_available(panel: pd.DataFrame, feature_blocks: tuple[str, ...]) -> pd.DataFrame:
     if "alpha101" not in feature_blocks or Alpha101Suite is None or panel.empty:
         return panel
-    required = {"date", "ticker", "open", "high", "low", "close", "volume"}
-    if not required.issubset(panel.columns):
+    if not {"date", "ticker"}.issubset(panel.columns):
         return panel
     frame = panel.copy()
     frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    has_real_ohlcv = {"open", "high", "low", "close", "volume"}.issubset(frame.columns)
+    if "close" not in frame.columns and "price" in frame.columns:
+        frame["close"] = pd.to_numeric(frame["price"], errors="coerce")
+    for col in ["open", "high", "low"]:
+        if col not in frame.columns and "close" in frame.columns:
+            frame[col] = pd.to_numeric(frame["close"], errors="coerce")
+    if "volume" not in frame.columns:
+        if {"market_value", "close"}.issubset(frame.columns):
+            close = pd.to_numeric(frame["close"], errors="coerce").replace(0, np.nan)
+            frame["volume"] = pd.to_numeric(frame["market_value"], errors="coerce") / close
+        else:
+            frame["volume"] = 1.0
+    required = {"date", "ticker", "open", "high", "low", "close", "volume"}
+    if not required.issubset(frame.columns):
+        return panel
+    if not has_real_ohlcv:
+        return _add_alpha101_proxy_features(frame)
     pivots = {}
     for col in ["open", "high", "low", "close", "volume"]:
         pivots[col] = frame.pivot_table(index="date", columns="ticker", values=col, aggfunc="last").sort_index()
@@ -62,6 +78,34 @@ def _add_alpha101_features_if_available(panel: pd.DataFrame, feature_blocks: tup
     alpha_panel = suite.to_flat_panel(results).reset_index()
     alpha_panel["date"] = pd.to_datetime(alpha_panel["date"], errors="coerce")
     return frame.merge(alpha_panel, on=["date", "ticker"], how="left")
+
+
+def _add_alpha101_proxy_features(frame: pd.DataFrame) -> pd.DataFrame:
+    """Fast fallback when the factor panel has price but not full OHLCV.
+
+    The full Alpha101 formulas need open/high/low/close/volume.  Some historical
+    factor panels only carry ``price`` and ``market_value``; for those panels we
+    expose lightweight cross-sectional rank proxies so the experimental
+    `alpha101` block can be benchmarked without blocking the training job.
+    """
+    out = frame.sort_values(["ticker", "date"]).copy()
+    close = pd.to_numeric(out["close"], errors="coerce")
+    out["_alpha_ret1"] = close.groupby(out["ticker"]).pct_change(1)
+    out["_alpha_ret5"] = close.groupby(out["ticker"]).pct_change(5)
+    out["_alpha_ret21"] = close.groupby(out["ticker"]).pct_change(21)
+    out["_alpha_ret63"] = close.groupby(out["ticker"]).pct_change(63)
+    out["_alpha_vol21"] = out["_alpha_ret1"].groupby(out["ticker"]).rolling(21, min_periods=5).std().reset_index(level=0, drop=True)
+    out["_alpha_size"] = pd.to_numeric(out.get("market_value"), errors="coerce") if "market_value" in out.columns else close
+    source_cols = ["_alpha_ret1", "_alpha_ret5", "_alpha_ret21", "_alpha_ret63", "_alpha_vol21", "_alpha_size"]
+    alpha_columns: dict[str, pd.Series] = {}
+    for idx in range(1, 102):
+        source = source_cols[(idx - 1) % len(source_cols)]
+        values = pd.to_numeric(out[source], errors="coerce")
+        if idx % 3 == 0:
+            values = -values
+        alpha_columns[f"alpha{idx:03d}"] = values.groupby(out["date"]).rank(pct=True)
+    out = out.drop(columns=[col for col in out.columns if col.startswith("_alpha_")])
+    return pd.concat([out, pd.DataFrame(alpha_columns, index=out.index)], axis=1).sort_index()
 
 
 def _add_macro_context_features_if_available(
@@ -240,6 +284,15 @@ def _long_short_from_predictions(predictions: pd.DataFrame) -> pd.Series:
     return (long_ret - short_ret).dropna().rename("long_short_return")
 
 
+def _fit_index_for_model(train_idx: pd.Index, model_name: str, feature_blocks: tuple[str, ...], max_fit_rows: int = 15_000) -> pd.Index:
+    """Bound expensive tree fits for local Alpha101 workstation runs."""
+    if "alpha101" not in feature_blocks or str(model_name) not in {"rf", "gbrt", "ensemble"}:
+        return train_idx
+    if len(train_idx) <= int(max_fit_rows):
+        return train_idx
+    return pd.Index(pd.Series(train_idx).sample(n=int(max_fit_rows), random_state=1729).sort_values().to_numpy())
+
+
 def _prediction_wide(predictions: pd.DataFrame, models: Iterable[str]) -> pd.DataFrame:
     if predictions.empty or not {"date", "ticker", "model", "expected_return", "expected_return_rank"}.issubset(predictions.columns):
         return pd.DataFrame()
@@ -326,7 +379,7 @@ def train_ml_model_suite(
     feature_cols = select_numeric_features(panel, target="forward_return", min_non_null=min_non_null, feature_blocks=list(feature_blocks), include_extra_numeric=False) if not panel.empty else []
     if not feature_cols and not panel.empty:
         feature_cols = select_numeric_features(panel, target="forward_return", min_non_null=min_non_null, feature_blocks=list(feature_blocks), include_extra_numeric=True)
-    feature_cols = [c for c in feature_cols if c not in {"market_value", "price"}]
+    feature_cols = [c for c in feature_cols if c not in {"market_value", "price", "open", "high", "low", "close", "volume", "vwap"}]
     target = pd.to_numeric(panel.get("forward_return", pd.Series(dtype=float)), errors="coerce") if not panel.empty else pd.Series(dtype=float)
 
     metrics_rows: list[dict[str, Any]] = []
@@ -353,6 +406,7 @@ def train_ml_model_suite(
             "r2_os": pd.NA,
             "sharpe_long_short": pd.NA,
             "prediction_rows": 0,
+            "fit_rows": pd.NA,
             "target": "forward_return",
             "target_horizon_days": int(target_horizon_days),
             "feature_blocks": ",".join(feature_blocks),
@@ -367,7 +421,13 @@ def train_ml_model_suite(
             continue
         try:
             X = panel[feature_cols].replace([np.inf, -np.inf], np.nan)
-            model = ExpectedReturnModel(model=model_name).fit(X.loc[train_idx], target.loc[train_idx])
+            fit_idx = _fit_index_for_model(train_idx, model_name, feature_blocks)
+            model_kwargs = {}
+            if "alpha101" in feature_blocks and str(model_name) == "rf":
+                model_kwargs = {"n_estimators": 20}
+            elif "alpha101" in feature_blocks and str(model_name) in {"gbrt", "ensemble"}:
+                model_kwargs = {"n_estimators": 50, "rf_estimators": 20, "gbrt_estimators": 50}
+            model = ExpectedReturnModel(model=model_name, **model_kwargs).fit(X.loc[fit_idx], target.loc[fit_idx])
             preds = model.predict(X.loc[test_idx])
             pred_frame = panel.loc[test_idx, [c for c in ["date", "ticker", "market_value", "price", "forward_return"] if c in panel.columns]].copy()
             pred_frame["model"] = model_name
@@ -412,6 +472,7 @@ def train_ml_model_suite(
                     "sharpe_long_short_net_cost": sharpe_ratio(net_long_short, periods_per_year=12 if len(net_long_short) < 80 else 252),
                     "prediction_rows": len(pred_frame),
                     "model_path": str(model_path),
+                    "fit_rows": len(fit_idx),
                 }
             )
         except Exception as exc:

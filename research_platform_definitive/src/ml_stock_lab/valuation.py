@@ -19,15 +19,15 @@ def _make_model(model: str, random_state: int = 42, **kwargs: Any):
             return RandomForestRegressor(n_estimators=int(kwargs.get("n_estimators", 100)), min_samples_leaf=2, random_state=random_state, n_jobs=-1)
         if model in {"gbrt", "gbm"}:
             from sklearn.ensemble import GradientBoostingRegressor
-            return GradientBoostingRegressor(random_state=random_state)
+            return GradientBoostingRegressor(n_estimators=int(kwargs.get("n_estimators", 100)), random_state=random_state)
         if model == "ensemble":
             from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, VotingRegressor
             from sklearn.linear_model import Lasso, LinearRegression
             return VotingRegressor([
                 ("ols", LinearRegression()),
                 ("lasso", Lasso(alpha=0.001, max_iter=10000, random_state=random_state)),
-                ("rf", RandomForestRegressor(n_estimators=80, min_samples_leaf=2, random_state=random_state, n_jobs=-1)),
-                ("gbrt", GradientBoostingRegressor(random_state=random_state)),
+                ("rf", RandomForestRegressor(n_estimators=int(kwargs.get("rf_estimators", 80)), min_samples_leaf=2, random_state=random_state, n_jobs=-1)),
+                ("gbrt", GradientBoostingRegressor(n_estimators=int(kwargs.get("gbrt_estimators", 100)), random_state=random_state)),
             ])
         from sklearn.linear_model import LinearRegression
         return LinearRegression()

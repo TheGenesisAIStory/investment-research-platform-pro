@@ -1,6 +1,6 @@
 # Project Status Final - Gen.is.IA Investment Research Workstation
 
-Data: 2026-05-25
+Data: 2026-05-26
 
 ## Stato sintetico
 
@@ -53,7 +53,9 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 - Macro context features: `OK / experimental`; blocco opzionale
   `macro_context` con lag minimo di una osservazione e as-of join.
 - Alpha101: `OK / experimental`; 101 formule WorldQuant/Kakushadze registrate
-  e selezionabili in ML Stock Lab.
+  e selezionabili in ML Stock Lab. Il retraining locale Alpha101 e' completato
+  con 4/4 modelli `OK` su split 2000-2018 / 2019-2026 e artifact `_alpha101`
+  sotto `output/ml_training_lab`.
 - Leakage policy attiva tramite `feature_columns_for_blocks()`.
 - Metriche: `r2_os`, `ic`, `rank_ic`, `sharpe_long_short`,
   `sharpe_long_short_net_cost`, data/model coverage metrics.
@@ -97,7 +99,9 @@ Risultato corrente:
 ## Limiti dichiarati
 
 - Il training ML full su tutto l'universo va ancora lanciato per passare da
-  smoke/bounded validation a performance economica definitiva.
+  smoke/bounded validation a performance economica definitiva; il run Alpha101
+  corrente e' bounded/local e usa fallback proxy per il factor panel privo di
+  OHLCV completo.
 - Banking fundamentals ufficiali e issuer/fund flows restano `PLANNED`/
   `PARTIAL`; Smart Money pubblico e macro context sono presenti come layer di
   contesto.

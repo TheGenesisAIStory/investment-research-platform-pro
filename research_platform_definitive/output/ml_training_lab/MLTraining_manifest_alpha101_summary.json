@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-05-26T16:34:27Z",
+  "status": "OK",
+  "run_type": "bounded_local_alpha101_retraining",
+  "command": "python research_platform_definitive/scripts/train_ml_models_2000_2026.py --models ols,rf,gbrt,ensemble --target-horizon-days 21 --feature-blocks value,quality,momentum,risk,size,growth,alpha101 --use-alpha101 True --max-rows 500000",
+  "models": ["ols", "rf", "gbrt", "ensemble"],
+  "target": "forward_return",
+  "target_horizon_days": 21,
+  "feature_blocks": ["value", "quality", "momentum", "risk", "size", "growth", "alpha101"],
+  "feature_count": 121,
+  "panel_rows": 275000,
+  "train_rows": 137780,
+  "test_rows": 137220,
+  "prediction_rows_per_model": 137220,
+  "train_window": "2000-01-03/2018-12-31",
+  "test_window": "2019-01-02/2026-05-22",
+  "notes": [
+    "The full WorldQuant/Kakushadze Alpha101 formulas are implemented in research_platform_core.alpha101 for OHLCV panels.",
+    "This bounded local retraining used the ML pipeline Alpha101 rank-proxy fallback because the historical factor panel has price and market_value but not full OHLCV.",
+    "Large panel, prediction and signal artifacts are intentionally kept local and are not versioned in Git."
+  ],
+  "summary_metrics_path": "output/ml_training_lab/tables/MLTraining_metrics_alpha101_summary.csv"
+}
