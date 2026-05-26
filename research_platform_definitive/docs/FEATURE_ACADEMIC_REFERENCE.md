@@ -133,8 +133,9 @@ The cross-asset factor blocks are experimental context layers inspired by Asness
 | `cross_asset_momentum` | momentum everywhere | 12-1 momentum, MA trend sign, volatility-adjusted momentum across Macro DB proxies | Asness, Moskowitz and Pedersen (2013) | all Macro DB inputs shifted one observation |
 | `cross_asset_value` | value everywhere | rolling z-score each supplied equity/FX/FI/commodity value signal, then average into `xasset_value_score` | Asness, Moskowitz and Pedersen (2013) | each input signal shifted one observation before normalization |
 | `global_risk_factor` | PCA risk-on/risk-off factor | rolling PC1 of cross-asset return matrix with equity-positive/rates-negative orientation | Bartram et al. (2021); PCA risk-factor literature | rolling PCA window uses returns available through t-1 |
+| `liquidity_factor` | cross-asset illiquidity | 21d rolling mean of `abs(return)/dollar_volume`, cross-sectional z-score; Roll-style spread proxy fallback | Amihud (2002), Journal of Financial Markets; Roll (1984) | rolling signal shifted one observation |
 
-These blocks use existing Macro DB and Smart Money artifacts where possible. True FX rate-differential carry, commodity futures-basis carry, PPP value, licensed spread data and a cross-asset Amihud/Pastor-Stambaugh liquidity factor remain planned enhancements when higher-quality provider fields are available.
+These blocks use existing Macro DB and Smart Money artifacts where possible. True FX rate-differential carry, commodity futures-basis carry, PPP value and licensed spread data remain planned enhancements when higher-quality provider fields are available.
 
 ## 9. Portfolio Analytics
 

@@ -821,7 +821,7 @@ _PAPER_DOI = {
     "Pastor-Stambaugh 2003": "10.1086/374184",
     "Roll 1984": "10.1111/j.1540-6261.1984.tb03646.x",
     "Lesmond-Ogden-Trzcinka 1999": "10.1093/rfs/12.5.1113",
-    "Amihud 2002": "10.1016/S0304-405X(01)00024-6",
+    "Amihud 2002": "10.1016/S1386-4181(01)00024-6",
     "Piotroski 2000": "10.1111/1475-679X.00033",
     "Altman 1995": "https://pages.stern.nyu.edu/~ealtman/Zscores.pdf",
     "Sloan 1996": "10.2307/2491046",
@@ -1369,6 +1369,28 @@ for _feature_id, _name, _formula, _zoo, _direction in (
             asset_class="multi_asset",
         ),
     )
+
+
+FEATURE_METADATA.setdefault(
+    "xasset_liquidity_score",
+    _academic_feature(
+        "xasset_liquidity_score",
+        "Cross-asset liquidity score",
+        "liquidity",
+        "cross_asset_liquidity",
+        "Cross-sectional z-score of lagged 21-day Amihud illiquidity across supplied cross-asset return and dollar-volume panels.",
+        "zscore_cs(rolling_mean(abs(return) / dollar_volume, 21d) shifted by 1 observation)",
+        r"z_{cs}\left(\frac{1}{21}\sum_{d=1}^{21}\frac{|r_{i,d}|}{DVOL_{i,d}}\right)_{t-1}",
+        "Positive values indicate higher illiquidity and stronger trading-friction exposure; use as an experimental context feature.",
+        "Amihud 2002",
+        "trading_frictions",
+        direction="negative",
+        data_requirement=("cross_asset_returns", "dollar_volume_or_spread_proxy"),
+        lag_required="1 observation",
+        implementation_module="cross_asset_factors.py",
+        asset_class="multi_asset",
+    ),
+)
 
 
 for _feature_id, _name, _formula, _latex, _source, _zoo, _direction in (

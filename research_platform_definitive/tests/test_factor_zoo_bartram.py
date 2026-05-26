@@ -6,7 +6,7 @@ import pytest
 
 from ml_stock_lab.factor_registry import FACTOR_BLOCKS, get_factors_by_asset_class, get_factors_by_category
 from research_platform_core.commodity_factors import build_commodity_factors
-from research_platform_core.cross_asset_factors import build_cross_asset_momentum, cross_asset_value, global_risk_factor
+from research_platform_core.cross_asset_factors import build_cross_asset_momentum, cross_asset_value, global_risk_factor, liquidity_factor
 from research_platform_core.feature_metadata import metadata_for_feature
 from research_platform_core.fi_factors import build_fi_factors
 from research_platform_core.fx_factors import build_fx_factors
@@ -148,6 +148,45 @@ def test_global_risk_factor_rolling_pca_outputs() -> None:
     assert result["global_risk_explained_variance"].dropna().between(0, 1).all()
 
 
+def test_liquidity_factor_amihud_and_spread_fallback() -> None:
+    dates = pd.bdate_range("2022-01-03", periods=80)
+    t = np.arange(len(dates), dtype=float)
+    returns = pd.DataFrame(
+        {
+            "SPY": 0.001 * np.sin(t / 5.0),
+            "TLT": 0.0015 * np.cos(t / 7.0),
+            "GLD": 0.0012 * np.sin(t / 9.0),
+        },
+        index=dates,
+    )
+    dollar_volume = pd.DataFrame(
+        {
+            "SPY": 1_000_000 + t * 1_000,
+            "TLT": 750_000 + t * 800,
+            "GLD": 500_000 + t * 500,
+        },
+        index=dates,
+    )
+    result = liquidity_factor(returns, dollar_volume, window=21)
+    assert "date" in result.columns
+    assert "xasset_liquidity_score" in result.columns
+    assert "xasset_liquidity_spy" in result.columns
+    assert result["xasset_liquidity_score"].iloc[:5].isna().any()
+    assert result["xasset_liquidity_score"].iloc[30:].notna().any()
+
+    alternating = pd.DataFrame(
+        {
+            "SPY": ((-1.0) ** np.arange(len(dates))) * 0.002,
+            "TLT": ((-1.0) ** np.arange(len(dates))) * 0.0015,
+            "GLD": ((-1.0) ** np.arange(len(dates))) * 0.001,
+        },
+        index=dates,
+    )
+    fallback = liquidity_factor(alternating, None, window=21)
+    assert "xasset_liquidity_score" in fallback.columns
+    assert fallback["xasset_liquidity_score"].iloc[30:].notna().any()
+
+
 def test_factor_builders_degrade_when_proxy_missing() -> None:
     frame = _macro_history()
     missing_fx = frame[~frame["symbol"].eq("EURUSD=X")]
@@ -182,6 +221,7 @@ def test_factor_zoo_registry_and_metadata() -> None:
     assert "cross_asset_momentum" in FACTOR_BLOCKS
     assert "cross_asset_value" in FACTOR_BLOCKS
     assert "global_risk_factor" in FACTOR_BLOCKS
+    assert "liquidity_factor" in FACTOR_BLOCKS
     assert get_factors_by_asset_class("fx")
     assert get_factors_by_category("momentum")
     for feature_id in [
@@ -195,6 +235,7 @@ def test_factor_zoo_registry_and_metadata() -> None:
         "xasset_value_score",
         "global_risk_factor",
         "global_risk_explained_variance",
+        "xasset_liquidity_score",
     ]:
         meta = metadata_for_feature(feature_id)
         assert meta is not None, feature_id

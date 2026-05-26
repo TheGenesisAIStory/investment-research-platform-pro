@@ -228,6 +228,13 @@ FACTOR_BLOCKS: dict[str, FactorBlock] = {
         "Rolling PCA risk-on/risk-off factor from cross-asset return panels.",
         experimental=True,
     ),
+    "liquidity_factor": FactorBlock(
+        "liquidity_factor",
+        "Cross-Asset Liquidity",
+        ("xasset_liquidity_score",),
+        "Amihud-style cross-asset illiquidity score with bid-ask-spread proxy fallback.",
+        experimental=True,
+    ),
     "technical_advanced": FactorBlock(
         "technical_advanced",
         "Technical Advanced",
@@ -541,6 +548,17 @@ FACTOR_REGISTRY: dict[str, dict[str, object]] = {
         "academic_reference": "Bartram et al. (2021); PCA global risk factor literature",
         "data_requirements": ["cross_asset_return_panels"],
         "anti_leakage": "rolling PCA window uses data through t-1",
+    },
+    "liquidity_factor": {
+        "module": "research_platform_core.cross_asset_factors",
+        "function": "liquidity_factor",
+        "asset_class": "multi_asset",
+        "category": "liquidity",
+        "frequency": "daily",
+        "experimental": True,
+        "academic_reference": "Amihud (2002), Journal of Financial Markets",
+        "data_requirements": ["cross_asset_returns", "dollar_volume or spread proxy"],
+        "anti_leakage": "rolling 21d signal shifted by one observation",
     },
     "eps_factors": {
         "module": "factors.eps_factors",

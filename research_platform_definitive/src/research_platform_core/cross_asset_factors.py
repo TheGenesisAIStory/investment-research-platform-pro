@@ -49,10 +49,43 @@ def _numeric_signal_frame(frame: pd.DataFrame | pd.Series, prefix: str) -> pd.Da
     return out
 
 
+def _numeric_panel(frame: pd.DataFrame | pd.Series | None) -> pd.DataFrame:
+    if frame is None:
+        return pd.DataFrame()
+    if isinstance(frame, pd.Series):
+        out = frame.to_frame(name=frame.name or "value")
+    else:
+        out = frame.copy()
+    if "date" in out.columns:
+        out = out.copy()
+        out["date"] = pd.to_datetime(out["date"], errors="coerce")
+        out = out.set_index("date")
+    out = out.apply(pd.to_numeric, errors="coerce").sort_index()
+    out = out.loc[:, ~out.columns.duplicated()]
+    out.columns = [sanitize_symbol(col) for col in out.columns]
+    return out
+
+
 def _rolling_zscore(frame: pd.DataFrame, window: int = 60) -> pd.DataFrame:
     mean = frame.rolling(window, min_periods=max(12, min(window, 20))).mean()
     std = frame.rolling(window, min_periods=max(12, min(window, 20))).std().replace(0, np.nan)
     return (frame - mean) / std
+
+
+def _cross_sectional_zscore(frame: pd.DataFrame) -> pd.DataFrame:
+    mean = frame.mean(axis=1, skipna=True)
+    std = frame.std(axis=1, skipna=True).replace(0, np.nan)
+    return frame.sub(mean, axis=0).div(std, axis=0)
+
+
+def _roll_bid_ask_spread_proxy(returns: pd.DataFrame, window: int) -> pd.DataFrame:
+    values = pd.DataFrame(index=returns.index)
+    min_periods = max(5, min(int(window), 10))
+    for col in returns.columns:
+        series = pd.to_numeric(returns[col], errors="coerce")
+        cov = series.rolling(int(window), min_periods=min_periods).cov(series.shift(1))
+        values[col] = 2.0 * np.sqrt(np.maximum(-cov, 0.0))
+    return values
 
 
 def build_cross_asset_momentum(macro_history_df: pd.DataFrame) -> pd.DataFrame:
@@ -196,11 +229,51 @@ def global_risk_factor(
     return out.reset_index(drop=True)
 
 
+def liquidity_factor(
+    ret_df: pd.DataFrame | pd.Series,
+    volume_df: pd.DataFrame | pd.Series | None = None,
+    *,
+    window: int = 21,
+) -> pd.DataFrame:
+    """Cross-asset Amihud illiquidity factor with a spread-proxy fallback.
+
+    Primary signal: rolling mean of `abs(return) / dollar_volume`.
+    If dollar-volume data is unavailable for an asset, the function falls back
+    to a Roll-style implicit bid-ask spread proxy from return autocovariance.
+    The final values are shifted by one observation and transformed into a
+    cross-sectional z-score each date.
+
+    Positive values indicate higher illiquidity / stronger trading-friction
+    exposure. Reference: Amihud (2002), Journal of Financial Markets.
+    """
+    returns = _numeric_panel(ret_df).replace([np.inf, -np.inf], np.nan).sort_index()
+    if returns.empty:
+        return pd.DataFrame()
+
+    volumes = _numeric_panel(volume_df).replace([np.inf, -np.inf], np.nan).sort_index()
+    volumes = volumes.reindex(index=returns.index, columns=returns.columns) if not volumes.empty else pd.DataFrame(index=returns.index, columns=returns.columns)
+    positive_volume = volumes.where(volumes > 0)
+
+    min_periods = max(5, min(int(window), 10))
+    amihud = (returns.abs() / positive_volume).rolling(int(window), min_periods=min_periods).mean()
+    spread_proxy = _roll_bid_ask_spread_proxy(returns, int(window))
+    raw_illiquidity = amihud.where(amihud.notna(), spread_proxy).shift(1)
+    zscore = _cross_sectional_zscore(raw_illiquidity)
+
+    out = pd.DataFrame(index=returns.index)
+    for col in zscore.columns:
+        out[f"xasset_liquidity_{sanitize_symbol(col)}"] = zscore[col]
+    out["xasset_liquidity_score"] = zscore.mean(axis=1, skipna=True)
+    out["date"] = out.index
+    return out.reset_index(drop=True)
+
+
 __all__ = [
     "CORE_CROSS_ASSET_SYMBOLS",
     "build_cross_asset_momentum",
     "cross_asset_momentum",
     "cross_asset_value",
     "global_risk_factor",
+    "liquidity_factor",
     "sanitize_symbol",
 ]

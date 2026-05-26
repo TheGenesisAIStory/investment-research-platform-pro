@@ -8,7 +8,7 @@ Decision policy applied:
 - EPS factors: `create_new_module`; implemented as experimental in `factors/eps_factors.py`.
 - Monte Carlo simulation: `create_new_module`; implemented as experimental in `simulation/monte_carlo.py`.
 - Colab Pro pipeline: `cloud_handoff`; created notebook skeleton in `colab/ml_training_pipeline.ipynb`.
-- Cross-asset completeness check: `extend_existing_module`; `cross_asset_value` and `global_risk_factor` are now implemented in the existing module, while `liquidity_factor` remains a documented `STUB`.
+- Cross-asset completeness check: `extend_existing_module`; `cross_asset_value`, `global_risk_factor` and `liquidity_factor` are now implemented in the existing module.
 
 ## Academic Documentation Audit
 
@@ -37,7 +37,7 @@ Decision policy applied:
 | `cross_asset_factors.py` | cross_asset_momentum | Asness-Moskowitz-Pedersen 2013, Journal of Finance | experimental | no |
 | `cross_asset_factors.py` | Cross-asset value | Asness-Moskowitz-Pedersen 2013, Journal of Finance | implemented experimental | no |
 | `cross_asset_factors.py` | Global risk factor | Bartram et al. 2021; PCA risk-factor literature | implemented experimental | no |
-| `cross_asset_factors.py` | Liquidity factor | Pastor-Stambaugh 2003, Journal of Political Economy; Amihud 2002, Journal of Financial Markets | STUB - owner: Data Platform; timeline: next provider-liquidity cycle | yes - implementation missing |
+| `cross_asset_factors.py` | Liquidity factor | Amihud 2002, Journal of Financial Markets; Roll 1984 fallback proxy | implemented experimental | no |
 | `smart_money.py` | COT hedging pressure | De Roon et al. 2000, Journal of Finance; CFTC COT | experimental | no |
 | `macro_context.py` / `ml_stock_lab/macro_features.py` | Macro context block | Fama-French conditional returns; Adrian-Shin 2010 | experimental | no |
 | `regime_detection.py` | Market regime label | Ang-Bekaert 2002; Gen.is.IA internal rule system | implemented | no |
@@ -66,7 +66,7 @@ Decision policy applied:
 | `cross_asset_factors.py` | `cross_asset_momentum` | Asness-Moskowitz-Pedersen 2013 | implemented alias to `build_cross_asset_momentum` | no |
 | `cross_asset_factors.py` | `cross_asset_value` | Asness-Moskowitz-Pedersen 2013 | implemented experimental | no |
 | `cross_asset_factors.py` | `global_risk_factor` | PCA-based global risk-factor literature | implemented experimental | no |
-| `cross_asset_factors.py` | `liquidity_factor` | Amihud 2002; Pastor-Stambaugh 2003 | STUB - owner: Data Platform; timeline: after Amihud/volume panel is standardized | yes |
+| `cross_asset_factors.py` | `liquidity_factor` | Amihud 2002; Roll 1984 fallback proxy | implemented experimental | no |
 
 ## DATA_ARTIFACTS
 
@@ -79,7 +79,7 @@ Decision policy applied:
 
 | Item | Status | Note |
 | --- | --- | --- |
-| STUB factors documented with owner and timeline | done | `liquidity_factor` remains the only cross-asset STUB from this audit. |
+| STUB factors documented with owner and timeline | done | No high-priority cross-asset STUB remains from this audit. |
 | data_completion manifest gap added as DATA_ARTIFACTS note | done | Classified as `LOCAL_ONLY - not required for CI`. |
 | CHANGELOG.md updated with v2.x entry | done | See root `CHANGELOG.md`. |
 | PR description includes commits `1c849c7`, `223903f`, `901e7e4` | ready | Include these commit IDs in the PR body. |
@@ -91,4 +91,4 @@ Decision policy applied:
 - EPS consensus coverage is provider-dependent. The implementation uses a rolling historical EPS mean as a naive proxy when consensus is unavailable.
 - Monte Carlo simulation assumes the supplied factor matrix is already point-in-time safe.
 - The Colab notebook is a handoff skeleton, not a committed heavy training run.
-- Cross-asset value and PCA global risk are implemented as experimental utilities. Cross-asset liquidity remains a STUB until the Amihud/volume panel is standardized across asset classes.
+- Cross-asset value, PCA global risk and Amihud-style liquidity are implemented as experimental utilities. Liquidity falls back to a Roll-style spread proxy when dollar-volume data is unavailable.
