@@ -76,7 +76,51 @@ The Bartram et al. (2021) institutional factor map is integrated as an additive 
 
 Point-in-time rule: statement-driven columns require a fiscal-reporting lag before use in live predictions. The helper functions are intentionally fail-soft so partial fundamentals coverage does not break the factor panel.
 
-## 5. Cross-Asset Factors
+## 5. EPS & Earnings Factors
+
+EPS features are an experimental earnings-information block. They are designed for provider data such as FMP/EODHD/IBES-like estimates, but `factors/eps_factors.py` falls back to a rolling historical EPS mean as a naive consensus proxy when analyst consensus is unavailable.
+
+| Feature | Formula | Academic reference | Data / frequency | Anti-leakage |
+| --- | --- | --- | --- | --- |
+| `eps_surprise` | `(actual_EPS - consensus_EPS) / abs(consensus_EPS)` | Ball and Brown (1968), Journal of Accounting Research; Bernard and Thomas (1989), Journal of Accounting and Economics | actual EPS, consensus EPS; quarterly/event driven | shifted by one fiscal period per ticker |
+| `eps_revision` | `change(consensus_EPS, 1 observation) / lag(consensus_EPS)` | Hawkins et al. (1984), analyst forecast revision literature | consensus EPS estimates; monthly or estimate timestamp | shifted by one fiscal period per ticker |
+| `eps_revision_3m` | `change(consensus_EPS, 3 observations) / lag_3(consensus_EPS)` | Hawkins et al. (1984) | consensus EPS estimates; monthly or estimate timestamp | shifted by one fiscal period per ticker |
+| `eps_forecast_accuracy` | `rolling_mean(abs(actual_EPS - forecast_EPS), 4 quarters)` | Forecast-evaluation / Gen.is.IA internal | actual EPS and forecast EPS; quarterly | uses only prior forecast errors, then shifted |
+| `eps_growth_momentum` | `EPS_t / EPS_t-4 - 1` | Bernard and Thomas (1989), post-earnings-announcement drift | quarterly EPS | shifted by one fiscal period per ticker |
+| `earnings_yield` | `EPS / price` | Basu (1977), Journal of Finance | EPS and price; quarterly plus daily price | EPS component lagged one fiscal period |
+
+Status: implemented as experimental in `factors/eps_factors.py` and registered as `eps_factors` in the ML factor registry. These features should be promoted only after coverage and point-in-time provider timestamps are audited.
+
+## 6. Simulation & Risk (Monte Carlo)
+
+The simulation layer is a research/risk utility, not a predictive factor. `simulation/monte_carlo.py` implements deterministic vectorized Monte Carlo helpers with `seed=42`.
+
+| Function | Output | Reference | Data requirements | Anti-leakage |
+| --- | --- | --- | --- | --- |
+| `monte_carlo_returns(factor_scores, n_sim=10000, horizon=252)` | percentile paths, terminal 5/25/50/75/95 bands, VaR, CVaR | Glasserman (2003), *Monte Carlo Methods in Financial Engineering* | historical factor scores or factor-return matrix | caller must pass PIT historical inputs only |
+| `monte_carlo_factor_uncertainty(factor_df, bootstrap=True)` | factor-level prediction interval percentiles | Glasserman (2003); bootstrap validation practice used in factor research | historical factor matrix | resamples only supplied in-sample rows |
+
+Monte Carlo outputs are registered as simulation metrics (`mc_p05`, `mc_p50`, `mc_p95`, `mc_var_95`, `mc_cvar_95`) so UI/report layers can explain them without treating them as model features.
+
+## 7. ML Training Pipeline (Colab Pro)
+
+`colab/ml_training_pipeline.ipynb` is a cloud handoff notebook for heavy experiments that should not be forced on the local workstation by default.
+
+Required sections are present:
+
+| Section | Purpose | Status |
+| --- | --- | --- |
+| Drive mount and project bootstrap | Mount `/content/drive/MyDrive/genisia/`, set project paths and import packages | implemented skeleton |
+| Feature engineering | Load `factor_registry`, factor panel and optional EPS block | implemented skeleton |
+| Model training | LightGBM, Ridge and optional GPU LSTM placeholder | implemented skeleton |
+| Walk-forward CV | Expanding-window no-leakage split | implemented skeleton |
+| SHAP feature importance | Per-feature explanation hook when SHAP is installed | implemented skeleton |
+| Factor IC analysis | RankIC helper by date | implemented skeleton |
+| Export | Metrics JSON and artifacts to Drive | implemented skeleton |
+
+The notebook is deliberately a handoff scaffold. Full training should write metrics/model artifacts to Drive and then sync lightweight summaries back into Git.
+
+## 8. Cross-Asset Factors
 
 The cross-asset factor blocks are experimental context layers inspired by Asness, Moskowitz and Pedersen (2013) and Bartram et al. (2021). They are registered in `factor_registry.py` but are not part of the canonical equity model unless explicitly selected.
 
@@ -90,7 +134,7 @@ The cross-asset factor blocks are experimental context layers inspired by Asness
 
 These blocks use existing Macro DB and Smart Money artifacts. True FX rate-differential carry, commodity futures-basis carry, PPP value and licensed spread data remain planned enhancements when higher-quality provider fields are available.
 
-## 6. Portfolio Analytics
+## 9. Portfolio Analytics
 
 | Metric | Formula | Interpretation |
 | --- | --- | --- |
@@ -104,7 +148,7 @@ These blocks use existing Macro DB and Smart Money artifacts. True FX rate-diffe
 | Brinson allocation | `$(w_p-w_b)(r_{b,s}-r_b)$` | sector allocation contribution |
 | Brinson selection | `$w_b(r_{p,s}-r_{b,s})$` | stock selection contribution |
 
-## 7. Valuation Models
+## 10. Valuation Models
 
 | Model | Formula | Notes |
 | --- | --- | --- |
@@ -114,11 +158,11 @@ These blocks use existing Macro DB and Smart Money artifacts. True FX rate-diffe
 | EVA | `$NOPAT-WACC\\times InvestedCapital$` | value creation after capital charge |
 | Comps | `implied price from sector median multiples` | compare PE, EV/EBITDA, EV/Sales and PB |
 
-## 8. Smart Money Indicators
+## 11. Smart Money Indicators
 
 Smart Money is a context layer. COT positioning, ETF flow proxies and optional put/call ratios are informational diagnostics, not direct model targets.
 
-## 9. Macro Context Features
+## 12. Macro Context Features
 
 | Feature | Formula | Use |
 | --- | --- | --- |
@@ -136,7 +180,7 @@ Source data: internal Macro DB, 140 multi-asset proxies, 2000-2026 where availab
 
 Related literature: factor timing and conditional expected returns in Fama and French (1989, 1993), credit-cycle information in Adrian and Shin (2010), and volatility/regime conditioning in Ang and Bekaert (2002).
 
-## 10. Market Regime Classification
+## 13. Market Regime Classification
 
 The regime detector writes `output/macro_market/tables/MarketRegimeHistory.csv` with four labels:
 
@@ -151,13 +195,13 @@ Signals stored with each row: `equity_momentum_21d`, `credit_spread`, `vix_proxy
 
 Historical distribution is generated from the local Macro DB when `build_regime_history()` or `build_market_regime_history()` runs. The distribution is intentionally not hard-coded in this document because it depends on the data snapshot.
 
-## 11. WorldQuant 101 Formulaic Alphas
+## 14. WorldQuant 101 Formulaic Alphas
 
 The platform implements the 101 formulaic alphas from Kakushadze (2016), arXiv:1601.00991, in `research_platform_core.alpha101`. Each alpha is exposed through `Alpha101Suite`, registered in `feature_metadata.py` as category `alpha101`, and selectable in ML Stock Lab as an experimental feature block.
 
 These alphas are price/volume formulas, cross-sectionally rank-normalized, and computed only when the panel has OHLCV fields. They are not mixed into the canonical academic factor layer by default; the researcher must explicitly select `alpha101` and compare the resulting IC/RankIC/Sharpe against value, quality, momentum, risk, size and growth baselines.
 
-## 12. Legacy Macro Regime Features
+## 15. Legacy Macro Regime Features
 
 | Feature | Formula | Use |
 | --- | --- | --- |
@@ -167,7 +211,7 @@ These alphas are price/volume formulas, cross-sectionally rank-normalized, and c
 | `regime_dxy_trend_21d` | `sign(DXY 21d return)` | USD pressure |
 | `regime_gold_trend_21d` | `sign(Gold 21d return)` | defensive/inflation proxy |
 
-## 13. Riferimenti bibliografici
+## 16. Riferimenti bibliografici
 
 - Adrian, T., Shin, H. S. (2010). Liquidity and leverage.
 - Amihud, Y. (2002). Illiquidity and stock returns.
@@ -178,7 +222,9 @@ These alphas are price/volume formulas, cross-sectionally rank-normalized, and c
 - Banz, R. (1981). The relationship between return and market value of common stocks.
 - Bartram, S., Lohre, H., Pope, P., Ranganathan, A. (2021). Navigating the factor zoo around the world.
 - Ball, R., Gerakos, J., Linnainmaa, J., Nikolaev, V. (2016). Accruals, cash flows, and operating profitability.
+- Ball, R., Brown, P. (1968). An empirical evaluation of accounting income numbers.
 - Basu, S. (1977). Investment performance of common stocks in relation to their price-earnings ratios.
+- Bernard, V., Thomas, J. (1989). Post-earnings-announcement drift.
 - Boudoukh, J., Michaely, R., Richardson, M., Roberts, M. (2007). On the importance of measuring payout yield.
 - Carhart, M. (1997). On persistence in mutual fund performance.
 - Cooper, M., Gulen, H., Schill, M. (2008). Asset growth and the cross-section of stock returns.
@@ -189,6 +235,8 @@ These alphas are price/volume formulas, cross-sectionally rank-normalized, and c
 - Fama, E., Bliss, R. (1987). The information in long-maturity forward rates.
 - Frazzini, A., Pedersen, L. (2014). Betting Against Beta.
 - Gorton, G., Rouwenhorst, K. (2006). Facts and fantasies about commodity futures.
+- Glasserman, P. (2003). Monte Carlo Methods in Financial Engineering.
+- Hawkins, E., Chamberlin, S., Daniel, W. (1984). Earnings expectations and analyst forecast revisions.
 - Jegadeesh, N., Titman, S. (1993). Returns to buying winners and selling losers.
 - Kakushadze, Z. (2016). 101 Formulaic Alphas. arXiv:1601.00991.
 - Lustig, H., Verdelhan, A. (2007). The cross-section of foreign currency risk premia.
