@@ -207,6 +207,67 @@ def normalize_cot_data(raw: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def build_cot_hedging_pressure(cot_df: pd.DataFrame) -> pd.DataFrame:
+    """Build weekly COT hedging-pressure features for ML/context panels.
+
+    The function accepts either normalized COT rows from `normalize_cot_data()`
+    or raw CFTC-style rows with commercial/non-commercial long/short columns.
+    Missing commercial fields produce NaN hedging pressure rather than raising.
+    """
+    if cot_df is None or cot_df.empty:
+        return pd.DataFrame()
+    frame = cot_df.copy()
+    if "instrument" not in frame.columns:
+        mapped = frame.get("market_and_exchange_names", frame.get("contract_market_name", pd.Series(index=frame.index, dtype=object))).map(_cot_instrument)
+        frame["instrument"] = mapped.map(lambda item: item[0])
+    date_col = next((col for col in ["report_date", "report_date_as_yyyy_mm_dd", "date"] if col in frame.columns), None)
+    if date_col is None:
+        return pd.DataFrame()
+    frame["date"] = pd.to_datetime(frame[date_col], errors="coerce")
+    frame = frame.dropna(subset=["date"])
+    if frame.empty:
+        return pd.DataFrame()
+
+    def pick(*names: str) -> pd.Series:
+        for name in names:
+            if name in frame.columns:
+                return pd.to_numeric(frame[name], errors="coerce")
+        return pd.Series(np.nan, index=frame.index)
+
+    noncomm_long = pick("noncommercial_long", "noncomm_positions_long_all", "lev_money_positions_long")
+    noncomm_short = pick("noncommercial_short", "noncomm_positions_short_all", "lev_money_positions_short")
+    commercial_long = pick("commercial_long", "comm_positions_long_all", "commercial_positions_long_all")
+    commercial_short = pick("commercial_short", "comm_positions_short_all", "commercial_positions_short_all")
+    frame["net_noncommercial"] = pick("net_noncommercial").where(lambda s: s.notna(), noncomm_long - noncomm_short)
+    frame["net_commercial"] = commercial_long - commercial_short
+    frame["hedging_pressure"] = frame["net_commercial"] / (commercial_long + commercial_short).replace(0, np.nan)
+    frame["instrument_id"] = frame["instrument"].map(lambda value: _safe_id(value).lower())
+
+    wide_parts: list[pd.DataFrame] = []
+    for instrument_id, group in frame.sort_values("date").groupby("instrument_id", dropna=True):
+        if not instrument_id:
+            continue
+        group = group.drop_duplicates("date", keep="last").set_index("date").sort_index()
+        net = pd.to_numeric(group["net_noncommercial"], errors="coerce")
+        hp = pd.to_numeric(group["hedging_pressure"], errors="coerce")
+        net_z = (net - net.rolling(52, min_periods=12).mean()) / net.rolling(52, min_periods=12).std().replace(0, np.nan)
+        hp_z = (hp - hp.rolling(52, min_periods=12).mean()) / hp.rolling(52, min_periods=12).std().replace(0, np.nan)
+        part = pd.DataFrame(
+            {
+                f"cot_net_noncomm_{instrument_id}": net.shift(1),
+                f"cot_hedging_pressure_{instrument_id}": hp.shift(1),
+                f"cot_z_{instrument_id}": hp_z.where(hp_z.notna(), net_z).shift(1),
+            },
+            index=group.index,
+        )
+        wide_parts.append(part)
+    if not wide_parts:
+        return pd.DataFrame()
+    out = pd.concat(wide_parts, axis=1).sort_index()
+    out["date"] = out.index
+    return out.reset_index(drop=True)
+
+
 def _safe_id(value: object) -> str:
     return "".join(ch if ch.isalnum() else "_" for ch in str(value).upper()).strip("_") or "UNKNOWN"
 

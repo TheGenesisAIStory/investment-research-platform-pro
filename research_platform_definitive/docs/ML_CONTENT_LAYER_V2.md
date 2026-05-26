@@ -16,6 +16,12 @@ vista della ricerca:
 - `size`: market cap/liquidita' come proxy di investibilita'.
 - `growth`: revenue/earnings growth quando disponibili.
 - `model_based`: mispricing da DCF, residual income, EVA o altri artifact.
+- `fx_factors`, `fi_factors`, `commodity_factors`: blocchi sperimentali
+  Bartram-style costruiti dal Macro DB 140 proxy.
+- `smart_money_factors`: COT hedging pressure e positioning z-score da Smart
+  Money/CFTC.
+- `cross_asset_momentum`: momentum-everywhere su equity, FX, FI, commodity e
+  crypto proxy.
 
 Il factor panel prodotto da `research_platform_core.data_completion` aggiunge
 `ret21d`, `ret63d`, `ret126d`, `ret252d`, `vol63d`, `vol126d`, `vol252d`,
@@ -41,13 +47,15 @@ Ogni entry contiene:
 Copertura consolidata:
 
 - `value`: `pe`, `pb`, `ev_ebit`, `ev_ebitda`, `dividend_yield`,
-  `valuation_score`, `value_score`.
+  `net_payout_yield`, `valuation_score`, `value_score`.
 - `quality`: `roe`, `roic`, `gross_margin`, `operating_margin`,
-  `debt_to_equity`, `quality_score`, `quality_flag`.
+  `debt_to_equity`, `gross_profitability`, `investment_factor`, `accruals`,
+  `cash_profitability`, `earnings_quality`, `quality_score`, `quality_flag`.
 - `momentum`: `ret21d`, `ret63d`, `ret126d`, `ret252d`,
-  `momentum_12_1`, `momentum_12_1_score`, `momentum_score`.
+  `momentum_12_1`, `short_term_reversal`, `momentum_12_1_score`,
+  `momentum_score`.
 - `risk`: `vol63d`, `vol126d`, `vol252d`, `beta`, `max_drawdown`,
-  `risk_score`.
+  `idiosyncratic_vol`, `distress_risk`, `risk_score`.
 - `size`: `market_value`, `market_cap`, `marketcap`, `log_market_value`,
   `size_score`.
 - `growth`: `revenue_growth`, `revenue_cagr`, `sales_cagr`, `eps_growth`,
@@ -125,11 +133,16 @@ essere disattivato lato job.
 
 ## Macro context feature block
 
-Il Macro DB multi-asset alimenta ora due blocchi sperimentali opzionali:
+Il Macro DB multi-asset alimenta ora piu' blocchi sperimentali opzionali:
 
 ```text
 macro_context
 alpha101
+fx_factors
+fi_factors
+commodity_factors
+smart_money_factors
+cross_asset_momentum
 ```
 
 `macro_context` vive in `ml_stock_lab.factor_registry` ma le feature sono
@@ -153,6 +166,18 @@ sostituirli.
 | --- | --- | ---: | --- | --- |
 | `macro_context` | experimental | 9 core + alias legacy | Macro DB 140 proxy | off |
 | `alpha101` | experimental | 101 | Kakushadze (2016), arXiv:1601.00991 | off |
+| `fx_factors` | experimental | 44 | Bartram et al. (2021), Menkhoff et al. (2012) | off |
+| `fi_factors` | experimental | 4 | Fama-Bliss (1987), Elton et al. (2001), AMP (2013) | off |
+| `commodity_factors` | experimental | 16 | Gorton-Rouwenhorst (2006), Bartram et al. (2021) | off |
+| `smart_money_factors` | experimental | 18 | De Roon et al. (2000), CFTC COT | off |
+| `cross_asset_momentum` | experimental | 30 | Asness, Moskowitz and Pedersen (2013) | off |
+
+Il nuovo set Bartram/AMP e' implementato come layer additivo: non sovrascrive
+feature gia' migliori nel factor panel, ma registra colonne opzionali e builder
+indipendenti (`institutional_factors.py`, `fx_factors.py`, `fi_factors.py`,
+`commodity_factors.py`, `cross_asset_factors.py`, `smart_money.py`). Tutti i
+builder usano almeno uno shift di una osservazione; le feature fondamentali
+richiedono lag fiscale prima dell'uso live.
 
 Risultati retraining Alpha101: gli artifact `_alpha101` vengono prodotti da
 `scripts/train_ml_models_2000_2026.py --use-alpha101 True`. Il run locale del

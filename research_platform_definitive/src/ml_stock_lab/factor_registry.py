@@ -29,25 +29,39 @@ FACTOR_BLOCKS: dict[str, FactorBlock] = {
     "value": FactorBlock(
         "value",
         "Value",
-        ("valuation_score", "pe", "pb", "ev_ebit", "ev_ebitda", "dividend_yield"),
+        ("valuation_score", "pe", "pb", "ev_ebit", "ev_ebitda", "dividend_yield", "net_payout_yield"),
         "Lower valuation multiples and higher shareholder yield.",
     ),
     "quality": FactorBlock(
         "quality",
         "Quality",
-        ("quality_score", "roe", "roic", "gross_margin", "operating_margin", "debt_to_equity"),
+        (
+            "quality_score",
+            "roe",
+            "roic",
+            "gross_margin",
+            "operating_margin",
+            "debt_to_equity",
+            "gross_profitability",
+            "investment_factor",
+            "asset_growth",
+            "accruals",
+            "accruals_ratio",
+            "cash_profitability",
+            "earnings_quality",
+        ),
         "Profitability, capital efficiency, margins and balance-sheet discipline.",
     ),
     "momentum": FactorBlock(
         "momentum",
         "Momentum",
-        ("momentum_score", "momentum_12_1", "ret252d", "ret126d", "ret63d", "ret21d"),
+        ("momentum_score", "momentum_12_1", "ret252d", "ret126d", "ret63d", "ret21d", "short_term_reversal", "momentum_reversal_1m"),
         "Intermediate-term price momentum with a preference for 12-1 month momentum when available.",
     ),
     "risk": FactorBlock(
         "risk",
         "Low Vol / Risk",
-        ("risk_score", "vol252d", "vol126d", "vol63d", "volatility", "beta", "max_drawdown"),
+        ("risk_score", "vol252d", "vol126d", "vol63d", "volatility", "beta", "max_drawdown", "idiosyncratic_vol", "distress_risk", "altman_z_score"),
         "Lower realized volatility, beta and drawdown risk.",
     ),
     "size": FactorBlock(
@@ -128,6 +142,62 @@ FACTOR_BLOCKS: dict[str, FactorBlock] = {
         "WorldQuant 101 Alphas",
         tuple(f"alpha{i:03d}" for i in range(1, 102)),
         "Kakushadze (2015) formulaic price-volume alphas, computed as optional cross-sectional rank features.",
+        experimental=True,
+    ),
+    "fx_factors": FactorBlock(
+        "fx_factors",
+        "FX Factors",
+        tuple(
+            f"{prefix}_{pair}"
+            for pair in ("eurusd", "gbpusd", "usdjpy", "usdchf", "audusd", "usdcad", "nzdusd", "eurgbp", "eurjpy", "eurchf", "dxy")
+            for prefix in ("fx_carry", "fx_mom", "fx_trend", "fx_vol")
+        ),
+        "Bartram-style FX carry proxy, momentum, trend and volatility factors from Macro DB FX pairs.",
+        experimental=True,
+    ),
+    "fi_factors": FactorBlock(
+        "fi_factors",
+        "Fixed Income Factors",
+        (
+            "fi_term_carry_tlt_shy",
+            "fi_credit_carry_hyg_lqd",
+            "fi_momentum_tlt",
+            "fi_real_yield_tip_tlt",
+        ),
+        "Term carry, credit carry, bond momentum and real-yield proxies from fixed-income ETFs.",
+        experimental=True,
+    ),
+    "commodity_factors": FactorBlock(
+        "commodity_factors",
+        "Commodity Factors",
+        tuple(
+            f"{prefix}_{commodity}"
+            for commodity in ("wti", "brent", "gold", "copper")
+            for prefix in ("commodity_mom", "commodity_trend", "commodity_carry", "commodity_mean_reversion")
+        ),
+        "Commodity momentum, trend, carry proxy and mean-reversion factors from Macro DB commodity proxies.",
+        experimental=True,
+    ),
+    "smart_money_factors": FactorBlock(
+        "smart_money_factors",
+        "Smart Money Factors",
+        tuple(
+            f"{prefix}_{asset}"
+            for asset in ("sp500", "nasdaq", "euro_fx", "gold", "wti_crude", "copper")
+            for prefix in ("cot_net_noncomm", "cot_hedging_pressure", "cot_z")
+        ),
+        "CFTC COT positioning and hedging-pressure features. Context layer until coverage is monitored.",
+        experimental=True,
+    ),
+    "cross_asset_momentum": FactorBlock(
+        "cross_asset_momentum",
+        "Cross-Asset Momentum",
+        tuple(
+            f"{prefix}_{asset}"
+            for asset in ("spy", "qqq", "dxy", "tlt", "hyg", "lqd", "brent", "gold", "copper", "btc")
+            for prefix in ("xasset_mom", "xasset_trend", "xasset_vol_adj_mom")
+        ),
+        "Momentum-everywhere features across equity, FX, fixed income, commodities and crypto proxies.",
         experimental=True,
     ),
     "technical_advanced": FactorBlock(
@@ -304,7 +374,7 @@ def add_factor_scores(panel: pd.DataFrame) -> pd.DataFrame:
     for col in ("pe", "pb", "ev_ebit", "ev_ebitda"):
         if col in out.columns:
             value_parts.append(_pct_rank(_numeric(out, col), higher_is_better=False, group=group))
-    for col in ("dividend_yield",):
+    for col in ("dividend_yield", "net_payout_yield"):
         if col in out.columns:
             value_parts.append(_pct_rank(_numeric(out, col), higher_is_better=True, group=group))
     computed_value = _mean_available(value_parts, out.index)
@@ -313,11 +383,12 @@ def add_factor_scores(panel: pd.DataFrame) -> pd.DataFrame:
     out["value_score"] = _mean_available([_numeric(out, "valuation_score"), computed_value], out.index)
 
     quality_parts = []
-    for col in ("roe", "roic", "gross_margin", "operating_margin"):
+    for col in ("roe", "roic", "gross_margin", "operating_margin", "gross_profitability", "cash_profitability", "earnings_quality"):
         if col in out.columns:
             quality_parts.append(_pct_rank(_numeric(out, col), higher_is_better=True, group=group))
-    if "debt_to_equity" in out.columns:
-        quality_parts.append(_pct_rank(_numeric(out, "debt_to_equity"), higher_is_better=False, group=group))
+    for col in ("debt_to_equity", "investment_factor", "asset_growth", "accruals", "accruals_ratio"):
+        if col in out.columns:
+            quality_parts.append(_pct_rank(_numeric(out, col), higher_is_better=False, group=group))
     computed_quality = _mean_available(quality_parts, out.index)
     if "quality_score" not in out.columns or _numeric(out, "quality_score").notna().sum() == 0:
         out["quality_score"] = computed_quality
@@ -329,9 +400,12 @@ def add_factor_scores(panel: pd.DataFrame) -> pd.DataFrame:
             out["momentum_score"] = out["momentum_12_1_score"]
 
     risk_parts = []
-    for col in ("vol252d", "vol126d", "vol63d", "volatility", "beta", "max_drawdown"):
+    for col in ("vol252d", "vol126d", "vol63d", "volatility", "beta", "max_drawdown", "idiosyncratic_vol"):
         if col in out.columns:
             risk_parts.append(_pct_rank(_numeric(out, col).abs(), higher_is_better=False, group=group))
+    for col in ("distress_risk", "altman_z_score"):
+        if col in out.columns:
+            risk_parts.append(_pct_rank(_numeric(out, col), higher_is_better=True, group=group))
     computed_risk = _mean_available(risk_parts, out.index)
     if "risk_score" not in out.columns or _numeric(out, "risk_score").notna().sum() == 0:
         out["risk_score"] = computed_risk
@@ -349,6 +423,86 @@ def add_factor_scores(panel: pd.DataFrame) -> pd.DataFrame:
     score_cols = [col for col in ("value_score", "quality_score", "momentum_score", "risk_score", "size_score", "growth_score") if col in out.columns]
     out["factor_composite_score"] = out[score_cols].apply(pd.to_numeric, errors="coerce").mean(axis=1, skipna=True) if score_cols else np.nan
     return out
+
+
+FACTOR_REGISTRY: dict[str, dict[str, object]] = {
+    "fx_carry": {
+        "module": "research_platform_core.fx_factors",
+        "function": "build_fx_factors",
+        "asset_class": "fx",
+        "category": "carry",
+        "frequency": "daily",
+        "experimental": True,
+        "academic_reference": "Bartram et al. (2021); Lustig and Verdelhan (2007)",
+        "data_requirements": ["macro_db_fx", "dxy_proxy"],
+        "anti_leakage": "shift(1)",
+    },
+    "fx_momentum": {
+        "module": "research_platform_core.fx_factors",
+        "function": "build_fx_factors",
+        "asset_class": "fx",
+        "category": "momentum",
+        "frequency": "daily",
+        "experimental": True,
+        "academic_reference": "Menkhoff et al. (2012); Asness et al. (2013)",
+        "data_requirements": ["macro_db_fx"],
+        "anti_leakage": "shift(1), skip latest month",
+    },
+    "fi_term_carry": {
+        "module": "research_platform_core.fi_factors",
+        "function": "build_fi_factors",
+        "asset_class": "fixed_income",
+        "category": "carry",
+        "frequency": "daily",
+        "experimental": True,
+        "academic_reference": "Fama and Bliss (1987); Bartram et al. (2021)",
+        "data_requirements": ["TLT", "SHY"],
+        "anti_leakage": "shift(1)",
+    },
+    "commodity_momentum": {
+        "module": "research_platform_core.commodity_factors",
+        "function": "build_commodity_factors",
+        "asset_class": "commodity",
+        "category": "momentum",
+        "frequency": "daily",
+        "experimental": True,
+        "academic_reference": "Gorton and Rouwenhorst (2006); Bartram et al. (2021)",
+        "data_requirements": ["macro_db_commodities"],
+        "anti_leakage": "shift(1), skip latest month",
+    },
+    "cot_hedging_pressure": {
+        "module": "research_platform_core.smart_money",
+        "function": "build_cot_hedging_pressure",
+        "asset_class": "multi_asset",
+        "category": "smart_money",
+        "frequency": "weekly",
+        "experimental": True,
+        "academic_reference": "De Roon et al. (2000); CFTC COT",
+        "data_requirements": ["cftc_cot"],
+        "anti_leakage": "shift(1)",
+    },
+    "cross_asset_momentum": {
+        "module": "research_platform_core.cross_asset_factors",
+        "function": "build_cross_asset_momentum",
+        "asset_class": "multi_asset",
+        "category": "momentum",
+        "frequency": "daily",
+        "experimental": True,
+        "academic_reference": "Asness, Moskowitz and Pedersen (2013); Bartram et al. (2021)",
+        "data_requirements": ["macro_db"],
+        "anti_leakage": "shift(1), skip latest month",
+    },
+}
+
+
+def get_factors_by_asset_class(asset_class: str) -> dict[str, dict[str, object]]:
+    key = str(asset_class or "").lower()
+    return {name: meta for name, meta in FACTOR_REGISTRY.items() if str(meta.get("asset_class", "")).lower() == key}
+
+
+def get_factors_by_category(category: str) -> dict[str, dict[str, object]]:
+    key = str(category or "").lower()
+    return {name: meta for name, meta in FACTOR_REGISTRY.items() if str(meta.get("category", "")).lower() == key}
 
 
 def feature_columns_for_blocks(

@@ -59,7 +59,38 @@ Macro and time-series signals are used as context for interpretation and monitor
 | `amihud_illiquidity` | `$ILLIQ=\\frac{1}{T}\\sum \\frac{|r_d|}{DollarVolume_d}\\times10^6$` | Amihud (2002) | rolling price/volume |
 | `asset_growth` | `$AG_t=\\frac{TA_t-TA_{t-1}}{TA_{t-1}}$` | Cooper, Gulen & Schill (2008) | requires statement lag |
 
-## 4. Portfolio Analytics
+## 4. Institutional Equity Factors
+
+The Bartram et al. (2021) institutional factor map is integrated as an additive layer. Existing stronger local features are kept; the new helpers only add missing columns or metadata and degrade to `NaN` when a fundamental input is unavailable.
+
+| Feature | Formula | Source | Status |
+| --- | --- | --- | --- |
+| `short_term_reversal` | `-return_21d`, lagged by one observation | Jegadeesh (1990), Bartram et al. (2021) | implemented in `institutional_factors.py` |
+| `gross_profitability` | `(revenue - COGS) / total_assets` | Novy-Marx (2013) | implemented, canonical quality input |
+| `investment_factor` | `(total_assets_t - total_assets_t-1) / total_assets_t-1` | Fama-French (2015), Bartram et al. (2021) | implemented, lower is better |
+| `accruals` | `(net_income - cash_from_operations) / total_assets` | Sloan (1996) | implemented, lower is better |
+| `cash_profitability` | `cash_from_operations / total_assets` | Ball et al. (2016) | implemented |
+| `earnings_quality` | `cash_from_operations / abs(net_income)` | Bartram et al. (2021) | implemented |
+| `net_payout_yield` | `(dividends + buybacks - issuance) / market_cap` | Boudoukh et al. (2007) | implemented, coverage-dependent |
+| `distress_risk` | Altman-style linear balance-sheet score | Altman (1968), Bartram et al. (2021) | implemented, higher means lower distress |
+
+Point-in-time rule: statement-driven columns require a fiscal-reporting lag before use in live predictions. The helper functions are intentionally fail-soft so partial fundamentals coverage does not break the factor panel.
+
+## 5. Cross-Asset Factors
+
+The cross-asset factor blocks are experimental context layers inspired by Asness, Moskowitz and Pedersen (2013) and Bartram et al. (2021). They are registered in `factor_registry.py` but are not part of the canonical equity model unless explicitly selected.
+
+| Block | Feature family | Formula summary | Source | PIT rule |
+| --- | --- | --- | --- | --- |
+| `fx_factors` | carry proxy, 12-1 momentum, trend, volatility | `ret63(pair)-ret63(DXY)`, `P_t-21/P_t-252-1`, `(MA50-MA200)/MA200`, `std(ret,63d)` | Lustig-Verdelhan (2007), Menkhoff et al. (2012), Bartram et al. (2021) | all price inputs shifted one observation |
+| `fi_factors` | term carry, credit carry, bond momentum, real-yield proxy | `ret(TLT)-ret(SHY)`, `ret(HYG)-ret(LQD)`, TLT 12-1 momentum, `ret(TIP)-ret(TLT)` | Fama-Bliss (1987), Elton et al. (2001), AMP (2013) | all ETF/yield proxies shifted one observation |
+| `commodity_factors` | momentum, trend, carry proxy, mean reversion | 12-1 momentum, MA50/MA200 trend, `ret63/vol63`, 252d z-score | Gorton-Rouwenhorst (2006), Bartram et al. (2021) | all price inputs shifted one observation |
+| `smart_money_factors` | COT positioning and hedging pressure | `noncommercial_long-short`, `net_commercial/(commercial_long+commercial_short)`, 52w z-score | De Roon et al. (2000), CFTC COT | weekly COT rows shifted one report |
+| `cross_asset_momentum` | momentum everywhere | 12-1 momentum, MA trend sign, volatility-adjusted momentum across Macro DB proxies | Asness, Moskowitz and Pedersen (2013) | all Macro DB inputs shifted one observation |
+
+These blocks use existing Macro DB and Smart Money artifacts. True FX rate-differential carry, commodity futures-basis carry, PPP value and licensed spread data remain planned enhancements when higher-quality provider fields are available.
+
+## 6. Portfolio Analytics
 
 | Metric | Formula | Interpretation |
 | --- | --- | --- |
@@ -73,7 +104,7 @@ Macro and time-series signals are used as context for interpretation and monitor
 | Brinson allocation | `$(w_p-w_b)(r_{b,s}-r_b)$` | sector allocation contribution |
 | Brinson selection | `$w_b(r_{p,s}-r_{b,s})$` | stock selection contribution |
 
-## 5. Valuation Models
+## 7. Valuation Models
 
 | Model | Formula | Notes |
 | --- | --- | --- |
@@ -83,11 +114,11 @@ Macro and time-series signals are used as context for interpretation and monitor
 | EVA | `$NOPAT-WACC\\times InvestedCapital$` | value creation after capital charge |
 | Comps | `implied price from sector median multiples` | compare PE, EV/EBITDA, EV/Sales and PB |
 
-## 6. Smart Money Indicators
+## 8. Smart Money Indicators
 
 Smart Money is a context layer. COT positioning, ETF flow proxies and optional put/call ratios are informational diagnostics, not direct model targets.
 
-## 7. Macro Context Features
+## 9. Macro Context Features
 
 | Feature | Formula | Use |
 | --- | --- | --- |
@@ -105,7 +136,7 @@ Source data: internal Macro DB, 140 multi-asset proxies, 2000-2026 where availab
 
 Related literature: factor timing and conditional expected returns in Fama and French (1989, 1993), credit-cycle information in Adrian and Shin (2010), and volatility/regime conditioning in Ang and Bekaert (2002).
 
-## 8. Market Regime Classification
+## 10. Market Regime Classification
 
 The regime detector writes `output/macro_market/tables/MarketRegimeHistory.csv` with four labels:
 
@@ -120,13 +151,13 @@ Signals stored with each row: `equity_momentum_21d`, `credit_spread`, `vix_proxy
 
 Historical distribution is generated from the local Macro DB when `build_regime_history()` or `build_market_regime_history()` runs. The distribution is intentionally not hard-coded in this document because it depends on the data snapshot.
 
-## 9. WorldQuant 101 Formulaic Alphas
+## 11. WorldQuant 101 Formulaic Alphas
 
 The platform implements the 101 formulaic alphas from Kakushadze (2016), arXiv:1601.00991, in `research_platform_core.alpha101`. Each alpha is exposed through `Alpha101Suite`, registered in `feature_metadata.py` as category `alpha101`, and selectable in ML Stock Lab as an experimental feature block.
 
 These alphas are price/volume formulas, cross-sectionally rank-normalized, and computed only when the panel has OHLCV fields. They are not mixed into the canonical academic factor layer by default; the researcher must explicitly select `alpha101` and compare the resulting IC/RankIC/Sharpe against value, quality, momentum, risk, size and growth baselines.
 
-## 10. Legacy Macro Regime Features
+## 12. Legacy Macro Regime Features
 
 | Feature | Formula | Use |
 | --- | --- | --- |
@@ -136,22 +167,32 @@ These alphas are price/volume formulas, cross-sectionally rank-normalized, and c
 | `regime_dxy_trend_21d` | `sign(DXY 21d return)` | USD pressure |
 | `regime_gold_trend_21d` | `sign(Gold 21d return)` | defensive/inflation proxy |
 
-## 11. Riferimenti bibliografici
+## 13. Riferimenti bibliografici
 
 - Adrian, T., Shin, H. S. (2010). Liquidity and leverage.
 - Amihud, Y. (2002). Illiquidity and stock returns.
 - Ang, A., Bekaert, G. (2002). International asset allocation with regime shifts.
 - Ang, A., Hodrick, R., Xing, Y., Zhang, X. (2006). The cross-section of volatility and expected returns.
 - Asness, C., Frazzini, A., Pedersen, L. (2019). Quality Minus Junk.
+- Asness, C., Moskowitz, T., Pedersen, L. (2013). Value and momentum everywhere.
 - Banz, R. (1981). The relationship between return and market value of common stocks.
+- Bartram, S., Lohre, H., Pope, P., Ranganathan, A. (2021). Navigating the factor zoo around the world.
+- Ball, R., Gerakos, J., Linnainmaa, J., Nikolaev, V. (2016). Accruals, cash flows, and operating profitability.
 - Basu, S. (1977). Investment performance of common stocks in relation to their price-earnings ratios.
+- Boudoukh, J., Michaely, R., Richardson, M., Roberts, M. (2007). On the importance of measuring payout yield.
 - Carhart, M. (1997). On persistence in mutual fund performance.
 - Cooper, M., Gulen, H., Schill, M. (2008). Asset growth and the cross-section of stock returns.
+- De Roon, F., Nijman, T., Veld, C. (2000). Hedging pressure effects in futures markets.
 - De Bondt, W., Thaler, R. (1985). Does the stock market overreact?
+- Elton, E., Gruber, M., Agrawal, D., Mann, C. (2001). Explaining the rate spread on corporate bonds.
 - Fama, E., French, K. (1992, 1993, 2015). Cross-sectional returns and factor models.
+- Fama, E., Bliss, R. (1987). The information in long-maturity forward rates.
 - Frazzini, A., Pedersen, L. (2014). Betting Against Beta.
+- Gorton, G., Rouwenhorst, K. (2006). Facts and fantasies about commodity futures.
 - Jegadeesh, N., Titman, S. (1993). Returns to buying winners and selling losers.
 - Kakushadze, Z. (2016). 101 Formulaic Alphas. arXiv:1601.00991.
+- Lustig, H., Verdelhan, A. (2007). The cross-section of foreign currency risk premia.
+- Menkhoff, L., Sarno, L., Schmeling, M., Schrimpf, A. (2012). Currency momentum strategies.
 - Novy-Marx, R. (2013). The other side of value.
 - Piotroski, J. (2000). Value investing and historical financial statement information.
 - Sloan, R. (1996). Do stock prices fully reflect information in accruals and cash flows?

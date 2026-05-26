@@ -826,6 +826,16 @@ _PAPER_DOI = {
     "Altman 1995": "https://pages.stern.nyu.edu/~ealtman/Zscores.pdf",
     "Sloan 1996": "10.2307/2491046",
     "Kakushadze 2015": "https://arxiv.org/abs/1601.00991",
+    "Bartram et al. 2021": "10.1007/s11573-021-01035-y",
+    "Asness-Moskowitz-Pedersen 2013": "10.1111/jofi.12021",
+    "Lustig-Verdelhan 2007": "10.1257/aer.97.1.89",
+    "Menkhoff et al. 2012": "10.1111/j.1540-6261.2012.01753.x",
+    "Fama-Bliss 1987": "10.3386/w1577",
+    "Elton et al. 2001": "10.1111/0022-1082.00365",
+    "Gorton-Rouwenhorst 2006": "10.2469/faj.v62.n2.4087",
+    "De Roon et al. 2000": "10.1111/0022-1082.00236",
+    "Ball et al. 2016": "10.1016/j.jfineco.2015.12.001",
+    "Boudoukh et al. 2007": "10.1111/j.1540-6261.2007.01278.x",
 }
 
 
@@ -855,6 +865,11 @@ _CATEGORY_TO_ZOO = {
     "factor_profitability": "profitability",
     "factor_zoo_academic": "intangibles",
     "alpha101": "technical",
+    "fx_factors": "macro",
+    "fi_factors": "macro",
+    "commodity_factors": "macro",
+    "smart_money_factors": "smart_money",
+    "cross_asset_momentum": "momentum",
 }
 
 
@@ -884,6 +899,11 @@ _CATEGORY_DEFAULT_PAPER = {
     "factor_profitability": "Fama-French 2015",
     "factor_zoo_academic": "Hou-Xue-Zhang 2015",
     "alpha101": "Kakushadze 2015",
+    "fx_factors": "Bartram et al. 2021",
+    "fi_factors": "Bartram et al. 2021",
+    "commodity_factors": "Bartram et al. 2021",
+    "smart_money_factors": "De Roon et al. 2000",
+    "cross_asset_momentum": "Asness-Moskowitz-Pedersen 2013",
 }
 
 
@@ -950,6 +970,14 @@ def _academic_feature(
         point_in_time_safe=True,
         leakage_risk=False,
     )
+
+
+def _latex_from_formula(formula: str) -> str:
+    text = str(formula or "").strip()
+    if not text:
+        return r"\text{See implementation notes}"
+    safe = text.replace("_", r"\_")
+    return rf"\text{{{safe[:180]}}}"
 
 
 FEATURE_METADATA.update(
@@ -1028,6 +1056,270 @@ FEATURE_METADATA.update(
     }
 )
 
+
+for _item in (
+    _academic_feature(
+        "short_term_reversal",
+        "Short-term reversal",
+        "momentum",
+        "reversal",
+        "Contrarian signal from the negative of the latest one-month return.",
+        "-return_21d",
+        r"-r_{t-21,t}",
+        "Higher values indicate weaker recent one-month performance and stronger reversal signal.",
+        "Bartram et al. 2021",
+        "momentum",
+        direction="positive",
+        data_requirement=("price",),
+        lag_required="1d",
+        implementation_module="institutional_factors.py",
+    ),
+    _academic_feature(
+        "investment_factor",
+        "Investment / CMA proxy",
+        "quality",
+        "investment",
+        "Asset-growth signal used as conservative-minus-aggressive investment proxy.",
+        "total_assets_t / total_assets_t-1 - 1",
+        r"\frac{TA_t-TA_{t-1}}{TA_{t-1}}",
+        "Lower values indicate more conservative investment policy.",
+        "Fama-French 2015",
+        "investment",
+        direction="negative",
+        data_requirement=("total_assets",),
+        lag_required="fiscal_quarter_lag",
+        implementation_module="institutional_factors.py",
+    ),
+    _academic_feature(
+        "accruals",
+        "Accruals",
+        "quality",
+        "earnings_quality",
+        "Accrual component of earnings scaled by total assets.",
+        "(net_income - cash_from_operations) / total_assets",
+        r"\frac{NI_t-CFO_t}{TA_t}",
+        "Lower values indicate cleaner cash-backed earnings quality.",
+        "Sloan 1996",
+        "quality",
+        direction="negative",
+        data_requirement=("net_income", "cash_from_operations", "total_assets"),
+        lag_required="fiscal_quarter_lag",
+        implementation_module="institutional_factors.py",
+    ),
+    _academic_feature(
+        "cash_profitability",
+        "Cash profitability",
+        "quality",
+        "cash_profitability",
+        "Operating cash flow scaled by total assets.",
+        "cash_from_operations / total_assets",
+        r"\frac{CFO_t}{TA_t}",
+        "Higher values indicate stronger cash-backed asset profitability.",
+        "Ball et al. 2016",
+        "profitability",
+        direction="positive",
+        data_requirement=("cash_from_operations", "total_assets"),
+        lag_required="fiscal_quarter_lag",
+        implementation_module="institutional_factors.py",
+    ),
+    _academic_feature(
+        "earnings_quality",
+        "Earnings quality",
+        "quality",
+        "earnings_quality",
+        "Operating cash flow scaled by absolute net income.",
+        "cash_from_operations / abs(net_income)",
+        r"\frac{CFO_t}{|NI_t|}",
+        "Higher values indicate earnings supported by cash flow.",
+        "Bartram et al. 2021",
+        "quality",
+        direction="positive",
+        data_requirement=("cash_from_operations", "net_income"),
+        lag_required="fiscal_quarter_lag",
+        implementation_module="institutional_factors.py",
+    ),
+    _academic_feature(
+        "net_payout_yield",
+        "Net payout yield",
+        "value",
+        "shareholder_yield",
+        "Dividends and buybacks net of issuance scaled by market capitalization.",
+        "(dividends_paid + buybacks - issuance) / market_cap",
+        r"\frac{Div_t+Buybacks_t-Issuance_t}{ME_t}",
+        "Higher values indicate stronger cash returned to shareholders.",
+        "Boudoukh et al. 2007",
+        "value",
+        direction="positive",
+        data_requirement=("dividends_paid", "buybacks", "market_cap"),
+        lag_required="fiscal_quarter_lag",
+        implementation_module="institutional_factors.py",
+    ),
+    _academic_feature(
+        "distress_risk",
+        "Distress risk proxy",
+        "risk",
+        "distress",
+        "Altman-style linear distress score proxy from balance-sheet and income-statement ratios.",
+        "1.2*WC/TA + 1.4*RE/TA + 3.3*EBIT/TA + 0.6*ME/TL + Sales/TA",
+        r"1.2\frac{WC}{TA}+1.4\frac{RE}{TA}+3.3\frac{EBIT}{TA}+0.6\frac{ME}{TL}+\frac{Sales}{TA}",
+        "Higher values indicate lower estimated distress risk.",
+        "Bartram et al. 2021",
+        "risk",
+        direction="positive",
+        data_requirement=("balance_sheet", "income_statement", "market_cap"),
+        lag_required="fiscal_quarter_lag",
+        implementation_module="institutional_factors.py",
+    ),
+):
+    FEATURE_METADATA.setdefault(_item.id, _item)
+
+
+_FX_PAIRS = ("eurusd", "gbpusd", "usdjpy", "usdchf", "audusd", "usdcad", "nzdusd", "eurgbp", "eurjpy", "eurchf", "dxy")
+for _pair in _FX_PAIRS:
+    for _prefix, _name, _formula, _source, _zoo, _direction in (
+        ("fx_carry", "FX carry proxy", "return_63d(pair) - return_63d(DXY)", "Bartram et al. 2021", "macro", "positive"),
+        ("fx_mom", "FX 12-1 momentum", "price_t-21 / price_t-252 - 1", "Menkhoff et al. 2012", "momentum", "positive"),
+        ("fx_trend", "FX trend", "(MA50 - MA200) / MA200", "Asness-Moskowitz-Pedersen 2013", "momentum", "positive"),
+        ("fx_vol", "FX volatility", "std(daily_return, 63d) * sqrt(252)", "Menkhoff et al. 2012", "risk", "negative"),
+    ):
+        _feature_id = f"{_prefix}_{_pair}"
+        FEATURE_METADATA.setdefault(
+            _feature_id,
+            _academic_feature(
+                _feature_id,
+                f"{_name} {_pair.upper()}",
+                "fx_factors",
+                _prefix,
+                f"Lagged {_name.lower()} for {_pair.upper()} from Macro DB FX proxies.",
+                _formula,
+                _latex_from_formula(_formula),
+                "Use only as an experimental cross-asset context feature until coverage and IC are monitored.",
+                _source,
+                _zoo,
+                direction=_direction,
+                data_requirement=("macro_db_fx",),
+                lag_required="1d",
+                implementation_module="fx_factors.py",
+                asset_class="fx",
+            ),
+        )
+
+
+for _feature_id, _name, _formula, _source, _zoo, _direction in (
+    ("fi_term_carry_tlt_shy", "Term carry TLT-SHY", "return_21d(TLT) - return_21d(SHY)", "Fama-Bliss 1987", "macro", "positive"),
+    ("fi_credit_carry_hyg_lqd", "Credit carry HYG-LQD", "return_21d(HYG) - return_21d(LQD)", "Elton et al. 2001", "macro", "positive"),
+    ("fi_momentum_tlt", "Bond momentum TLT", "TLT_t-21 / TLT_t-252 - 1", "Asness-Moskowitz-Pedersen 2013", "momentum", "positive"),
+    ("fi_real_yield_tip_tlt", "Real-yield proxy TIP-TLT", "return_21d(TIP) - return_21d(TLT)", "Bartram et al. 2021", "macro", "neutral"),
+):
+    FEATURE_METADATA.setdefault(
+        _feature_id,
+        _academic_feature(
+            _feature_id,
+            _name,
+            "fi_factors",
+            "fixed_income",
+            f"Lagged fixed-income factor: {_name}.",
+            _formula,
+            _latex_from_formula(_formula),
+            "Experimental fixed-income context feature derived from ETF/yield proxies.",
+            _source,
+            _zoo,
+            direction=_direction,
+            data_requirement=("macro_db_fixed_income",),
+            lag_required="1d",
+            implementation_module="fi_factors.py",
+            asset_class="fixed_income",
+        ),
+    )
+
+
+for _commodity in ("wti", "brent", "gold", "copper"):
+    for _prefix, _name, _formula, _zoo, _direction in (
+        ("commodity_mom", "Commodity momentum", "price_t-21 / price_t-252 - 1", "momentum", "positive"),
+        ("commodity_trend", "Commodity trend", "(MA50 - MA200) / MA200", "momentum", "positive"),
+        ("commodity_carry", "Commodity carry proxy", "return_63d / volatility_63d", "macro", "positive"),
+        ("commodity_mean_reversion", "Commodity mean reversion", "(price - mean_252d) / std_252d", "macro", "negative"),
+    ):
+        _feature_id = f"{_prefix}_{_commodity}"
+        FEATURE_METADATA.setdefault(
+            _feature_id,
+            _academic_feature(
+                _feature_id,
+                f"{_name} {_commodity.upper()}",
+                "commodity_factors",
+                _prefix,
+                f"Lagged {_name.lower()} for {_commodity.upper()} from Macro DB commodity proxies.",
+                _formula,
+                _latex_from_formula(_formula),
+                "Experimental commodity context feature; true basis/carry can replace the proxy when futures-curve data are licensed.",
+                "Gorton-Rouwenhorst 2006",
+                _zoo,
+                direction=_direction,
+                data_requirement=("macro_db_commodities",),
+                lag_required="1d",
+                implementation_module="commodity_factors.py",
+                asset_class="commodity",
+            ),
+        )
+
+
+for _asset in ("sp500", "nasdaq", "euro_fx", "gold", "wti_crude", "copper"):
+    for _prefix, _name, _formula in (
+        ("cot_net_noncomm", "COT net non-commercial", "noncommercial_long - noncommercial_short"),
+        ("cot_hedging_pressure", "COT hedging pressure", "net_commercial / (commercial_long + commercial_short)"),
+        ("cot_z", "COT positioning z-score", "zscore_52w(hedging_pressure or net_noncommercial)"),
+    ):
+        _feature_id = f"{_prefix}_{_asset}"
+        FEATURE_METADATA.setdefault(
+            _feature_id,
+            _academic_feature(
+                _feature_id,
+                f"{_name} {_asset.upper()}",
+                "smart_money_factors",
+                "cot",
+                f"Lagged CFTC COT {_name.lower()} for {_asset.upper()}.",
+                _formula,
+                _latex_from_formula(_formula),
+                "Use as Smart Money context; positioning is not a direct trading signal without stability checks.",
+                "De Roon et al. 2000",
+                "smart_money",
+                direction="neutral",
+                data_requirement=("cftc_cot",),
+                lag_required="1w",
+                implementation_module="smart_money.py:build_cot_hedging_pressure",
+                asset_class="multi_asset",
+            ),
+        )
+
+
+for _asset in ("spy", "qqq", "dxy", "tlt", "hyg", "lqd", "brent", "gold", "copper", "btc"):
+    for _prefix, _name, _formula, _direction in (
+        ("xasset_mom", "Cross-asset momentum", "price_t-21 / price_t-252 - 1", "positive"),
+        ("xasset_trend", "Cross-asset trend", "sign(MA50 - MA200)", "positive"),
+        ("xasset_vol_adj_mom", "Vol-adjusted cross-asset momentum", "momentum_12_1 / vol_63d", "positive"),
+    ):
+        _feature_id = f"{_prefix}_{_asset}"
+        FEATURE_METADATA.setdefault(
+            _feature_id,
+            _academic_feature(
+                _feature_id,
+                f"{_name} {_asset.upper()}",
+                "cross_asset_momentum",
+                _prefix,
+                f"Lagged {_name.lower()} for {_asset.upper()} from Macro DB proxies.",
+                _formula,
+                _latex_from_formula(_formula),
+                "Experimental momentum-everywhere feature across major asset-class proxies.",
+                "Asness-Moskowitz-Pedersen 2013",
+                "momentum",
+                direction=_direction,
+                data_requirement=("macro_db",),
+                lag_required="1d",
+                implementation_module="cross_asset_factors.py",
+                asset_class="multi_asset",
+            ),
+        )
+
 try:
     from .alpha101 import Alpha101Suite
 
@@ -1064,14 +1356,6 @@ except Exception:
     # Metadata must remain importable even if optional Alpha101 dependencies are
     # unavailable in a constrained environment.
     pass
-
-
-def _latex_from_formula(formula: str) -> str:
-    text = str(formula or "").strip()
-    if not text:
-        return r"\text{See implementation notes}"
-    safe = text.replace("_", r"\_")
-    return rf"\text{{{safe[:180]}}}"
 
 
 def _complete_feature_metadata(meta: FeatureMetadata) -> FeatureMetadata:
