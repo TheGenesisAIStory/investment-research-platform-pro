@@ -106,6 +106,13 @@ with st.sidebar:
         )
         if include_macro_regime and "macro_regime" not in selected_feature_blocks:
             selected_feature_blocks = [*selected_feature_blocks, "macro_regime"]
+        include_macro_context = st.checkbox(
+            "🌍 Macro Context (experimental)",
+            value=False,
+            help="Feature cross-asset derivate dal Macro DB 140 proxy. Sperimentale: testare in combinazione con factor layer canonico.",
+        )
+        if include_macro_context and "macro_context" not in selected_feature_blocks:
+            selected_feature_blocks = [*selected_feature_blocks, "macro_context"]
         include_alpha101 = st.checkbox(
             "Include Alpha101 features",
             value=False,

@@ -125,22 +125,39 @@ essere disattivato lato job.
 
 ## Macro context feature block
 
-Il Macro DB multi-asset alimenta ora un blocco sperimentale opzionale:
+Il Macro DB multi-asset alimenta ora due blocchi sperimentali opzionali:
 
 ```text
 macro_context
+alpha101
 ```
 
-Il blocco vive in `ml_stock_lab.factor_registry` ma le feature sono costruite
-in `research_platform_core.macro_context`. Le colonne principali includono
-momentum macro su SPY/DXY/Brent/WTI/TLT/GLD/BTC, credit spread proxy
-`HYG - TLT`, curve proxy `TNX - IRX`, VIX level/change e
-`macro_risk_on_score`.
+`macro_context` vive in `ml_stock_lab.factor_registry` ma le feature sono
+costruite in `research_platform_core.macro_context` e `ml_stock_lab.macro_features`.
+Le colonne principali includono momentum macro su SPY/DXY/Brent/WTI/TLT,
+credit spread proxy `HYG - TLT`, curve proxy `TNX - IRX`, VIX percentile
+e `macro_regime_encoded`.
 
 Regola anti-leakage: il `MacroContextPanel.csv` e' laggato di una osservazione
 prima dell'as-of join con il factor panel equity. Il blocco non entra nei
 modelli di default; va selezionato esplicitamente in ML Stock Lab per testare
 se migliora IC/RankIC/Sharpe rispetto ai fattori equity core.
+
+`alpha101` espone le 101 formule WorldQuant/Kakushadze (2016,
+arXiv:1601.00991), calcolate da OHLCV come segnali cross-sectionally ranked.
+Anche questo blocco e' disattivato di default: serve per confrontare la
+famiglia di alpha formulaici con i fattori accademici canonici, non per
+sostituirli.
+
+| Block | Status | N feature | Source | Default |
+| --- | --- | ---: | --- | --- |
+| `macro_context` | experimental | 9 core + alias legacy | Macro DB 140 proxy | off |
+| `alpha101` | experimental | 101 | Kakushadze (2016), arXiv:1601.00991 | off |
+
+Risultati retraining Alpha101: gli artifact `_alpha101` vengono prodotti da
+`scripts/train_ml_models_2000_2026.py --use-alpha101 True`. La tabella
+comparativa IC/RankIC/Sharpe va aggiornata con i valori del run locale appena
+il job termina.
 
 La metodologia e' documentata in `docs/MACRO_CONTEXT_LAYER.md`.
 

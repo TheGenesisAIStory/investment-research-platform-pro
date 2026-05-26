@@ -72,14 +72,22 @@ render_page_intro(
 )
 
 with st.container(border=True):
+    st.markdown("**Current Market Regime**")
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Catalog Assets", len(catalog))
     c2.metric("Downloaded Assets", int(manifest["status"].astype(str).eq("OK").sum()) if not manifest.empty and "status" in manifest.columns else 0)
     c3.metric("Regions", catalog["region"].nunique() if not catalog.empty and "region" in catalog.columns else 0)
     c4.metric("Asset Classes", catalog["asset_class"].nunique() if not catalog.empty and "asset_class" in catalog.columns else 0)
-    c5.metric("Current Regime", str(current_regime.get("regime", "unknown")).replace("_", " ").title(), str(current_regime.get("date", "")))
+    confidence = pd.to_numeric(pd.Series([current_regime.get("confidence")]), errors="coerce").iloc[0]
+    c5.metric(
+        "Current Regime",
+        str(current_regime.get("regime", "unknown")).replace("_", " ").title(),
+        f"{float(confidence):.0%} confidence" if pd.notna(confidence) else str(current_regime.get("date", "")),
+    )
     if current_regime.get("drivers"):
         st.caption(f"Regime drivers: {current_regime.get('drivers')}")
+    elif str(current_regime.get("regime", "unknown")).lower() == "unknown":
+        st.caption("REGIME: UNKNOWN · run Macro DB refresh or regime history build to populate this box.")
 
 with st.container(border=True):
     st.markdown("**Compile / refresh macro database**")

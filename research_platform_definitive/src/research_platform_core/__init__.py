@@ -191,7 +191,7 @@ from .smart_money import (
     summarize_smart_money_sources,
 )
 from .equity_feature_engineering import compute_alpha_factors, compute_investment_factors, compute_sentiment_alternative_features
-from .regime_detection import build_market_regime_history, detect_market_regime, load_market_regime_history
+from .regime_detection import build_market_regime_history, build_regime_history, detect_market_regime, get_current_regime, load_market_regime_history
 from .sentiment_analysis import collect_ticker_sentiment, fetch_reddit_mentions, fetch_stocktwits_messages, fetch_x_recent_mentions, score_sentiment_frame, score_text
 from .run_lock import LockInfo, acquire_stage_lock, is_stage_locked, read_stage_lock, release_stage_lock, stage_lock_path
 from .feature_metadata import FEATURE_METADATA, FeatureMetadata, category_for_feature, metadata_for_feature, metadata_frame, metadata_help
@@ -435,6 +435,8 @@ __all__ = [
     "summarize_smart_money_sources",
     "build_market_regime_history",
     "detect_market_regime",
+    "build_regime_history",
+    "get_current_regime",
     "load_market_regime_history",
     "collect_ticker_sentiment",
     "fetch_reddit_mentions",

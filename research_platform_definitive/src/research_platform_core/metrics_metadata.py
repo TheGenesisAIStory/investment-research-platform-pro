@@ -494,6 +494,67 @@ METRICS_METADATA.update(
     }
 )
 
+METRICS_METADATA.update(
+    {
+        "regime_label": MetricMetadata(
+            "regime_label",
+            "Market regime label",
+            "macro_context",
+            "Discrete market-regime classification used for research context.",
+            "rule_based_label(equity_momentum, credit_spread, VIX, yield_slope, commodities)",
+            "Labels are contextual diagnostics, not direct trading signals.",
+        ),
+        "regime_confidence": MetricMetadata(
+            "regime_confidence",
+            "Regime confidence",
+            "macro_context",
+            "Availability- and rule-strength-adjusted confidence for the regime label.",
+            "base_rule_confidence * signal_availability_adjustment",
+            "Higher values indicate more complete and internally consistent regime evidence.",
+        ),
+        "equity_momentum_21d": MetricMetadata(
+            "equity_momentum_21d",
+            "Equity momentum 21D",
+            "macro_context",
+            "Twenty-one trading day return of the equity market proxy.",
+            "SPY_t / SPY_t-21 - 1",
+            "Negative values below -2% contribute to risk-off classification.",
+        ),
+        "credit_spread": MetricMetadata(
+            "credit_spread",
+            "Credit spread proxy",
+            "macro_context",
+            "Relative performance of high-yield credit versus long-duration Treasuries.",
+            "return_21d(HYG) - return_21d(TLT)",
+            "Negative values indicate credit stress or defensive duration leadership.",
+        ),
+        "vix_proxy": MetricMetadata(
+            "vix_proxy",
+            "VIX proxy",
+            "macro_context",
+            "Raw or percentile-normalized volatility-stress proxy.",
+            "VIX level or rank_pct(VIX, 252d)",
+            "High values flag risk-off or crisis conditions.",
+        ),
+        "yield_slope": MetricMetadata(
+            "yield_slope",
+            "Yield slope proxy",
+            "macro_context",
+            "Long-rate minus front-end-rate proxy.",
+            "10Y yield proxy - 2Y/front-end yield proxy",
+            "Flat or inverted slopes are treated as macro warnings.",
+        ),
+        "commodity_momentum": MetricMetadata(
+            "commodity_momentum",
+            "Commodity momentum",
+            "macro_context",
+            "Twenty-one day commodity trend proxy, preferring Brent then gold.",
+            "commodity_proxy_t / commodity_proxy_t-21 - 1",
+            "Used as context for reflation or defensive commodity regimes.",
+        ),
+    }
+)
+
 
 _METRIC_PAPER_DOI = {
     "Gen.is.IA internal": "https://genisia.local/methodology/internal",

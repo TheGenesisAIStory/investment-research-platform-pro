@@ -87,7 +87,46 @@ Macro and time-series signals are used as context for interpretation and monitor
 
 Smart Money is a context layer. COT positioning, ETF flow proxies and optional put/call ratios are informational diagnostics, not direct model targets.
 
-## 7. Macro Regime Features
+## 7. Macro Context Features
+
+| Feature | Formula | Use |
+| --- | --- | --- |
+| `macro_spy_ret21d` | `SPY_t / SPY_t-21 - 1`, lagged one observation | short-horizon global equity risk appetite |
+| `macro_spy_ret63d` | `SPY_t / SPY_t-63 - 1`, lagged one observation | medium-horizon equity backdrop |
+| `macro_dxy_ret21d` | `DXY_t / DXY_t-21 - 1`, lagged one observation | USD tightening/liquidity pressure |
+| `macro_brent_ret21d` | `Brent_t / Brent_t-21 - 1`, lagged one observation | commodity/reflation impulse |
+| `macro_tlt_ret21d` | `TLT_t / TLT_t-21 - 1`, lagged one observation | duration and flight-to-quality context |
+| `macro_credit_spread` | `return_21d(HYG) - return_21d(TLT)`, lagged one observation | credit risk appetite versus duration |
+| `macro_yield_slope` | `US 10Y proxy - US 2Y/front-end proxy`, lagged one observation | curve and rate-cycle context |
+| `macro_vix_level` | `rank_pct(VIX over 252d)`, lagged one observation in ML feature construction | volatility stress percentile |
+| `macro_regime_encoded` | `risk_on=1, recovery=0.5, risk_off=-0.5, crisis=-1`, lagged one observation | compact regime state for experimental models |
+
+Source data: internal Macro DB, 140 multi-asset proxies, 2000-2026 where available. The ML join uses a minimum one-observation delay and an as-of merge, so an equity row at date `t` cannot see macro observations after `t-1`. These variables are experimental and should be evaluated by incremental IC/RankIC/Sharpe versus the canonical equity factor block.
+
+Related literature: factor timing and conditional expected returns in Fama and French (1989, 1993), credit-cycle information in Adrian and Shin (2010), and volatility/regime conditioning in Ang and Bekaert (2002).
+
+## 8. Market Regime Classification
+
+The regime detector writes `output/macro_market/tables/MarketRegimeHistory.csv` with four labels:
+
+| Regime | Definition | Core rule |
+| --- | --- | --- |
+| `risk_on` | constructive equity/credit backdrop | positive 21d equity momentum, low volatility, no credit stress |
+| `risk_off` | defensive or deteriorating backdrop | VIX warning, negative equity momentum, credit stress or inverted curve |
+| `crisis` | acute stress | VIX stress, equity momentum below -5% or 63d below -10%, and credit stress |
+| `recovery` | rebound after stress | positive equity momentum after `risk_off` or `crisis`, without crisis-level volatility |
+
+Signals stored with each row: `equity_momentum_21d`, `credit_spread`, `vix_proxy`, `yield_slope`, `commodity_momentum`, plus `confidence` and human-readable `drivers`. If one proxy is missing, the classifier degrades gracefully and scales confidence by signal availability.
+
+Historical distribution is generated from the local Macro DB when `build_regime_history()` or `build_market_regime_history()` runs. The distribution is intentionally not hard-coded in this document because it depends on the data snapshot.
+
+## 9. WorldQuant 101 Formulaic Alphas
+
+The platform implements the 101 formulaic alphas from Kakushadze (2016), arXiv:1601.00991, in `research_platform_core.alpha101`. Each alpha is exposed through `Alpha101Suite`, registered in `feature_metadata.py` as category `alpha101`, and selectable in ML Stock Lab as an experimental feature block.
+
+These alphas are price/volume formulas, cross-sectionally rank-normalized, and computed only when the panel has OHLCV fields. They are not mixed into the canonical academic factor layer by default; the researcher must explicitly select `alpha101` and compare the resulting IC/RankIC/Sharpe against value, quality, momentum, risk, size and growth baselines.
+
+## 10. Legacy Macro Regime Features
 
 | Feature | Formula | Use |
 | --- | --- | --- |
@@ -97,9 +136,11 @@ Smart Money is a context layer. COT positioning, ETF flow proxies and optional p
 | `regime_dxy_trend_21d` | `sign(DXY 21d return)` | USD pressure |
 | `regime_gold_trend_21d` | `sign(Gold 21d return)` | defensive/inflation proxy |
 
-## 8. Riferimenti bibliografici
+## 11. Riferimenti bibliografici
 
+- Adrian, T., Shin, H. S. (2010). Liquidity and leverage.
 - Amihud, Y. (2002). Illiquidity and stock returns.
+- Ang, A., Bekaert, G. (2002). International asset allocation with regime shifts.
 - Ang, A., Hodrick, R., Xing, Y., Zhang, X. (2006). The cross-section of volatility and expected returns.
 - Asness, C., Frazzini, A., Pedersen, L. (2019). Quality Minus Junk.
 - Banz, R. (1981). The relationship between return and market value of common stocks.
@@ -110,6 +151,7 @@ Smart Money is a context layer. COT positioning, ETF flow proxies and optional p
 - Fama, E., French, K. (1992, 1993, 2015). Cross-sectional returns and factor models.
 - Frazzini, A., Pedersen, L. (2014). Betting Against Beta.
 - Jegadeesh, N., Titman, S. (1993). Returns to buying winners and selling losers.
+- Kakushadze, Z. (2016). 101 Formulaic Alphas. arXiv:1601.00991.
 - Novy-Marx, R. (2013). The other side of value.
 - Piotroski, J. (2000). Value investing and historical financial statement information.
 - Sloan, R. (1996). Do stock prices fully reflect information in accruals and cash flows?

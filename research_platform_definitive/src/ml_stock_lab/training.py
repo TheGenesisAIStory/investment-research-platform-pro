@@ -20,14 +20,17 @@ from .datasets import load_financial_db_panel, normalize_panel, validate_panel_c
 from .evaluation import oos_r2, rank_information_coefficient, rolling_ic_by_date, sharpe_ratio
 from .features import add_basic_features, make_forward_returns, select_numeric_features
 from .factor_registry import FACTOR_BLOCKS, available_factor_blocks, feature_columns_for_blocks
+from .macro_features import build_macro_context_features
 from .prediction import ExpectedReturnModel, describe_temporal_split
 
 try:
     from research_platform_core.llm_client import OllamaClient
     from research_platform_core.alpha101 import Alpha101Suite
+    from research_platform_core.macro_context import load_macro_context_panel
 except Exception:  # pragma: no cover - optional dependency during isolated package use
     OllamaClient = None
     Alpha101Suite = None
+    load_macro_context_panel = None
 
 
 DEFAULT_MODELS = ("ols", "rf")
@@ -59,6 +62,26 @@ def _add_alpha101_features_if_available(panel: pd.DataFrame, feature_blocks: tup
     alpha_panel = suite.to_flat_panel(results).reset_index()
     alpha_panel["date"] = pd.to_datetime(alpha_panel["date"], errors="coerce")
     return frame.merge(alpha_panel, on=["date", "ticker"], how="left")
+
+
+def _add_macro_context_features_if_available(
+    panel: pd.DataFrame,
+    feature_blocks: tuple[str, ...],
+    output_root: str | Path,
+    financial_db_root: str | Path | None = None,
+) -> pd.DataFrame:
+    if not {"macro_context", "macro_regime"}.intersection(feature_blocks) or panel.empty or load_macro_context_panel is None:
+        return panel
+    try:
+        macro = load_macro_context_panel(financial_db_root=financial_db_root, output_root=output_root, refresh_if_missing=True)
+    except Exception:
+        macro = pd.DataFrame()
+    if macro.empty:
+        return panel
+    try:
+        return build_macro_context_features(panel, macro)
+    except Exception:
+        return panel
 
 
 def _project_root() -> Path:
@@ -293,6 +316,7 @@ def train_ml_model_suite(
     models = tuple(models)
     feature_blocks = tuple(feature_blocks or FACTOR_BLOCKS.keys())
     panel = load_training_panel(output_root, financial_db_root, start_year, end_year, max_rows=max_rows, target_horizon_days=target_horizon_days)
+    panel = _add_macro_context_features_if_available(panel, feature_blocks, output_root=output_root, financial_db_root=financial_db_root)
     panel = _add_alpha101_features_if_available(panel, feature_blocks)
     panel_path = _write_csv(panel, tables / "MLTraining_panel.csv")
     coverage = validate_panel_coverage(panel, min_tickers=2, min_dates=2, required_columns=("market_value",))

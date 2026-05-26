@@ -31,8 +31,8 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
   - ticker nel panel validato: 1.000.
   - data range: 2000-01-03 -> 2026-05-22.
 - Macro View:
-  - 40 asset/proxy compilati fra global, USA, EU, Italy, crypto, FX,
-    commodities, ETF e fixed income.
+  - multi-asset universe esteso con 140 proxy fra global, USA, EU, Italy,
+    crypto, FX, commodities, ETF e fixed income dove disponibili.
 
 ## ML / contenuto quantitativo
 
@@ -47,6 +47,13 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
   correlazioni benchmark e matrici di correlazione per Screener/Portfolio.
 - Factor vocabulary: value, quality, momentum, risk, size, growth,
   model-based.
+- Regime detection: `OK`; quattro stati (`risk_on`, `risk_off`, `crisis`,
+  `recovery`) derivati da equity momentum, credit spread proxy, VIX, yield
+  slope e commodity momentum.
+- Macro context features: `OK / experimental`; blocco opzionale
+  `macro_context` con lag minimo di una osservazione e as-of join.
+- Alpha101: `OK / experimental`; 101 formule WorldQuant/Kakushadze registrate
+  e selezionabili in ML Stock Lab.
 - Leakage policy attiva tramite `feature_columns_for_blocks()`.
 - Metriche: `r2_os`, `ic`, `rank_ic`, `sharpe_long_short`,
   `sharpe_long_short_net_cost`, data/model coverage metrics.
@@ -83,17 +90,20 @@ La piattaforma e' ora in stato `v1-ready` per uso locale/desk research:
 Risultato corrente:
 
 - locale: 73 test passati;
-- worktree GitHub separato: 77 test passati;
+- worktree GitHub separato: 133 test passati;
 - validator: OK;
-- AppTest Home + Time Series Lab: `exceptions 0`.
+- AppTest Home, Macro View, ML Lab e Portfolio: `exceptions 0`.
 
 ## Limiti dichiarati
 
 - Il training ML full su tutto l'universo va ancora lanciato per passare da
   smoke/bounded validation a performance economica definitiva.
-- `macro_fx`, `factor_libraries`, `smart_money`, `banking` sono ancora `PLANNED`
-  nel validator completion 2000-2026, anche se esistono artifact/app parziali o
-  dedicati.
+- Banking fundamentals ufficiali e issuer/fund flows restano `PLANNED`/
+  `PARTIAL`; Smart Money pubblico e macro context sono presenti come layer di
+  contesto.
+- Il validator coverage puo' indicare `MISSING` per i CSV pesanti
+  `output/data_completion/*` nei worktree temporanei quando gli artifact locali
+  non sono sincronizzati.
 - Drive resta archivio/sync; i batch parquet devono scrivere prima su filesystem
   locale stabile.
 

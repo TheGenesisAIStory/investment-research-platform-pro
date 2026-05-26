@@ -105,15 +105,23 @@ def build_macro_context_panel(
             out[f"macro_{symbol.lower()}_ret21d"] = close[symbol].pct_change(21)
             out[f"macro_{symbol.lower()}_ret63d"] = close[symbol].pct_change(63)
     if "VIX" in close.columns:
+        out["macro_vix_raw"] = close["VIX"]
         out["macro_vix_level"] = close["VIX"]
         out["macro_vix_change21d"] = close["VIX"].diff(21)
+        out["macro_vix_percentile_252d"] = close["VIX"].rolling(252, min_periods=60).apply(
+            lambda values: pd.Series(values).rank(pct=True).iloc[-1],
+            raw=False,
+        )
     if {"HYG", "TLT"}.issubset(close.columns):
+        out["macro_credit_spread"] = close["HYG"].pct_change(21) - close["TLT"].pct_change(21)
         out["macro_credit_hyg_tlt_ret63d"] = close["HYG"].pct_change(63) - close["TLT"].pct_change(63)
     if {"LQD", "TLT"}.issubset(close.columns):
         out["macro_credit_lqd_tlt_ret63d"] = close["LQD"].pct_change(63) - close["TLT"].pct_change(63)
     if {"TNX", "IRX"}.issubset(close.columns):
+        out["macro_yield_slope"] = pd.to_numeric(close["TNX"], errors="coerce") - pd.to_numeric(close["IRX"], errors="coerce")
         out["macro_curve_tnx_irx"] = pd.to_numeric(close["TNX"], errors="coerce") - pd.to_numeric(close["IRX"], errors="coerce")
     elif {"TLT", "SHY"}.issubset(close.columns):
+        out["macro_yield_slope"] = close["TLT"].pct_change(63) - close["SHY"].pct_change(63)
         out["macro_curve_tlt_shy_ret63d"] = close["TLT"].pct_change(63) - close["SHY"].pct_change(63)
 
     conditions: list[pd.Series] = []
@@ -130,6 +138,16 @@ def build_macro_context_panel(
         condition_frame = pd.concat([condition.astype(float) for condition in conditions], axis=1)
         out["macro_risk_on_score"] = condition_frame.mean(axis=1, skipna=True) * 100.0
         out["macro_context_score"] = out["macro_risk_on_score"]
+        out["macro_regime_encoded"] = np.select(
+            [
+                out["macro_risk_on_score"] >= 67.0,
+                out["macro_risk_on_score"].between(45.0, 67.0, inclusive="left"),
+                out["macro_risk_on_score"].between(25.0, 45.0, inclusive="left"),
+                out["macro_risk_on_score"] < 25.0,
+            ],
+            [1.0, 0.5, -0.5, -1.0],
+            default=np.nan,
+        )
 
     if "macro_spy_ret63d" in out.columns:
         out["regime_spy_trend_sign"] = np.sign(pd.to_numeric(out["macro_spy_ret63d"], errors="coerce"))

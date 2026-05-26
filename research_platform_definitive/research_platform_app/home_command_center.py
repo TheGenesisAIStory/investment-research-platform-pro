@@ -263,7 +263,19 @@ def _render_platform_status(
         cols[1].metric("Prices", _stage_status(health, "equity_prices"), f"{ohlcv_counts.get('LIMITED_HISTORY', 0):,} limited")
         cols[2].metric("Factor Panel", factor["status"], f"{factor['tickers']:,} tickers")
         cols[3].metric("ML Models", model_status, model_detail[:42] + ("..." if len(model_detail) > 42 else ""))
-        cols[4].metric("Regime", str(regime.get("regime", "unknown")).replace("_", " ").title(), str(regime.get("date", "")))
+        regime_label = str(regime.get("regime", "unknown") or "unknown").lower()
+        cols[4].metric("Regime", regime_label.replace("_", " ").title(), str(regime.get("date", "")))
+        tones = {
+            "risk_on": ("#ECFDF3", "#067647"),
+            "risk_off": ("#FFF4DF", "#8A4B00"),
+            "crisis": ("#FDECEC", "#8A1F11"),
+            "recovery": ("#E6F4F7", "#006D77"),
+        }
+        bg, color = tones.get(regime_label, ("#F6F8FB", "#344054"))
+        cols[4].markdown(
+            f"<span style='background:{bg};color:{color};border-radius:999px;padding:4px 9px;font-weight:800;font-size:12px'>REGIME: {regime_label.upper()}</span>",
+            unsafe_allow_html=True,
+        )
         cols[5].metric("Ollama", ollama["status"])
         cols[6].metric("Data Issues", ohlcv_counts.get("NETWORK_TIMEOUT", 0), "network timeouts")
         if regime.get("drivers"):

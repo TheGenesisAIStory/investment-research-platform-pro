@@ -185,13 +185,19 @@ with tab_macro_ts:
     benchmark = str(st.session_state.get("benchmark_ticker", "SPY") or "SPY").strip().upper()
     current_regime = detect_market_regime(financial_db_root=roots["financial_db"], output_root=roots["workspace"])
     regime_score_value = pd.to_numeric(pd.Series([current_regime.get("regime_score")]), errors="coerce").iloc[0]
+    regime_confidence = pd.to_numeric(pd.Series([current_regime.get("confidence")]), errors="coerce").iloc[0]
     with st.container(border=True):
         r1, r2, r3 = st.columns(3)
         r1.metric("Market regime", str(current_regime.get("regime", "unknown")).replace("_", " ").title(), str(current_regime.get("date", "")))
-        r2.metric("Regime score", f"{float(regime_score_value):.0f}/100" if pd.notna(regime_score_value) else "n/a")
+        r2.metric(
+            "Regime score",
+            f"{float(regime_score_value):.0f}/100" if pd.notna(regime_score_value) else "n/a",
+            f"{float(regime_confidence):.0%} confidence" if pd.notna(regime_confidence) else None,
+        )
         r3.metric("Use in portfolio", "Context only")
         if current_regime.get("drivers"):
             st.caption(f"Drivers: {current_regime.get('drivers')}")
+        st.caption("Market regime is scenario context only; it is not used as an automatic portfolio-construction signal.")
     context_symbols = [benchmark, "SPY", "ACWI", "FEZ", "EWI", "DXY", "TLT", "GLD", "BTC"]
     ts_context = summarize_time_series_forecast_context(context_symbols, roots["workspace"])
     if ts_context.empty:
