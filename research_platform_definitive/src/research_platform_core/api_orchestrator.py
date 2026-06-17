@@ -102,8 +102,10 @@ DEFAULT_PROVIDERS = {
         static_history=True,
         notes="Local static seed datasets imported from Kaggle. Used to avoid historical API refetches; not called as a network provider.",
     ),
-    "fmp": ProviderSpec("fmp", priority=4, requests_per_minute=30, cost_tier="limited", requires_env=("FMP_API_KEY",)),
+    "fmp": ProviderSpec("fmp", priority=4, requests_per_minute=300, cost_tier="limited", requires_env=("FMP_API_KEY",)),
     "polygon": ProviderSpec("polygon", priority=5, requests_per_minute=120, cost_tier="paid", requires_env=("POLYGON_API_KEY",)),
+    "eodhd": ProviderSpec("eodhd", priority=6, requests_per_minute=60, cost_tier="paid", requires_env=("EODHD_API_KEY",), regions=("global", "Europe", "JP", "US")),
+    "intrinio": ProviderSpec("intrinio", priority=7, requests_per_minute=60, cost_tier="paid", requires_env=("INTRINIO_API_KEY",), regions=("US", "global")),
 }
 
 
@@ -141,7 +143,7 @@ class ProviderUsageTracker:
 
     @staticmethod
     def _today() -> str:
-        return pd.Timestamp.utcnow().date().isoformat()
+        return pd.Timestamp.now(tz="UTC").date().isoformat()
 
     def _load(self) -> dict[str, Any]:
         if self.path.exists():
@@ -356,15 +358,20 @@ class APIOrchestrator:
 
     def __init__(
         self,
-        log_path: Path | str,
+        log_path: Path | str | None = None,
         providers: dict[str, ProviderSpec] | None = None,
         cache: DataCache | None = None,
         usage_tracker: ProviderUsageTracker | None = None,
+        api_keys: dict[str, str] | None = None,
     ):
-        self.log_path = Path(log_path).expanduser()
+        self.log_path = Path(log_path or "output/logs/api_orchestrator.jsonl").expanduser()
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self.providers = providers or DEFAULT_PROVIDERS
         self.cache = cache
+        self.api_keys = dict(api_keys or {})
+        for key, value in self.api_keys.items():
+            if value:
+                os.environ.setdefault(str(key), str(value))
         self.usage_tracker = usage_tracker or ProviderUsageTracker(self.log_path.with_suffix(".usage.json"))
         self.limiters = {name: RateLimiter(spec.requests_per_minute) for name, spec in self.providers.items()}
 
@@ -426,3 +433,173 @@ class APIOrchestrator:
             self._append_log({"status": "failed", "key": key, **error})
             continue
         raise RuntimeError(f"All providers failed for {key}: {errors}")
+
+    def _api_key(self, *names: str) -> str:
+        for name in names:
+            if name in self.api_keys and self.api_keys[name]:
+                return str(self.api_keys[name])
+            if os.environ.get(name):
+                return str(os.environ[name])
+        return ""
+
+    def _request_json(self, provider: str, url: str, *, params: dict[str, Any] | None = None, timeout: int = 30) -> Any | None:
+        spec = self.providers.get(provider, ProviderSpec(provider, 999))
+        available, reason = self.usage_tracker.can_call(spec)
+        if not available:
+            self._append_log({"status": "budget_skipped", "provider": provider, "key": url, "reason": reason})
+            return None
+        try:
+            import requests
+
+            self.limiters.setdefault(provider, RateLimiter(spec.requests_per_minute)).wait()
+            self.usage_tracker.record_call(provider)
+            response = requests.get(url, params=params, timeout=timeout, headers={"User-Agent": "Gen.is.IA ResearchPlatform/2.0"})
+            if response.status_code == 429:
+                time.sleep(float(spec.backoff_seconds))
+                response = requests.get(url, params=params, timeout=timeout, headers={"User-Agent": "Gen.is.IA ResearchPlatform/2.0"})
+            response.raise_for_status()
+            self._append_log({"status": "success", "provider": provider, "key": url})
+            return response.json()
+        except Exception as exc:
+            self._append_log({"status": "failed", "provider": provider, "key": url, "error": f"{type(exc).__name__}: {exc}"})
+            return None
+
+    @staticmethod
+    def _first_payload(payload: Any) -> dict[str, Any]:
+        if isinstance(payload, list):
+            return payload[0] if payload and isinstance(payload[0], dict) else {}
+        return payload if isinstance(payload, dict) else {}
+
+    def get_fundamentals_fmp(self, ticker: str, statement: str = "income", period: str = "annual") -> dict[str, Any] | None:
+        """Fetch structured fundamentals from Financial Modeling Prep."""
+        key = self._api_key("FMP_API_KEY")
+        if not key:
+            return None
+        endpoint_map = {
+            "income": f"income-statement/{ticker}",
+            "balance": f"balance-sheet-statement/{ticker}",
+            "cashflow": f"cash-flow-statement/{ticker}",
+            "key_metrics_ttm": f"key-metrics-ttm/{ticker}",
+            "ratios_ttm": f"ratios-ttm/{ticker}",
+            "earnings_surprises": f"earnings-surprises/{ticker}",
+            "analyst_estimates": f"analyst-estimates/{ticker}",
+            "institutional_holder": f"institutional-holder/{ticker}",
+            "insider_trading": "insider-trading",
+            "short_interest": "short_interest",
+        }
+        endpoint = endpoint_map.get(statement, endpoint_map["income"])
+        version = "v4" if statement in {"insider_trading", "short_interest"} else "v3"
+        url = f"https://financialmodelingprep.com/api/{version}/{endpoint}"
+        params = {"apikey": key}
+        if statement not in {"key_metrics_ttm", "ratios_ttm", "insider_trading", "short_interest"}:
+            params["period"] = period
+        if statement in {"insider_trading", "short_interest"}:
+            params["symbol"] = ticker
+            params["limit"] = 100
+        payload = self._request_json("fmp", url, params=params)
+        if payload is None:
+            return None
+        return {"provider": "fmp", "statement": statement, "payload": payload, **self._first_payload(payload)}
+
+    def get_fundamentals_polygon(self, ticker: str, statement: str = "income") -> dict[str, Any] | None:
+        """Fetch GAAP/IFRS fundamentals from Polygon when a key is configured."""
+        key = self._api_key("POLYGON_API_KEY")
+        if not key:
+            return None
+        url = "https://api.polygon.io/vX/reference/financials"
+        payload = self._request_json("polygon", url, params={"ticker": ticker, "timeframe": "annual", "include_sources": "true", "apiKey": key})
+        if payload is None:
+            return None
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        first = results[0] if results and isinstance(results[0], dict) else {}
+        return {"provider": "polygon", "statement": statement, "payload": payload, **first}
+
+    def get_fundamentals_eodhd(self, ticker: str) -> dict[str, Any] | None:
+        """Fetch global fundamentals from EODHD for US/EU/JP tickers."""
+        key = self._api_key("EODHD_API_KEY")
+        if not key:
+            return None
+        url = f"https://eodhistoricaldata.com/api/fundamentals/{ticker}"
+        payload = self._request_json("eodhd", url, params={"api_token": key, "fmt": "json"})
+        if payload is None:
+            return None
+        return {"provider": "eodhd", "payload": payload, **self._first_payload(payload)}
+
+    def get_fundamentals_intrinio(self, ticker: str, tag: str) -> float | None:
+        """Fetch one Intrinio data point, returning None when unavailable."""
+        key = self._api_key("INTRINIO_API_KEY")
+        if not key:
+            return None
+        url = f"https://api-v2.intrinio.com/companies/{ticker}/data_point/{tag}/number"
+        payload = self._request_json("intrinio", url, params={"api_key": key})
+        try:
+            if isinstance(payload, dict):
+                return float(payload.get("value", payload.get("number")))
+            return float(payload)
+        except (TypeError, ValueError):
+            return None
+
+    def get_price_data_polygon(self, ticker: str, start: str, end: str, timespan: str = "day") -> pd.DataFrame:
+        """Fetch historical aggregate bars from Polygon."""
+        key = self._api_key("POLYGON_API_KEY")
+        if not key:
+            return pd.DataFrame()
+        url = f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/{timespan}/{start}/{end}"
+        payload = self._request_json("polygon", url, params={"adjusted": "true", "sort": "asc", "limit": 50000, "apiKey": key})
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        if not results:
+            return pd.DataFrame()
+        frame = pd.DataFrame(results)
+        if "t" in frame.columns:
+            frame["date"] = pd.to_datetime(frame["t"], unit="ms", errors="coerce")
+        return frame.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
+
+    @staticmethod
+    def _completeness(payload: dict[str, Any]) -> float:
+        if not payload:
+            return 0.0
+        scalar_items = [value for key, value in payload.items() if key not in {"payload", "provider"}]
+        if not scalar_items:
+            return 0.0
+        filled = sum(value not in (None, "", [], {}) for value in scalar_items)
+        return round(100.0 * filled / max(len(scalar_items), 1), 2)
+
+    def get_fundamentals_waterfall(self, ticker: str) -> dict[str, Any]:
+        """Try FMP, Polygon, EODHD and yfinance, returning a normalized envelope."""
+        for provider, getter in [
+            ("fmp", lambda: self.get_fundamentals_fmp(ticker, "key_metrics_ttm")),
+            ("polygon", lambda: self.get_fundamentals_polygon(ticker)),
+            ("eodhd", lambda: self.get_fundamentals_eodhd(ticker)),
+        ]:
+            payload = getter()
+            if payload:
+                return {
+                    "ticker": ticker,
+                    "source_provider": provider,
+                    "data_completeness_pct": self._completeness(payload),
+                    "data": payload,
+                }
+        if os.environ.get("ENABLE_YFINANCE_FUNDAMENTALS_FALLBACK", "").lower() in {"1", "true", "yes"}:
+            try:
+                import yfinance as yf
+
+                info = yf.Ticker(ticker).info or {}
+                if info:
+                    return {
+                        "ticker": ticker,
+                        "source_provider": "yfinance",
+                        "data_completeness_pct": self._completeness(info),
+                        "data": info,
+                    }
+            except Exception as exc:
+                self._append_log({"status": "failed", "provider": "yfinance", "key": ticker, "error": f"{type(exc).__name__}: {exc}"})
+        return {"ticker": ticker, "source_provider": "none", "data_completeness_pct": 0.0, "data": {}}
+
+
+ApiOrchestrator = APIOrchestrator
+
+
+def get_fundamentals_waterfall(ticker: str, orchestrator: APIOrchestrator | None = None) -> dict[str, Any]:
+    """Module-level convenience wrapper for provider waterfall fundamentals."""
+    client = orchestrator or APIOrchestrator()
+    return client.get_fundamentals_waterfall(ticker)

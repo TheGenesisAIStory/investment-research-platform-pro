@@ -13,6 +13,7 @@ from .loaders.fx_commodities import COMMODITY_TICKERS, FX_TICKERS
 from .loaders.risk_factors import FRED_RISK_SERIES, VOLATILITY_TICKERS
 from .loaders.ecb_client import ECB_SERIES_PRESETS
 from .loaders.bditalia_client import BDITALIA_SERIES_PRESETS
+from .data_platform import get_ohlcv_parquet_root_info
 
 
 AQR_TARGETS = {
@@ -28,8 +29,9 @@ def _path_exists(path: Path) -> bool:
     return path.exists() and path.is_file()
 
 
-def build_target_catalog(financial_db_root: Path | str) -> pd.DataFrame:
+def build_target_catalog(financial_db_root: Path | str, output_root: Path | str | None = None) -> pd.DataFrame:
     root = Path(financial_db_root).expanduser()
+    ohlcv_info = get_ohlcv_parquet_root_info(root, output_root)
     rows: list[dict[str, Any]] = []
     for key, meta in EQUITY_UNIVERSES.items():
         path = root / "Equities" / meta["region"] / key / "constituents_current.csv"
@@ -181,7 +183,7 @@ def build_target_catalog(financial_db_root: Path | str) -> pd.DataFrame:
         "asset_master": {"label": "OHLCV asset master", "path": root / "MarketData" / "OHLCV" / "asset_master_candidates.csv", "priority": 1},
         "ohlcv_sqlite": {"label": "OHLCV SQLite/Postgres mirror", "path": root / "MarketData" / "ohlcv.sqlite", "priority": 1},
         "daily_manifest": {"label": "Daily OHLCV ingest manifest", "path": root / "MarketData" / "OHLCV" / "manifests" / "ohlcv_daily_manifest.csv", "priority": 1},
-        "daily_parquet": {"label": "Daily OHLCV parquet root", "path": root / "MarketData" / "OHLCV" / "daily", "priority": 1},
+        "daily_parquet": {"label": "Daily OHLCV parquet root", "path": ohlcv_info.path / "daily", "priority": 1},
         "intraday_5m_manifest": {"label": "Optional 5m OHLCV manifest", "path": root / "MarketData" / "OHLCV" / "manifests" / "ohlcv_intraday_5m_manifest.csv", "priority": 3},
     }.items():
         path = meta["path"]

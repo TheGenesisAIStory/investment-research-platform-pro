@@ -53,6 +53,37 @@ from .valuation import (
     RollingPeerValuator,
 )
 
+# Compatibility bridge: the canonical v1 workstation package lives under
+# research_platform_definitive/src/ml_stock_lab and exposes the app/job entry
+# points. When Python is launched from the repo root, this legacy package can
+# shadow the editable install; load only the missing canonical entry points
+# under a private module name so old imports keep working.
+try:
+    run_ml_stock_lab_experiment
+except NameError:
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    canonical_init = Path(__file__).resolve().parents[1] / "research_platform_definitive" / "src" / "ml_stock_lab" / "__init__.py"
+    canonical_pkg = canonical_init.parent
+    if canonical_pkg.exists() and str(canonical_pkg) not in __path__:
+        __path__.append(str(canonical_pkg))
+    if canonical_init.exists():
+        spec = importlib.util.spec_from_file_location(
+            "_research_platform_definitive_ml_stock_lab",
+            canonical_init,
+            submodule_search_locations=[str(canonical_init.parent)],
+        )
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+            run_ml_stock_lab_experiment = module.run_ml_stock_lab_experiment
+            train_ml_model_suite = module.train_ml_model_suite
+            load_training_panel = module.load_training_panel
+            summarize_training_with_ollama = module.summarize_training_with_ollama
+
 __all__ = [
     "EnsembleMispricingSignal",
     "ExperimentStatus",
@@ -103,4 +134,8 @@ __all__ = [
     "top_bottom",
     "turnover",
     "validate_panel",
+    "run_ml_stock_lab_experiment",
+    "load_training_panel",
+    "summarize_training_with_ollama",
+    "train_ml_model_suite",
 ]

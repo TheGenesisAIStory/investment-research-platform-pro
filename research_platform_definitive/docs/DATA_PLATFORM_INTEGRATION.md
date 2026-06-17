@@ -127,7 +127,7 @@ The platform follows:
 Streamlit page:
 
 ```text
-research_platform_app/pages/7_Data_Platform.py
+research_platform_app/pages/8_🗄️_Data_Platform.py
 ```
 
 Dedicated Data/API app:

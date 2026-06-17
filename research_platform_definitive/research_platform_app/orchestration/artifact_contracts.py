@@ -12,7 +12,7 @@ from .models import ArtifactSpec, NotebookJob
 
 def validate_artifacts(root: Path, specs: list[ArtifactSpec]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    now = pd.Timestamp.utcnow()
+    now = pd.Timestamp.now(tz="UTC")
     for spec in specs:
         path = root / spec.relative_path
         exists = path.exists()

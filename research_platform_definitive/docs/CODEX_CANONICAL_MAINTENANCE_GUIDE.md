@@ -54,14 +54,15 @@ machine-learning-for-trading/
 ├── research_platform_app/
 │   ├── app.py
 │   └── pages/
-│       ├── 1_Valuation_Research.py
-│       ├── 2_Portfolio_Research.py
-│       ├── 3_Screeners_Selection.py
-│       ├── 4_Artifacts_Exports.py
-│       ├── 5_Run_Notebooks.py
-│       ├── 6_Run_History.py
-│       ├── 7_Data_Platform.py
-│       ├── 8_Smart_Money_Gov_Data.py
+│       ├── 0_🏠_Home.py
+│       ├── 1_📡_Smart_Money_Macro.py
+│       ├── 2_🔬_Valuation_Research.py
+│       ├── 3_📁_Portfolio_Research.py
+│       ├── 4_🔍_Screener_Builder.py
+│       ├── 5_📤_Export_Center.py
+│       ├── 6_🧪_Notebook_Runner.py
+│       ├── 7_⚙️_Run_Hi_Freq_Engine.py
+│       ├── 8_🗄️_Data_Platform.py
 │       └── 9_ML_Stock_Lab.py
 ├── output/
 │   ├── ml_stock_lab/

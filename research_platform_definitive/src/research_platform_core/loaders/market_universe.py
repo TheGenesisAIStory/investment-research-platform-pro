@@ -79,6 +79,24 @@ def _normalize_symbol(value: Any) -> str:
     return str(value or "").strip().replace(".", "-").upper()
 
 
+def _provider_symbol_for_index(value: Any, universe: str) -> str:
+    """Return a Yahoo-compatible provider symbol for curated index members."""
+    text = str(value or "").strip().upper()
+    if not text or text == "NAN":
+        return text
+
+    suffixes = ("-MI", "-DE", "-PA", "-AS", "-MC", "-L", "-T", "-HK")
+    for suffix in suffixes:
+        if text.endswith(suffix):
+            return f"{text[: -len(suffix)]}.{suffix[1:]}"
+
+    if universe == "ftse100" and "." not in text:
+        return f"{text}.L"
+    if universe in {"ftsemib", "dax40", "cac40", "ibex35"}:
+        return text.replace("-", ".")
+    return text
+
+
 def _normalize_asset_frame(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=["ticker", "provider_symbol", "name", "exchange", "country", "type", "market", "primary_source", "active_flag"])
@@ -209,7 +227,7 @@ class MarketUniverseBuilder:
                 frame = pd.DataFrame(
                     {
                         "ticker": constituents["symbol"],
-                        "provider_symbol": constituents["symbol"],
+                        "provider_symbol": constituents["symbol"].map(lambda value: _provider_symbol_for_index(value, universe)),
                         "name": constituents.get("name", ""),
                         "exchange": meta["exchange"],
                         "country": meta["country"],

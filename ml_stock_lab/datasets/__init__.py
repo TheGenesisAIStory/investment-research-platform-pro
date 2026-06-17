@@ -14,6 +14,7 @@ from .panel import (
     make_forward_returns,
     normalize_panel,
     select_numeric_features,
+    validate_panel_coverage,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "make_forward_returns",
     "normalize_panel",
     "select_numeric_features",
+    "validate_panel_coverage",
 ]

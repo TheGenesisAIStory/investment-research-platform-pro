@@ -13,9 +13,10 @@ from orchestration.freshness import freshness_badge
 from orchestration.notebook_parameters import ensure_parameters_cell, has_parameters_cell
 from orchestration.scheduler import scheduler_tick
 from orchestration.scheduler_process import scheduler_status, start_scheduler_process, stop_scheduler_process
-from support import configure_page, sidebar_roots
+from support import configure_page, render_context_bar, render_footer, render_page_header, render_page_intro, sidebar_roots
+from ui_ops import job_status_board, render_job_board, render_safe_log_preview
 
-configure_page("Run Notebooks")
+configure_page("Notebook Runner")
 
 import pandas as pd
 import streamlit as st
@@ -45,18 +46,32 @@ store = JobStore()
 registry = get_job_registry()
 runs_df = pd.DataFrame([run.to_dict() for run in store.list_runs()])
 
-st.title("Run Notebooks")
-st.caption("Operational launcher for notebook-safe jobs and lightweight artifact refreshes.")
+render_page_header(
+    "Notebook Runner",
+    "Advanced launcher for notebook-safe jobs, data bootstrap, ML training and lightweight artifact refreshes.",
+    "▹",
+    module="PLATFORM OPS",
+    status="READY",
+)
+render_context_bar()
+render_page_intro(
+    "Advanced operations live here: data bootstrap, notebook execution, ML training and artifact refresh jobs.",
+    "Daily research should start from Home, Screener, Valuation or Data Platform; use this page when a run is required.",
+)
 
 st.markdown(
     """
     <div class="rp-note">
-    Notebooks remain the analytical source of truth. This page launches supported jobs,
+    <b>Advanced operations:</b> this page is not required for normal desk browsing. It launches supported jobs,
     stores executed notebook copies/logs, and validates exported artifacts afterward.
     </div>
     """,
     unsafe_allow_html=True,
 )
+
+with st.expander("Platform job board", expanded=True):
+    st.caption("One operating model for notebook runs, lightweight refreshes, data sync and model artifacts.")
+    render_job_board(job_status_board(registry, runs_df), key="notebook_runner_job_board", height=260)
 
 job_options = {f"{job.label} ({job.job_id})": job_id for job_id, job in registry.items()}
 selected_label = st.selectbox("Job", list(job_options))
@@ -72,6 +87,8 @@ duration_hint = {
     "module": "light · usually seconds",
     "data_platform": "light · inventory only",
     "price_refresh": "medium · depends on stale symbols",
+    "research_data_bootstrap": "heavy · dry-run is seconds, execute depends on provider scope",
+    "ml_training_lab": "medium/heavy · depends on panel size and model list",
     "papermill": "heavy · notebook execution",
     "nbclient": "heavy · fallback notebook execution",
 }.get(job.runner_type, "unknown")
@@ -96,7 +113,7 @@ with st.expander("Last 3 runs for selected job", expanded=not job_runs.empty):
 if not job.enabled:
     st.warning(job.disabled_reason or "This job is disabled.")
 
-with st.expander("Job contract", expanded=True):
+with st.expander("Advanced job contract", expanded=False):
     st.write(job.description)
     st.code(str(job.notebook_path or "module-only job"))
     if job.notebook_path:
@@ -118,16 +135,20 @@ with st.expander("Job contract", expanded=True):
             st.warning("Some expected artifacts are stale or missing. Confirm Data Platform freshness before launching a heavy run.")
 
 with st.form("run_job_form"):
-    st.subheader("Parameters")
+    st.subheader("Run Parameters")
+    st.caption("Defaults are chosen for safe desk usage. Heavy notebook jobs should usually run in background mode.")
     values = {spec.name: render_parameter(spec) for spec in job.parameters}
     async_mode = st.checkbox("Run in background process", value=True, help="Keeps Streamlit responsive while notebook/module work runs in a detached worker.")
     submitted = st.form_submit_button("Run Job", disabled=not job.enabled, width="stretch")
 
 if submitted:
     if async_mode:
-        run = launch_job_process(job.job_id, values, roots=roots, store=store)
-        st.success(f"Background run launched: {run.run_id}")
-        st.info("Use Run History or the Latest Run panel below to monitor status/logs.")
+        with st.spinner("Starting background job..."):
+            run = launch_job_process(job.job_id, values, roots=roots, store=store)
+        st.success(f"Job started: Run ID={run.run_id}")
+        if run.log_path:
+            st.caption(f"Log: {run.log_path}")
+        st.info("Monitor status in the Latest Run panel or Run Hi-Freq Engine. The app remains usable while the worker runs.")
     else:
         with st.status("Running job...", expanded=True) as status:
             st.write("Creating run metadata")
@@ -148,7 +169,7 @@ if latest_for_job:
     c3.metric("Finished", latest_for_job.finished_at or "n/a")
     if latest_for_job.log_path and Path(latest_for_job.log_path).exists():
         with st.expander("Run log", expanded=False):
-            st.code(Path(latest_for_job.log_path).read_text(encoding="utf-8", errors="replace")[-12000:])
+            render_safe_log_preview(Path(latest_for_job.log_path).read_text(encoding="utf-8", errors="replace"))
     if latest_for_job.output_notebook_path:
         path = Path(latest_for_job.output_notebook_path)
         st.write(f"Executed notebook/output: `{path}`")
@@ -200,3 +221,5 @@ with st.expander("Freshness Monitor", expanded=False):
         for status_value in summary["status"].tolist():
             st.markdown(f"{freshness_badge(status_value)}", unsafe_allow_html=True)
         st.dataframe(freshness, width="stretch", hide_index=True)
+
+render_footer()

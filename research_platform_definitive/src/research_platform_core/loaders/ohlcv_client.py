@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import re
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -22,6 +24,27 @@ from ..data_platform import resolve_data_platform_roots, utc_now
 
 DAILY_COLUMNS = ["date", "open", "high", "low", "close", "adjclose", "volume", "provider_symbol", "source"]
 INTRADAY_COLUMNS = ["ts", "open", "high", "low", "close", "volume", "provider_symbol", "source"]
+NETWORK_TIMEOUT_PATTERNS = (
+    "curl: (28)",
+    "curl 28",
+    "operation timed out",
+    "read timed out",
+    "connect timeout",
+    "connection timed out",
+    "timeout",
+    "timed out",
+)
+DELISTING_HINT_PATTERNS = (
+    "possibly delisted",
+    "no price data found",
+    "no timezone found",
+    "not found",
+    "no data found",
+)
+NO_PRICE_PATTERNS = (
+    "empty dataframe",
+    "empty bulk result",
+)
 
 
 def normalize_ohlcv_frame(raw: pd.DataFrame, provider_symbol: str, source: str, interval: str = "1d") -> pd.DataFrame:
@@ -29,6 +52,18 @@ def normalize_ohlcv_frame(raw: pd.DataFrame, provider_symbol: str, source: str, 
     if raw is None or raw.empty:
         return pd.DataFrame(columns=INTRADAY_COLUMNS if interval != "1d" else DAILY_COLUMNS)
     df = raw.copy()
+    if isinstance(df.columns, pd.MultiIndex):
+        try:
+            level0 = set(map(str, df.columns.get_level_values(0)))
+            level1 = set(map(str, df.columns.get_level_values(1)))
+            if provider_symbol in level1:
+                df = df.xs(provider_symbol, axis=1, level=1)
+            elif provider_symbol in level0:
+                df = df[provider_symbol]
+            else:
+                df.columns = [str(col[0]) for col in df.columns]
+        except Exception:
+            df.columns = [" ".join(str(part) for part in col if str(part)) for col in df.columns]
     if not isinstance(df.index, pd.RangeIndex):
         df = df.reset_index()
     rename = {
@@ -122,6 +157,31 @@ def _asset_value(asset: Any, key: str, default: str = "") -> str:
         return default
 
 
+def classify_provider_error(error: str | Exception | None) -> str:
+    """Map provider error text into stable OHLCV coverage categories."""
+    text = str(error or "").lower()
+    if any(pattern in text for pattern in NETWORK_TIMEOUT_PATTERNS):
+        return "NETWORK_TIMEOUT"
+    if any(pattern in text for pattern in NO_PRICE_PATTERNS):
+        return "NO_PRICE_DATA"
+    if any(pattern in text for pattern in DELISTING_HINT_PATTERNS):
+        return "DELISTED"
+    if text:
+        return "PROVIDER_ERROR"
+    return "NO_PRICE_DATA"
+
+
+def _effective_end_date(end: str | None) -> pd.Timestamp:
+    today = pd.Timestamp.now(tz="UTC").normalize().tz_localize(None)
+    parsed = pd.to_datetime(end, errors="coerce")
+    if pd.isna(parsed):
+        return today
+    parsed = pd.Timestamp(parsed).normalize()
+    if parsed.tzinfo is not None:
+        parsed = parsed.tz_localize(None)
+    return min(parsed, today)
+
+
 def _daily_quality_summary(frame: pd.DataFrame, start: str | None, end: str | None) -> dict[str, Any]:
     if frame is None or frame.empty or "date" not in frame.columns:
         return {"rows": 0, "coverage_ratio": 0.0, "first_date": None, "last_date": None}
@@ -129,7 +189,7 @@ def _daily_quality_summary(frame: pd.DataFrame, start: str | None, end: str | No
     if dates.empty:
         return {"rows": 0, "coverage_ratio": 0.0, "first_date": None, "last_date": None}
     start_dt = pd.to_datetime(start, errors="coerce").date() if start else min(dates)
-    end_dt = pd.to_datetime(end, errors="coerce").date() if end else min(pd.Timestamp.utcnow().date(), max(dates))
+    end_dt = _effective_end_date(end).date() if end else min(pd.Timestamp.now(tz="UTC").date(), max(dates))
     expected = pd.bdate_range(start_dt, end_dt)
     coverage = min(float(dates.nunique()) / max(len(expected), 1), 1.0)
     return {
@@ -138,6 +198,160 @@ def _daily_quality_summary(frame: pd.DataFrame, start: str | None, end: str | No
         "first_date": min(dates).isoformat(),
         "last_date": max(dates).isoformat(),
     }
+
+
+def classify_history_window(
+    frame: pd.DataFrame,
+    start: str | None,
+    end: str | None,
+    error: str | Exception | None = None,
+    recent_days: int = 370,
+) -> dict[str, Any]:
+    """Classify OHLCV coverage, keeping recent IPO/SPAC histories non-critical."""
+    if frame is None or frame.empty or "date" not in frame.columns:
+        status = classify_provider_error(error)
+        return {
+            "coverage_status": status,
+            "coverage_reason": str(error or status),
+            "first_price_date": pd.NA,
+            "last_price_date": pd.NA,
+            "coverage_ratio": 0.0,
+            "listing_gap_days": pd.NA,
+        }
+
+    quality = _daily_quality_summary(frame, start, end)
+    first = pd.to_datetime(quality.get("first_date"), errors="coerce")
+    last = pd.to_datetime(quality.get("last_date"), errors="coerce")
+    requested_start = pd.to_datetime(start, errors="coerce")
+    effective_end = _effective_end_date(end)
+    listing_gap_days = int((first - requested_start).days) if pd.notna(first) and pd.notna(requested_start) else 0
+    stale_days = int((effective_end - last).days) if pd.notna(last) else 999999
+
+    if pd.notna(last) and stale_days > recent_days:
+        return {
+            "coverage_status": "DELISTED",
+            "coverage_reason": f"last price {quality.get('last_date')} is {stale_days} days before effective end",
+            "first_price_date": quality.get("first_date"),
+            "last_price_date": quality.get("last_date"),
+            "coverage_ratio": quality.get("coverage_ratio", 0.0),
+            "listing_gap_days": listing_gap_days,
+        }
+    if listing_gap_days > 31:
+        return {
+            "coverage_status": "LIMITED_HISTORY",
+            "coverage_reason": f"first price {quality.get('first_date')} is after requested start {start}",
+            "first_price_date": quality.get("first_date"),
+            "last_price_date": quality.get("last_date"),
+            "coverage_ratio": quality.get("coverage_ratio", 0.0),
+            "listing_gap_days": listing_gap_days,
+        }
+    return {
+        "coverage_status": "OK",
+        "coverage_reason": "requested history available within provider coverage",
+        "first_price_date": quality.get("first_date"),
+        "last_price_date": quality.get("last_date"),
+        "coverage_ratio": quality.get("coverage_ratio", 0.0),
+        "listing_gap_days": listing_gap_days,
+    }
+
+
+def is_variant_sensitive_symbol(symbol: str) -> bool:
+    """Return True for symbols where raw-provider retries are usually wasteful.
+
+    Yahoo uses provider-specific conventions for preferred shares, warrants,
+    rights, units and share classes. The bulk request has already tested the
+    raw symbol, so fallback should probe normalized variants first.
+    """
+    raw = str(symbol or "").strip().upper()
+    if not raw:
+        return False
+    if "$" in raw:
+        return True
+    if raw.endswith("P") and len(raw) > 4:
+        return True
+    suffix_match = re.search(r"[.-]([A-Z]{1,3})$", raw)
+    if suffix_match:
+        suffix = suffix_match.group(1)
+        return suffix in {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "R", "U", "W", "WS", "WT"}
+    return False
+
+
+def is_low_priority_structured_symbol(symbol: str) -> bool:
+    """Return True for warrants/units/rights that should not slow broad backfills."""
+    raw = str(symbol or "").strip().upper()
+    return bool(re.search(r"[.-](W|WS|WT|U|R)$", raw))
+
+
+def provider_symbol_variants(symbol: str, asset: Any = None, prefer_common: bool = False, include_raw: bool = True) -> list[str]:
+    """Generate conservative symbol variants for recent-listing rescue probes."""
+    raw = str(symbol or "").strip()
+    variants = [raw] if raw and include_raw else []
+    ticker = _asset_value(asset, "ticker", "")
+    if ticker and (include_raw or ticker != raw) and ticker not in variants:
+        variants.append(ticker)
+    if "$" in raw:
+        for replacement in ["-P", "-", "."]:
+            candidate = raw.replace("$", replacement)
+            if candidate not in variants:
+                variants.append(candidate)
+        if prefer_common:
+            preferred = [raw.replace("$", replacement) for replacement in ["-P", "-", "."]]
+            preferred = [candidate for candidate in preferred if candidate in variants]
+            variants = preferred + [item for item in variants if item not in preferred]
+    if "." in raw:
+        base, suffix = raw.rsplit(".", 1)
+        suffix_upper = suffix.upper()
+        dot_variants: list[str] = []
+        if suffix_upper == "W":
+            dot_variants = [f"{base}-WT", f"{base}-WS", f"{base}-W"]
+        elif suffix_upper in {"WS", "WT"}:
+            dot_variants = [f"{base}-{suffix_upper}"]
+        elif suffix_upper in {"U", "R"}:
+            dot_variants = [f"{base}-{suffix_upper}"]
+        elif len(suffix_upper) == 1:
+            dot_variants = [f"{base}-{suffix_upper}"]
+        for candidate in dot_variants:
+            if candidate not in variants:
+                variants.append(candidate)
+        if prefer_common and dot_variants:
+            preferred = [candidate for candidate in dot_variants if candidate in variants]
+            variants = preferred + [item for item in variants if item not in preferred]
+    if "-" in raw:
+        base, suffix = raw.rsplit("-", 1)
+        dash_variants: list[str] = []
+        if suffix_upper := suffix.upper():
+            if suffix_upper in {"WT", "WS"}:
+                dash_variants.extend([f"{base}.W", f"{base}-W"])
+            elif suffix_upper in {"U", "R"}:
+                dash_variants.append(f"{base}.{suffix_upper}")
+            elif suffix_upper.startswith("P") and len(suffix_upper) == 2:
+                dash_variants.extend([f"{base}${suffix_upper[-1]}", f"{base}-{suffix_upper[-1]}", f"{base}.{suffix_upper[-1]}"])
+            elif len(suffix_upper) == 1:
+                dash_variants.append(f"{base}.{suffix_upper}")
+        for candidate in dash_variants:
+            if candidate not in variants:
+                variants.append(candidate)
+    compact = re.sub(r"[^A-Za-z0-9.-]", "", raw)
+    if compact and (include_raw or compact != raw) and compact not in variants:
+        variants.append(compact)
+    if raw.endswith("P") and len(raw) > 4:
+        common_candidate = raw[:-1]
+        if common_candidate not in variants:
+            variants.append(common_candidate)
+        if prefer_common and common_candidate in variants:
+            variants = [common_candidate] + [item for item in variants if item != common_candidate]
+    return variants
+
+
+def _download_yfinance(**kwargs: Any) -> tuple[pd.DataFrame, str]:
+    """Run yfinance with stdout/stderr captured so provider chatter stays out of run logs."""
+    import yfinance as yf
+
+    kwargs.setdefault("timeout", 20)
+    buffer = StringIO()
+    with redirect_stdout(buffer), redirect_stderr(buffer):
+        raw = yf.download(**kwargs)
+    return raw, buffer.getvalue().strip()
 
 
 def merge_ohlcv_frames(frames: list[pd.DataFrame], provider_order: list[str]) -> pd.DataFrame:
@@ -181,7 +395,7 @@ class YFinanceOhlcvProvider(BaseOhlcvProvider):
         symbols = [str(s).strip() for s in symbols if str(s).strip()]
         if not symbols:
             return {}
-        raw = yf.download(
+        raw, _provider_log = _download_yfinance(
             tickers=symbols,
             start=start,
             end=end,
@@ -195,10 +409,20 @@ class YFinanceOhlcvProvider(BaseOhlcvProvider):
         return parse_yfinance_bulk(raw, symbols, source=self.name)
 
     def get_ohlcv_daily(self, symbol: str, start: str, end: str | None = None) -> pd.DataFrame:
-        import yfinance as yf
-
-        raw = yf.download(symbol, start=start, end=end, interval="1d", auto_adjust=False, actions=False, progress=False, threads=False)
-        return normalize_ohlcv_frame(raw, symbol, self.name, interval="1d")
+        raw, provider_log = _download_yfinance(
+            tickers=symbol,
+            start=start,
+            end=end,
+            interval="1d",
+            auto_adjust=False,
+            actions=False,
+            progress=False,
+            threads=False,
+        )
+        out = normalize_ohlcv_frame(raw, symbol, self.name, interval="1d")
+        if out.empty and provider_log:
+            raise RuntimeError(provider_log[-1200:])
+        return out
 
 
 class StooqOhlcvProvider(BaseOhlcvProvider):
@@ -429,6 +653,7 @@ class OhlcvClient:
         )
         meta["provider_order"] = order
         meta["quality"] = _daily_quality_summary(frame, start, end)
+        meta["history"] = classify_history_window(frame, start, end)
         blend_enabled = self.allow_provider_blend if allow_blend is None else allow_blend
         if not blend_enabled or meta["quality"]["coverage_ratio"] >= self.coverage_threshold or len(order) < 2:
             return frame, meta
@@ -450,13 +675,52 @@ class OhlcvClient:
                 merged = merge_ohlcv_frames(frames, order)
                 merged_quality = _daily_quality_summary(merged, start, end)
                 if merged_quality["coverage_ratio"] >= self.coverage_threshold:
-                    meta.update({"status": "success_blended", "provider": "+".join([p for p in used if p]), "quality": merged_quality})
+                    meta.update({"status": "success_blended", "provider": "+".join([p for p in used if p]), "quality": merged_quality, "history": classify_history_window(merged, start, end)})
                     return merged, meta
             except Exception as exc:
                 meta.setdefault("blend_errors", []).append({"provider": provider, "error": str(exc)})
         merged = merge_ohlcv_frames(frames, order)
-        meta.update({"status": "success_blended_partial", "provider": "+".join([p for p in used if p]), "quality": _daily_quality_summary(merged, start, end)})
+        meta.update({"status": "success_blended_partial", "provider": "+".join([p for p in used if p]), "quality": _daily_quality_summary(merged, start, end), "history": classify_history_window(merged, start, end)})
         return merged, meta
+
+    def probe_recent_listing(
+        self,
+        symbol: str,
+        start: str = "2020-01-01",
+        end: str | None = None,
+        asset: Any = None,
+        preferred_providers: list[str] | None = None,
+    ) -> tuple[pd.DataFrame, dict[str, Any]]:
+        """Recover active recent listings when full-window fetches look delisted."""
+        errors: list[dict[str, str]] = []
+        fast_variant_probe = is_variant_sensitive_symbol(symbol)
+        variants = provider_symbol_variants(symbol, asset=asset, prefer_common=True, include_raw=not fast_variant_probe)
+        for candidate in variants:
+            try:
+                if fast_variant_probe:
+                    frame = self.provider_adapters["yfinance"].get_ohlcv_daily(candidate, start, end)
+                    if frame is None or frame.empty:
+                        raise ValueError("empty DataFrame")
+                    meta = {"status": "success", "provider": "yfinance", "provider_order": ["yfinance"]}
+                else:
+                    frame, meta = self.fetch_daily_one(
+                        candidate,
+                        start=start,
+                        end=end,
+                        asset=asset,
+                        preferred_providers=preferred_providers or ["yfinance", "alpha_vantage", "stooq"],
+                        allow_blend=False,
+                    )
+                if frame is not None and not frame.empty:
+                    history = classify_history_window(frame, "2000-01-01", end)
+                    if history["coverage_status"] == "OK":
+                        history["coverage_status"] = "LIMITED_HISTORY"
+                        history["coverage_reason"] = f"recent-listing probe recovered data from {history['first_price_date']}"
+                    meta.update({"probe_symbol": candidate, "history": history, "quality": _daily_quality_summary(frame, "2000-01-01", end)})
+                    return frame, meta
+            except Exception as exc:
+                errors.append({"symbol": candidate, "error": str(exc), "category": classify_provider_error(exc)})
+        raise RuntimeError(f"Recent listing probe failed for {symbol}: {errors}")
 
     def fetch_alpha_vantage_intraday_5m(self, symbol: str, month: str | None = None) -> pd.DataFrame:
         """Backward-compatible direct Alpha Vantage 5 minute helper."""

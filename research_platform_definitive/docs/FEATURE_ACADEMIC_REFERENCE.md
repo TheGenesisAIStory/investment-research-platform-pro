@@ -1,0 +1,249 @@
+# Gen.is.IA — Academic Feature Reference
+
+## 1. Introduzione metodologica
+
+Gen.is.IA separa tre famiglie di segnali:
+
+- **Cross-sectional equity factors**: value, momentum, quality, size, low risk, liquidity, growth and model-based signals used by Screener and ML Stock Lab.
+- **Multi-asset context**: FX, commodities, ETF, fixed-income, crypto and regime features used as optional context, not as hidden trading rules.
+- **Portfolio and valuation diagnostics**: risk-adjusted metrics, drawdowns, DCF/WACC, DDM, EVA and comparable-company multiples.
+
+### 1.1 Factor Zoo
+
+The platform uses a conservative subset of the equity factor zoo: signals with long academic history, interpretable formulas and clear point-in-time requirements. New signals are marked experimental until they have stable coverage and out-of-sample monitoring.
+
+### 1.2 Cross-Sectional Predictability
+
+The main ML target family is `forward_return_21d`, `forward_return_63d` and `forward_return_252d`. Model quality is evaluated with IC, RankIC, hit ratio, long-short spread and portfolio Sharpe. These metrics answer whether the model ranks securities well at each date.
+
+### 1.3 Point-In-Time Safety
+
+Price-only features can use values known at date `t`. Fundamental features require reporting lags, typically one quarter or six months depending on the statement item. Target columns are never valid model inputs.
+
+### 1.4 Winsorization and Normalization
+
+The recommended default is cross-sectional winsorization at 1%/99%, then rank or z-score normalization by date and universe. This avoids one extreme outlier dominating a factor composite.
+
+### 1.5 Regime Dependency
+
+Macro and time-series signals are used as context for interpretation and monitoring. They may be promoted to ML feature blocks only when tests show stable incremental IC and no leakage.
+
+## 2. Fattori accademici fondamentali
+
+| Family | Factors | Source | Platform status |
+| --- | --- | --- | --- |
+| Fama-French 3-Factor | MKT-RF, SMB, HML, RF | Ken French Data Library | US, EU, JP, APAC, EM, World download helpers |
+| Fama-French 5-Factor | MKT-RF, SMB, HML, RMW, CMA, RF | Ken French Data Library | US, EU, JP, APAC download helpers |
+| Carhart Momentum | MOM/UMD | Ken French Data Library | US, EU, JP, APAC download helpers |
+| Italy local factors | MKT_RF, SMB, HML, MOM, RF | Local factor panel construction | Proxy from Italian tickers where available |
+| AQR factor library | QMJ, BAB, HML Devil and related datasets | AQR Data Library | Discovery/cache provider |
+
+## 3. Feature equity implementate
+
+| Feature | Formula | Paper / rationale | PIT status |
+| --- | --- | --- | --- |
+| `momentum_12m_1m` | `$MOM_t = \\frac{P_{t-21}-P_{t-252}}{P_{t-252}}$` | Jegadeesh & Titman (1993); skip last month to reduce short-term reversal noise | price-only, safe at `t` |
+| `momentum_reversal_1m` | `$REV_t = -\\frac{P_t-P_{t-21}}{P_{t-21}}$` | Jegadeesh (1990), De Bondt & Thaler (1985) | price-only, safe at `t` |
+| `book_to_market` | `$B/M_t = \\frac{BookEquity_{t-lag}}{MarketCap_t}$` | Fama & French (1992, 1993) | requires fundamental lag |
+| `earnings_yield` | `$E/P_t = \\frac{EPS_{TTM,t-lag}}{P_t}$` | Basu (1977) | requires earnings lag |
+| `fcf_yield` | `$FCF/MC_t = \\frac{FCF_{TTM,t-lag}}{MarketCap_t}$` | Lakonishok, Shleifer & Vishny (1994) | requires cash-flow lag |
+| `gross_profitability` | `$GPA_t = \\frac{Revenue_t-COGS_t}{TotalAssets_t}$` | Novy-Marx (2013) | requires statement lag |
+| `roe` | `$ROE_t = \\frac{NetIncome_{TTM}}{AvgBookEquity}$` | Piotroski (2000), quality/profitability literature | requires statement lag |
+| `roic` | `$ROIC_t = \\frac{EBIT_t(1-tax)}{Equity+Debt-Cash}$` | Penman (2001), Koller et al. | requires statement lag |
+| `accruals_ratio` | `$ACC_t = \\frac{NI_t-CFO_t}{AvgTotalAssets_t}$` | Sloan (1996) | requires statement lag |
+| `piotroski_f_score` | `$F=\\sum_{i=1}^{9} F_i$` | Piotroski (2000) | requires comparable prior statements |
+| `altman_z_score` | `$Z'=6.56X_1+3.26X_2+6.72X_3+1.05X_4$` | Altman (1968, 1995 revised) | requires statement lag |
+| `log_market_cap` | `$SIZE_t=\\ln(P_t \\times Shares_t)$` | Banz (1981), Fama & French (1992) | safe when shares are lagged |
+| `beta_market` | `$\\beta_i=\\frac{Cov(r_i,r_m)}{Var(r_m)}$` | Sharpe (1964) | rolling returns, safe at `t` |
+| `idiosyncratic_vol` | `$IVOL_i=std(\\epsilon_i)$` | Ang et al. (2006) | rolling residuals only |
+| `amihud_illiquidity` | `$ILLIQ=\\frac{1}{T}\\sum \\frac{|r_d|}{DollarVolume_d}\\times10^6$` | Amihud (2002) | rolling price/volume |
+| `asset_growth` | `$AG_t=\\frac{TA_t-TA_{t-1}}{TA_{t-1}}$` | Cooper, Gulen & Schill (2008) | requires statement lag |
+
+## 4. Institutional Equity Factors
+
+The Bartram et al. (2021) institutional factor map is integrated as an additive layer. Existing stronger local features are kept; the new helpers only add missing columns or metadata and degrade to `NaN` when a fundamental input is unavailable.
+
+| Feature | Formula | Source | Status |
+| --- | --- | --- | --- |
+| `short_term_reversal` | `-return_21d`, lagged by one observation | Jegadeesh (1990), Bartram et al. (2021) | implemented in `institutional_factors.py` |
+| `gross_profitability` | `(revenue - COGS) / total_assets` | Novy-Marx (2013) | implemented, canonical quality input |
+| `investment_factor` | `(total_assets_t - total_assets_t-1) / total_assets_t-1` | Fama-French (2015), Bartram et al. (2021) | implemented, lower is better |
+| `accruals` | `(net_income - cash_from_operations) / total_assets` | Sloan (1996) | implemented, lower is better |
+| `cash_profitability` | `cash_from_operations / total_assets` | Ball et al. (2016) | implemented |
+| `earnings_quality` | `cash_from_operations / abs(net_income)` | Bartram et al. (2021) | implemented |
+| `net_payout_yield` | `(dividends + buybacks - issuance) / market_cap` | Boudoukh et al. (2007) | implemented, coverage-dependent |
+| `distress_risk` | Altman-style linear balance-sheet score | Altman (1968), Bartram et al. (2021) | implemented, higher means lower distress |
+
+Point-in-time rule: statement-driven columns require a fiscal-reporting lag before use in live predictions. The helper functions are intentionally fail-soft so partial fundamentals coverage does not break the factor panel.
+
+## 5. EPS & Earnings Factors
+
+EPS features are an experimental earnings-information block. They are designed for provider data such as FMP/EODHD/IBES-like estimates, but `factors/eps_factors.py` falls back to a rolling historical EPS mean as a naive consensus proxy when analyst consensus is unavailable.
+
+| Feature | Formula | Academic reference | Data / frequency | Anti-leakage |
+| --- | --- | --- | --- | --- |
+| `eps_surprise` | `(actual_EPS - consensus_EPS) / abs(consensus_EPS)` | Ball and Brown (1968), Journal of Accounting Research; Bernard and Thomas (1989), Journal of Accounting and Economics | actual EPS, consensus EPS; quarterly/event driven | shifted by one fiscal period per ticker |
+| `eps_revision` | `change(consensus_EPS, 1 observation) / lag(consensus_EPS)` | Hawkins et al. (1984), analyst forecast revision literature | consensus EPS estimates; monthly or estimate timestamp | shifted by one fiscal period per ticker |
+| `eps_revision_3m` | `change(consensus_EPS, 3 observations) / lag_3(consensus_EPS)` | Hawkins et al. (1984) | consensus EPS estimates; monthly or estimate timestamp | shifted by one fiscal period per ticker |
+| `eps_forecast_accuracy` | `rolling_mean(abs(actual_EPS - forecast_EPS), 4 quarters)` | Forecast-evaluation / Gen.is.IA internal | actual EPS and forecast EPS; quarterly | uses only prior forecast errors, then shifted |
+| `eps_growth_momentum` | `EPS_t / EPS_t-4 - 1` | Bernard and Thomas (1989), post-earnings-announcement drift | quarterly EPS | shifted by one fiscal period per ticker |
+| `earnings_yield` | `EPS / price` | Basu (1977), Journal of Finance | EPS and price; quarterly plus daily price | EPS component lagged one fiscal period |
+
+Status: implemented as experimental in `factors/eps_factors.py` and registered as `eps_factors` in the ML factor registry. These features should be promoted only after coverage and point-in-time provider timestamps are audited.
+
+## 6. Simulation & Risk (Monte Carlo)
+
+The simulation layer is a research/risk utility, not a predictive factor. `simulation/monte_carlo.py` implements deterministic vectorized Monte Carlo helpers with `seed=42`.
+
+| Function | Output | Reference | Data requirements | Anti-leakage |
+| --- | --- | --- | --- | --- |
+| `monte_carlo_returns(factor_scores, n_sim=10000, horizon=252)` | percentile paths, terminal 5/25/50/75/95 bands, VaR, CVaR | Glasserman (2003), *Monte Carlo Methods in Financial Engineering* | historical factor scores or factor-return matrix | caller must pass PIT historical inputs only |
+| `monte_carlo_factor_uncertainty(factor_df, bootstrap=True)` | factor-level prediction interval percentiles | Glasserman (2003); bootstrap validation practice used in factor research | historical factor matrix | resamples only supplied in-sample rows |
+
+Monte Carlo outputs are registered as simulation metrics (`mc_p05`, `mc_p50`, `mc_p95`, `mc_var_95`, `mc_cvar_95`) so UI/report layers can explain them without treating them as model features.
+
+## 7. ML Training Pipeline (Colab Pro)
+
+`colab/ml_training_pipeline.ipynb` is a cloud handoff notebook for heavy experiments that should not be forced on the local workstation by default.
+
+Required sections are present:
+
+| Section | Purpose | Status |
+| --- | --- | --- |
+| Drive mount and project bootstrap | Mount `/content/drive/MyDrive/genisia/`, set project paths and import packages | implemented skeleton |
+| Feature engineering | Load `factor_registry`, factor panel and optional EPS block | implemented skeleton |
+| Model training | LightGBM, Ridge and optional GPU LSTM placeholder | implemented skeleton |
+| Walk-forward CV | Expanding-window no-leakage split | implemented skeleton |
+| SHAP feature importance | Per-feature explanation hook when SHAP is installed | implemented skeleton |
+| Factor IC analysis | RankIC helper by date | implemented skeleton |
+| Export | Metrics JSON and artifacts to Drive | implemented skeleton |
+
+The notebook is deliberately a handoff scaffold. Full training should write metrics/model artifacts to Drive and then sync lightweight summaries back into Git.
+
+## 8. Cross-Asset Factors
+
+The cross-asset factor blocks are experimental context layers inspired by Asness, Moskowitz and Pedersen (2013) and Bartram et al. (2021). They are registered in `factor_registry.py` but are not part of the canonical equity model unless explicitly selected.
+
+| Block | Feature family | Formula summary | Source | PIT rule |
+| --- | --- | --- | --- | --- |
+| `fx_factors` | carry proxy, 12-1 momentum, trend, volatility | `ret63(pair)-ret63(DXY)`, `P_t-21/P_t-252-1`, `(MA50-MA200)/MA200`, `std(ret,63d)` | Lustig-Verdelhan (2007), Menkhoff et al. (2012), Bartram et al. (2021) | all price inputs shifted one observation |
+| `fi_factors` | term carry, credit carry, bond momentum, real-yield proxy | `ret(TLT)-ret(SHY)`, `ret(HYG)-ret(LQD)`, TLT 12-1 momentum, `ret(TIP)-ret(TLT)` | Fama-Bliss (1987), Elton et al. (2001), AMP (2013) | all ETF/yield proxies shifted one observation |
+| `commodity_factors` | momentum, trend, carry proxy, mean reversion | 12-1 momentum, MA50/MA200 trend, `ret63/vol63`, 252d z-score | Gorton-Rouwenhorst (2006), Bartram et al. (2021) | all price inputs shifted one observation |
+| `smart_money_factors` | COT positioning and hedging pressure | `noncommercial_long-short`, `net_commercial/(commercial_long+commercial_short)`, 52w z-score | De Roon et al. (2000), CFTC COT | weekly COT rows shifted one report |
+| `cross_asset_momentum` | momentum everywhere | 12-1 momentum, MA trend sign, volatility-adjusted momentum across Macro DB proxies | Asness, Moskowitz and Pedersen (2013) | all Macro DB inputs shifted one observation |
+| `cross_asset_value` | value everywhere | rolling z-score each supplied equity/FX/FI/commodity value signal, then average into `xasset_value_score` | Asness, Moskowitz and Pedersen (2013) | each input signal shifted one observation before normalization |
+| `global_risk_factor` | PCA risk-on/risk-off factor | rolling PC1 of cross-asset return matrix with equity-positive/rates-negative orientation | Bartram et al. (2021); PCA risk-factor literature | rolling PCA window uses returns available through t-1 |
+| `liquidity_factor` | cross-asset illiquidity | 21d rolling mean of `abs(return)/dollar_volume`, cross-sectional z-score; Roll-style spread proxy fallback | Amihud (2002), Journal of Financial Markets; Roll (1984) | rolling signal shifted one observation |
+
+These blocks use existing Macro DB and Smart Money artifacts where possible. True FX rate-differential carry, commodity futures-basis carry, PPP value and licensed spread data remain planned enhancements when higher-quality provider fields are available.
+
+## 9. Portfolio Analytics
+
+| Metric | Formula | Interpretation |
+| --- | --- | --- |
+| Sharpe | `$\\frac{E[R_p-R_f]}{\\sigma_p}$` | excess return per unit volatility |
+| Sortino | `$\\frac{E[R_p-R_f]}{\\sigma_{down}}$` | downside-risk-adjusted return |
+| Information Ratio | `$\\frac{R_p-R_b}{\\sigma(R_p-R_b)}$` | active return per unit tracking error |
+| Calmar | `$CAGR / |MaxDrawdown|$` | return per unit worst path loss |
+| Omega | `$\\frac{\\int_T^\\infty (1-F(r))dr}{\\int_{-\\infty}^T F(r)dr}$` | gain/loss balance around a threshold |
+| Ulcer Index | `$\\sqrt{mean(drawdown_t^2)}$` | depth and persistence of underwater periods |
+| CVaR | `$E[R \\mid R \\le VaR_\\alpha]$` | expected shortfall in the tail |
+| Brinson allocation | `$(w_p-w_b)(r_{b,s}-r_b)$` | sector allocation contribution |
+| Brinson selection | `$w_b(r_{p,s}-r_{b,s})$` | stock selection contribution |
+
+## 10. Valuation Models
+
+| Model | Formula | Notes |
+| --- | --- | --- |
+| DCF | `$EV=\\sum_{t=1}^{N}\\frac{FCF_t}{(1+WACC)^t}+\\frac{TV}{(1+WACC)^N}$` | terminal value uses Gordon growth |
+| WACC | `$(E/V)R_e+(D/V)R_d(1-tax)$` | CAPM equity cost and after-tax debt cost |
+| DDM | `$P_0=\\frac{D_1}{R_e-g}$` | only meaningful for dividend payers |
+| EVA | `$NOPAT-WACC\\times InvestedCapital$` | value creation after capital charge |
+| Comps | `implied price from sector median multiples` | compare PE, EV/EBITDA, EV/Sales and PB |
+
+## 11. Smart Money Indicators
+
+Smart Money is a context layer. COT positioning, ETF flow proxies and optional put/call ratios are informational diagnostics, not direct model targets.
+
+## 12. Macro Context Features
+
+| Feature | Formula | Use |
+| --- | --- | --- |
+| `macro_spy_ret21d` | `SPY_t / SPY_t-21 - 1`, lagged one observation | short-horizon global equity risk appetite |
+| `macro_spy_ret63d` | `SPY_t / SPY_t-63 - 1`, lagged one observation | medium-horizon equity backdrop |
+| `macro_dxy_ret21d` | `DXY_t / DXY_t-21 - 1`, lagged one observation | USD tightening/liquidity pressure |
+| `macro_brent_ret21d` | `Brent_t / Brent_t-21 - 1`, lagged one observation | commodity/reflation impulse |
+| `macro_tlt_ret21d` | `TLT_t / TLT_t-21 - 1`, lagged one observation | duration and flight-to-quality context |
+| `macro_credit_spread` | `return_21d(HYG) - return_21d(TLT)`, lagged one observation | credit risk appetite versus duration |
+| `macro_yield_slope` | `US 10Y proxy - US 2Y/front-end proxy`, lagged one observation | curve and rate-cycle context |
+| `macro_vix_level` | `rank_pct(VIX over 252d)`, lagged one observation in ML feature construction | volatility stress percentile |
+| `macro_regime_encoded` | `risk_on=1, recovery=0.5, risk_off=-0.5, crisis=-1`, lagged one observation | compact regime state for experimental models |
+
+Source data: internal Macro DB, 140 multi-asset proxies, 2000-2026 where available. The ML join uses a minimum one-observation delay and an as-of merge, so an equity row at date `t` cannot see macro observations after `t-1`. These variables are experimental and should be evaluated by incremental IC/RankIC/Sharpe versus the canonical equity factor block.
+
+Related literature: factor timing and conditional expected returns in Fama and French (1989, 1993), credit-cycle information in Adrian and Shin (2010), and volatility/regime conditioning in Ang and Bekaert (2002).
+
+## 13. Market Regime Classification
+
+The regime detector writes `output/macro_market/tables/MarketRegimeHistory.csv` with four labels:
+
+| Regime | Definition | Core rule |
+| --- | --- | --- |
+| `risk_on` | constructive equity/credit backdrop | positive 21d equity momentum, low volatility, no credit stress |
+| `risk_off` | defensive or deteriorating backdrop | VIX warning, negative equity momentum, credit stress or inverted curve |
+| `crisis` | acute stress | VIX stress, equity momentum below -5% or 63d below -10%, and credit stress |
+| `recovery` | rebound after stress | positive equity momentum after `risk_off` or `crisis`, without crisis-level volatility |
+
+Signals stored with each row: `equity_momentum_21d`, `credit_spread`, `vix_proxy`, `yield_slope`, `commodity_momentum`, plus `confidence` and human-readable `drivers`. If one proxy is missing, the classifier degrades gracefully and scales confidence by signal availability.
+
+Historical distribution is generated from the local Macro DB when `build_regime_history()` or `build_market_regime_history()` runs. The distribution is intentionally not hard-coded in this document because it depends on the data snapshot.
+
+## 14. WorldQuant 101 Formulaic Alphas
+
+The platform implements the 101 formulaic alphas from Kakushadze (2016), arXiv:1601.00991, in `research_platform_core.alpha101`. Each alpha is exposed through `Alpha101Suite`, registered in `feature_metadata.py` as category `alpha101`, and selectable in ML Stock Lab as an experimental feature block.
+
+These alphas are price/volume formulas, cross-sectionally rank-normalized, and computed only when the panel has OHLCV fields. They are not mixed into the canonical academic factor layer by default; the researcher must explicitly select `alpha101` and compare the resulting IC/RankIC/Sharpe against value, quality, momentum, risk, size and growth baselines.
+
+## 15. Legacy Macro Regime Features
+
+| Feature | Formula | Use |
+| --- | --- | --- |
+| `regime_spy_trend_63d` | `sign(SPY 63d return)` | equity risk appetite |
+| `regime_vix_level` | VIX low/mid/high bucket | volatility stress |
+| `regime_yield_slope` | `US 10Y proxy - US 2Y/front-end proxy` | curve/rate regime |
+| `regime_dxy_trend_21d` | `sign(DXY 21d return)` | USD pressure |
+| `regime_gold_trend_21d` | `sign(Gold 21d return)` | defensive/inflation proxy |
+
+## 16. Riferimenti bibliografici
+
+- Adrian, T., Shin, H. S. (2010). Liquidity and leverage.
+- Amihud, Y. (2002). Illiquidity and stock returns.
+- Ang, A., Bekaert, G. (2002). International asset allocation with regime shifts.
+- Ang, A., Hodrick, R., Xing, Y., Zhang, X. (2006). The cross-section of volatility and expected returns.
+- Asness, C., Frazzini, A., Pedersen, L. (2019). Quality Minus Junk.
+- Asness, C., Moskowitz, T., Pedersen, L. (2013). Value and momentum everywhere.
+- Banz, R. (1981). The relationship between return and market value of common stocks.
+- Bartram, S., Lohre, H., Pope, P., Ranganathan, A. (2021). Navigating the factor zoo around the world.
+- Ball, R., Gerakos, J., Linnainmaa, J., Nikolaev, V. (2016). Accruals, cash flows, and operating profitability.
+- Ball, R., Brown, P. (1968). An empirical evaluation of accounting income numbers.
+- Basu, S. (1977). Investment performance of common stocks in relation to their price-earnings ratios.
+- Bernard, V., Thomas, J. (1989). Post-earnings-announcement drift.
+- Boudoukh, J., Michaely, R., Richardson, M., Roberts, M. (2007). On the importance of measuring payout yield.
+- Carhart, M. (1997). On persistence in mutual fund performance.
+- Cooper, M., Gulen, H., Schill, M. (2008). Asset growth and the cross-section of stock returns.
+- De Roon, F., Nijman, T., Veld, C. (2000). Hedging pressure effects in futures markets.
+- De Bondt, W., Thaler, R. (1985). Does the stock market overreact?
+- Elton, E., Gruber, M., Agrawal, D., Mann, C. (2001). Explaining the rate spread on corporate bonds.
+- Fama, E., French, K. (1992, 1993, 2015). Cross-sectional returns and factor models.
+- Fama, E., Bliss, R. (1987). The information in long-maturity forward rates.
+- Frazzini, A., Pedersen, L. (2014). Betting Against Beta.
+- Gorton, G., Rouwenhorst, K. (2006). Facts and fantasies about commodity futures.
+- Glasserman, P. (2003). Monte Carlo Methods in Financial Engineering.
+- Hawkins, E., Chamberlin, S., Daniel, W. (1984). Earnings expectations and analyst forecast revisions.
+- Jegadeesh, N., Titman, S. (1993). Returns to buying winners and selling losers.
+- Kakushadze, Z. (2016). 101 Formulaic Alphas. arXiv:1601.00991.
+- Lustig, H., Verdelhan, A. (2007). The cross-section of foreign currency risk premia.
+- Menkhoff, L., Sarno, L., Schmeling, M., Schrimpf, A. (2012). Currency momentum strategies.
+- Novy-Marx, R. (2013). The other side of value.
+- Piotroski, J. (2000). Value investing and historical financial statement information.
+- Sloan, R. (1996). Do stock prices fully reflect information in accruals and cash flows?

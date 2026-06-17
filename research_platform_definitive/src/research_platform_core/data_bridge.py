@@ -40,7 +40,7 @@ class DataBridge:
         dataset_dir = self.bridge_root / "datasets"
         manifest_dir.mkdir(parents=True, exist_ok=True)
         dataset_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = pd.Timestamp.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = pd.Timestamp.now(tz="UTC").strftime("%Y%m%d_%H%M%S")
         manifest_path = manifest_dir / f"ml_stock_lab_dataset_manifest_{timestamp}.csv"
         data.to_csv(manifest_path, index=False)
         copied_rows = []

@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from .factor_registry import add_factor_scores, feature_columns_for_blocks, is_leakage_feature
+
 
 FUNDAMENTAL_ALIASES = {
     "pe": ["peratio", "pe_ratio", "p_e"],
@@ -41,28 +43,42 @@ def add_basic_features(panel: pd.DataFrame) -> pd.DataFrame:
     for ret_col in ["ret21d", "ret63d", "ret126d"]:
         if ret_col in out.columns:
             out[f"{ret_col}_rank"] = out.groupby("date")[ret_col].rank(pct=True) if "date" in out.columns else out[ret_col].rank(pct=True)
-    return out
+    return add_factor_scores(out)
 
 
-def select_numeric_features(panel: pd.DataFrame, target: str = "market_value", min_non_null: int = 5) -> list[str]:
-    """Select stable numeric features for notebook-safe modelling."""
-    cols: list[str] = []
+def select_numeric_features(
+    panel: pd.DataFrame,
+    target: str = "market_value",
+    min_non_null: int = 5,
+    feature_blocks: list[str] | tuple[str, ...] | None = None,
+    include_extra_numeric: bool = True,
+) -> list[str]:
+    """Select stable numeric features with factor-block and leakage controls."""
+    cols = feature_columns_for_blocks(
+        panel,
+        blocks=feature_blocks,
+        target=target,
+        min_non_null=min_non_null,
+        include_extra_numeric=include_extra_numeric,
+    )
+    seen = set(cols)
     for col in panel.columns:
-        if col in {target, "forward_return"}:
+        if col in seen or is_leakage_feature(col, target=target):
             continue
         if pd.api.types.is_numeric_dtype(panel[col]) and panel[col].notna().sum() >= min_non_null:
             cols.append(col)
+            seen.add(col)
     return cols
 
 
-def make_forward_returns(panel: pd.DataFrame, price_col: str = "price", horizon: int = 1) -> pd.DataFrame:
+def make_forward_returns(panel: pd.DataFrame, price_col: str = "price", horizon: int = 21) -> pd.DataFrame:
     """Create forward returns by ticker if price history is available."""
     out = panel.copy()
     if price_col not in out.columns or "ticker" not in out.columns:
         return out
     out = out.sort_values(["ticker", "date"] if "date" in out.columns else ["ticker"])
-    prices = pd.to_numeric(out[price_col], errors="coerce")
     out["forward_return"] = out.groupby("ticker")[price_col].transform(lambda s: pd.to_numeric(s, errors="coerce").shift(-horizon) / pd.to_numeric(s, errors="coerce") - 1)
+    out["forward_return_horizon"] = int(horizon)
     return out
 
 

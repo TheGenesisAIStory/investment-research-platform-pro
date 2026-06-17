@@ -1,19 +1,13 @@
 # Stato progetto - 2026-05-23
 
 Aggiornato: 2026-05-23 19:46 CEST  
-Repository locale: `/Users/itsgennymac/GitHub/investment-research-platform-pro`  
-Branch: `main`  
-Remote GitHub: `https://github.com/TheGenesisAIStory/investment-research-platform-pro`
-
-Origine migrazione: `/Users/itsgennymac/GitHub/machine-learning-for-trading`, commit `7ad9a7d`.
+Repository locale: `/Users/itsgennymac/GitHub/machine-learning-for-trading`  
+Branch: `codex/research-platform-workstation`  
+Remote GitHub: `https://github.com/TheGenesisAIStory/ml-trading-thesis-bot.git`
 
 ## Sintesi
 
 Il progetto operativo e' ora centrato su `research_platform_definitive/`. La vecchia struttura estesa del repository e' stata sostituita da un bundle canonico con notebook, app Streamlit, package riusabili, documentazione, validatori e integrazioni.
-
-Questa copia e' il repository standalone dedicato del progetto Investment Research Platform Pro. La storia Git parte fresca da questo stato, mentre i riferimenti esterni restano come submodule.
-
-Nota finale: lo stato piu' aggiornato dopo il completamento Data Center / LLM Lab / mobile e' in `docs/PROJECT_STATUS_FINAL.md`.
 
 Lo stato funzionale verificato in questo passaggio e' positivo: test mirati, validatori, smoke check e compilazione Python passano. Rimane da trattare con attenzione la dimensione della migrazione Git: il working tree contiene molte rimozioni intenzionali della vecchia struttura e il nuovo bundle deve essere salvato come migrazione coerente.
 
@@ -53,11 +47,11 @@ Nota: i test passano con soli warning di deprecazione `Pandas4Warning` su `pd.Ti
 | Smart Money engine | `research_platform_definitive/src/smart_money_engine/` | Funzionante | Smoke OK. Gli artifact demo sono validati. |
 | Company Valuation | `research_platform_definitive/company_valuation/` | Funzionante come bundle | Moduli e notebook canonici presenti. Da validare con dati/provider reali quando si esegue analisi live. |
 | Portfolio Analysis | `research_platform_definitive/portfolio_analysis/` | Funzionante come bundle | Moduli e notebook canonici presenti. Da validare con portafogli reali quando disponibili. |
-| Laboratorio | `research_platform_definitive/laboratorio/` | Reference OK | Libreria di ricerca curata, non fonte di produzione. Validati 129 file e 75 notebook. |
+| Laboratorio | `research_platform_definitive/archive/laboratorio/` | Reference OK | Libreria di ricerca curata, non fonte di produzione. Validati 129 file e 75 notebook. |
 | Vibe-Trading bridge | `integrations/vibe_trading_bridge/`, `vibe_trading/` | Compila | Dipendenza opzionale via submodule. Requirements in `requirements-vibe.txt`. |
 | QuantDinger bridge | `integrations/quantdinger_bridge/`, `external/QuantDinger*` | Testato | Test adapter/config/db/service inclusi nei 27 test. Submodule puliti localmente. |
-| Drive sync | `scripts/sync_repo_to_google_drive.sh` | Pronto per sync | Target locale Google Drive: `MyDrive/GitHub/investment-research-platform-pro/`. Esclude `.git`, venv, cache e DB locali. |
-| GitHub sync | branch `main` | Pubblicato come repo standalone | Repository dedicato: `TheGenesisAIStory/investment-research-platform-pro`. |
+| Drive sync | `scripts/sync_repo_to_google_drive.sh` | Pronto per sync | Target locale Google Drive: `MyDrive/GitHub/machine-learning-for-trading/`. Esclude `.git`, venv, cache e DB locali. |
+| GitHub sync | branch `codex/research-platform-workstation` | Pronto per commit/push | Da salvare come migrazione unica con documentazione e fix test harness. |
 
 ## Intervento di armonizzazione fatto
 
@@ -84,14 +78,14 @@ Locale:
 Drive:
 
 - Script operativo: `./scripts/sync_repo_to_google_drive.sh`
-- Destinazione: `/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/GitHub/investment-research-platform-pro`
+- Destinazione: `/Users/itsgennymac/Library/CloudStorage/GoogleDrive-sfn.gns@gmail.com/Il mio Drive/GitHub/machine-learning-for-trading`
 - Modalita' standard: `SYNC_MODE=operational`, senza `.git`, virtualenv, cache runtime, DB locali e archive pesanti.
 
 GitHub:
 
 - Remote: `origin`
-- Branch: `main`
-- Repository standalone: `https://github.com/TheGenesisAIStory/investment-research-platform-pro`
+- Branch: `codex/research-platform-workstation`
+- Il salvataggio deve includere la migrazione completa, questo documento e il fix dei test.
 
 ## Rischi residui e prossimi passi
 

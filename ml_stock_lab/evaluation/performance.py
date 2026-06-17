@@ -26,6 +26,68 @@ def sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.0, periods_per_ye
     return float((excess.mean() / vol) * np.sqrt(periods_per_year))
 
 
+def oos_r2(y_true: pd.Series, y_pred: pd.Series, benchmark: pd.Series | float | None = None) -> float:
+    """Out-of-sample R2 versus a benchmark forecast."""
+    y = pd.to_numeric(y_true, errors="coerce")
+    p = pd.to_numeric(y_pred, errors="coerce")
+    if benchmark is None:
+        b = pd.Series(y.mean(), index=y.index)
+    elif isinstance(benchmark, (int, float)):
+        b = pd.Series(float(benchmark), index=y.index)
+    else:
+        b = pd.to_numeric(benchmark, errors="coerce")
+    mask = y.notna() & p.notna() & b.notna()
+    if mask.sum() == 0:
+        return float("nan")
+    denom = ((y[mask] - b[mask]) ** 2).sum()
+    return float(1 - ((y[mask] - p[mask]) ** 2).sum() / denom) if denom else float("nan")
+
+
+def information_coefficient(y_true: pd.Series, y_score: pd.Series, method: str = "pearson") -> float:
+    y = pd.to_numeric(y_true, errors="coerce")
+    s = pd.to_numeric(y_score, errors="coerce")
+    mask = y.notna() & s.notna()
+    if mask.sum() < 3 or y[mask].nunique() < 2 or s[mask].nunique() < 2:
+        return float("nan")
+    return float(y[mask].corr(s[mask], method=method))
+
+
+def rank_information_coefficient(y_true: pd.Series, y_score: pd.Series) -> float:
+    return information_coefficient(y_true, y_score, method="spearman")
+
+
+def rolling_ic_by_date(
+    frame: pd.DataFrame,
+    score_col: str = "expected_return",
+    return_col: str = "forward_return",
+    date_col: str = "date",
+) -> pd.DataFrame:
+    if frame.empty or not {score_col, return_col}.issubset(frame.columns):
+        return pd.DataFrame(columns=[date_col, "ic", "rank_ic", "name_count"])
+    if date_col not in frame.columns:
+        return pd.DataFrame(
+            [
+                {
+                    date_col: "all",
+                    "ic": information_coefficient(frame[return_col], frame[score_col]),
+                    "rank_ic": rank_information_coefficient(frame[return_col], frame[score_col]),
+                    "name_count": int(frame[[score_col, return_col]].dropna().shape[0]),
+                }
+            ]
+        )
+    rows = []
+    for date, group in frame.groupby(date_col):
+        rows.append(
+            {
+                date_col: date,
+                "ic": information_coefficient(group[return_col], group[score_col]),
+                "rank_ic": rank_information_coefficient(group[return_col], group[score_col]),
+                "name_count": int(group[[score_col, return_col]].dropna().shape[0]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def max_drawdown(returns: pd.Series) -> float:
     """Return maximum drawdown from a return series."""
     r = pd.to_numeric(returns, errors="coerce").dropna()

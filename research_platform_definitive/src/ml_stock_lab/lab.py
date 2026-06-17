@@ -142,6 +142,7 @@ def run_ml_stock_lab_experiment(
     include_aqr: bool = False,
     aqr_slugs: list[str] | None = None,
     aqr_max_datasets: int | None = None,
+    target_horizon_days: int = 21,
 ) -> dict[str, Any]:
     """Run a lightweight ML valuation/screening/quintile experiment."""
     output_root = Path(output_root)
@@ -167,7 +168,8 @@ def run_ml_stock_lab_experiment(
         proxy_source = str(panel["market_value_proxy_source"].dropna().iloc[0])
     panel["target_source"] = proxy_source
     if "forward_return" not in panel.columns:
-        panel = make_forward_returns(panel, price_col="price" if "price" in panel.columns else "market_value")
+        panel = make_forward_returns(panel, price_col="price" if "price" in panel.columns else "market_value", horizon=target_horizon_days)
+    panel["target_horizon_days"] = int(target_horizon_days)
 
     panel_status = validate_panel_coverage(panel, min_tickers=min_tickers, min_dates=min_dates)
     panel_status["stage"] = "panel_validation"
@@ -194,6 +196,7 @@ def run_ml_stock_lab_experiment(
             "tickers": _csv_value(tickers),
             "target": "market_value",
             "target_selected": target,
+            "target_horizon_days": int(target_horizon_days),
             "target_source": proxy_source,
             "panel_rows": int(panel_status["panel_rows"].iloc[0]),
             "ticker_count": int(panel_status["ticker_count"].iloc[0]),
@@ -226,10 +229,16 @@ def run_ml_stock_lab_experiment(
         }
         return {"status": status, "paths": paths, "panel": panel, "metrics": metrics, "status_report": panel_status}
 
-    features = select_numeric_features(panel, target="market_value", min_non_null=max(3, min(10, len(panel) // 10)))
+    features = select_numeric_features(
+        panel,
+        target="market_value",
+        min_non_null=max(3, min(10, len(panel) // 10)),
+        feature_blocks=feature_blocks,
+        include_extra_numeric=False,
+    )
     if not features:
         numeric = panel.select_dtypes("number").columns.tolist()
-        features = [c for c in numeric if c not in {"market_value", "forward_return"}][:8]
+        features = [c for c in numeric if c not in {"market_value", "forward_return", "price"}][:8]
     X, y, features = FundamentalDatasetBuilder(features, "market_value").build(panel)
     if X.empty or not features:
         empty = pd.DataFrame()
@@ -246,6 +255,7 @@ def run_ml_stock_lab_experiment(
             "tickers": _csv_value(tickers),
             "target": "market_value",
             "target_selected": target,
+            "target_horizon_days": int(target_horizon_days),
             "target_source": proxy_source,
             "r2_os": pd.NA,
             "sharpe_long_short": pd.NA,
@@ -292,6 +302,7 @@ def run_ml_stock_lab_experiment(
             "tickers": _csv_value(tickers),
             "target": "market_value",
             "target_selected": target,
+            "target_horizon_days": int(target_horizon_days),
             "target_source": proxy_source,
             "panel_rows": status_values.get("panel_rows"),
             "ticker_count": status_values.get("ticker_count"),
@@ -399,6 +410,7 @@ def run_ml_stock_lab_experiment(
         "tickers": _csv_value(tickers),
         "target": "market_value",
         "target_selected": target,
+        "target_horizon_days": int(target_horizon_days),
         "target_source": proxy_source,
         "panel_rows": status_values.get("panel_rows"),
         "ticker_count": status_values.get("ticker_count"),

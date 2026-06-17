@@ -33,6 +33,10 @@ NOTEBOOKS = (
         "machine_learning_lab/notebooks/ML_Stock_Lab_Experiments.ipynb",
         ("ml_stock_lab", "run_ml_stock_lab_experiment", "ML Stock Lab"),
     ),
+    NotebookContract(
+        "machine_learning_lab/notebooks/ML_Training_Lab_Colab_Ollama.ipynb",
+        ("train_ml_model_suite", "Ollama", "ML Training Lab"),
+    ),
 )
 
 FORBIDDEN_PATH_PATTERNS = (
